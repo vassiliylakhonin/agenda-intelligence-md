@@ -134,6 +134,57 @@
               "type": "string"
             }
           }
+        },
+        "export_review": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "verdict",
+            "classification_status",
+            "stage",
+            "blocking_gaps",
+            "review_leads",
+            "next_one_thing",
+            "notice"
+          ],
+          "properties": {
+            "verdict": {
+              "enum": [
+                "NOT_READY",
+                "READY_FOR_EXPORT_CONTROL_REVIEW"
+              ]
+            },
+            "classification_status": {
+              "enum": [
+                "caller_declared_only",
+                "not_provided"
+              ]
+            },
+            "stage": {
+              "enum": [
+                "file_intake",
+                "ready_for_classifier_review"
+              ]
+            },
+            "blocking_gaps": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "review_leads": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "next_one_thing": {
+              "type": "string"
+            },
+            "notice": {
+              "type": "string"
+            }
+          }
         }
       }
     },

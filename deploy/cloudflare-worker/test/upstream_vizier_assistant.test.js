@@ -341,7 +341,7 @@ test("upstream_vizier_assistant: full A2A handleRequest integration with sanctio
       method: "message/send",
       params: {
         message: {
-          parts: [{ kind: "text", text: "Can we use Sovcomflot? Token: sk-proj-1234567890abcdef1234" }]
+          parts: [{ kind: "text", text: "Can we use Sovcomflot for dual-use HS 854231? Token: sk-proj-1234567890abcdef1234" }]
         }
       }
     })
@@ -362,6 +362,9 @@ test("upstream_vizier_assistant: full A2A handleRequest integration with sanctio
   assert.equal(inner.sanctions_advisory.status, "escalate");
   assert.ok(inner.message.includes("SANCTIONS ADVISORY"));
   assert.ok(inner.message.includes("SECURITY NOTICE"));
+  assert.equal(inner.handoff_draft, null);
+  assert.equal(inner.hs_hint, null);
+  assert.match(inner.handoff_notice, /redact/i);
 
   // Check caller_text sanitized
   assert.ok(inner.caller_text.includes("******"));

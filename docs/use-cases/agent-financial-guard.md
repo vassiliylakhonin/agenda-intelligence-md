@@ -16,6 +16,12 @@ intent can trigger rejection. Other requests require human review.
 
 See [ADR 0027](../adr/0027-financial-and-escrow-evidence-boundaries.md) for the boundary.
 
+## Before-sign integration
+
+The machine result includes `pre_sign_verdict` (`REJECT` or `HUMAN_REVIEW`), `can_auto_sign: false`, local denylist status, reason codes and one next step. These fields do not establish current sanctions screening, authoritative policy, verified wallet history or a signed approval. Approve, swap and contract-call reasons signal that relevant transaction terms remain unverified; they are not a full calldata, allowance, slippage or router analysis. Reported limit violations are evaluated against caller-supplied numbers, not a verified wallet ledger.
+
+MCP advertises flat transaction arguments; the legacy `{request: ...}` call remains accepted and retains its existing task envelope. Both use the same validation and admission. The example [`before-sign.mjs`](../../examples/agent-financial-guard/before-sign.mjs) accepts a caller-provided evaluator and returns a review result with `can_auto_sign: false`, or exposes a hook that stops without invoking a signer. It makes no network call itself, does not pay, and does not verify that a response is bound to the exact transaction bytes. A production executor needs its own authenticated, transaction-bound authority and independent human approval; a payment receipt or self-declared policy is not such authority. The local Python fallback and Worker have different historical policy defaults and should not be treated as interchangeable authoritative limits.
+
 ## Public interfaces
 
 - [Website and fixed synthetic example](https://agent-financial-guard-a2a.vassiliy-lakhonin.workers.dev/)

@@ -2,15 +2,37 @@
   "contract_version": "1.19.0",
   "profile": "dual_use_technology_export",
   "export_risk_triage": {
-    "status": "ready_for_human_review",
-    "score": 69,
+    "status": "not_decision_ready",
+    "score": 49,
     "score_scope": "declared_evidence_structure_only",
     "factual_verification_performed": false,
     "human_review_required": true,
     "not_advice_notice": "Pre-compliance evidence triage only. Not legal, sanctions, compliance, financial, investment, insurance, or trading advice.",
     "evidence_gaps": [
+      "Missing review reference: licence_pathway_evidence.",
+      "Missing review reference: intermediate_consignee_chain.",
+      "Missing review reference: reexport_assurance.",
+      "Missing review reference: sanctions_screen_extract.",
       "Source content, classification, licensing requirements and end-use have not been independently verified."
     ],
+    "export_review": {
+      "verdict": "NOT_READY",
+      "classification_status": "caller_declared_only",
+      "stage": "file_intake",
+      "blocking_gaps": [
+        "licence_pathway_evidence",
+        "intermediate_consignee_chain",
+        "reexport_assurance",
+        "sanctions_screen_extract"
+      ],
+      "review_leads": [
+        "HS6 matches the bundled CHPL snapshot; assess current classification, route and end use with a qualified reviewer.",
+        "Caller-declared route and the HS snapshot suggest enhanced diversion review; legal applicability is not determined.",
+        "Caller-declared end-user sector warrants closer end-use review."
+      ],
+      "next_one_thing": "Obtain or independently resolve the missing licence pathway evidence reference.",
+      "notice": "Reference metadata and caller declarations only; no classification, factual verification, licence decision or export authorization."
+    },
     "primary_risk_vectors": [
       "CHPL Status: Tier 1 matched (HS 854231). Diversion-review lead from the BIS CHPL reference snapshot; applicable controls require separate product, jurisdiction and end-use review.",
       "OFAC E.O. 14114 applicability question: Does a foreign financial institution facilitate relevant significant transactions or services connected to Russia’s military-industrial base? HS tier alone does not determine sanctions exposure.",

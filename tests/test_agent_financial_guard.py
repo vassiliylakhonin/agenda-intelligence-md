@@ -202,3 +202,13 @@ def test_public_sdk_remote_request_does_not_claim_owner_probe(client_kind):
     request = remote.call_args.args[0]
     assert request.get_header("User-agent").startswith("agenda-client-python-sdk/")
     assert request.get_header("X-client-id") is None
+
+
+def test_local_verdict_reports_unverified_policy_without_authorizing_signing():
+    guard = AgentFinancialGuard()
+    tx = {"network": "base_mainnet", "token": "USDC", "amount_usd": 10, "recipient": "0x123", "method": "swap"}
+    raw = guard.check(tx, "Payment for review", prefer_remote=False).raw
+    assert raw["pre_sign_verdict"] == "HUMAN_REVIEW"
+    assert raw["can_auto_sign"] is False
+    assert "SWAP_TERMS_UNVERIFIED" in raw["blocking_reasons"]
+    assert "POLICY_AUTHORITY_UNVERIFIED" in raw["blocking_reasons"]

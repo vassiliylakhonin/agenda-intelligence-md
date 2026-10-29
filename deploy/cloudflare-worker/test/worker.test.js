@@ -7239,8 +7239,8 @@ test("dual-use technology profile routes structured MCP requests to its declared
 
   assert.equal(response.result.isError, false);
   assert.equal(response.result.structuredContent.profile, "dual_use_technology_export");
-  assert.equal(response.result.structuredContent.export_risk_triage.status, "ready_for_human_review");
-  assert.equal(response.result.structuredContent.export_risk_triage.score, 69);
+  assert.equal(response.result.structuredContent.export_risk_triage.status, "not_decision_ready");
+  assert.equal(response.result.structuredContent.export_risk_triage.score, 49);
 });
 
 test("dual-use free text creates an intake candidate without classifying goods", async () => {

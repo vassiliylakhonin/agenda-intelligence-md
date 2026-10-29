@@ -14,6 +14,7 @@ import { corridorOwnerActions, corridorOwnerActionsHtml } from './corridor-owner
 import { CIS_WIZARD_SCRIPT, cisWizardHtml } from './cis-wizard.js';
 import { GULF_WIZARD_SCRIPT, gulfWizardHtml, gulfGateHtml } from './gulf-wizard.js';
 import { MARKET_ENTRY_WIZARD_SCRIPT, marketEntryWizardHtml } from './market-entry-wizard.js';
+import { financialGuardViewHtml, dualUseViewHtml, corridorPlanHtml } from './fleet-review-view.js';
 import { marketEntryView, marketEntryViewHtml, marketEntryProgress, marketEntryProgressHtml } from './market-entry-workflow.js';
 import { cisReviewView, cisReviewViewHtml } from './cis-review-view.js';
 import { parseCounterpartyCsv, prepareBatch } from './cis-batch.js';
@@ -119,6 +120,7 @@ function landingHtml(request, env) {
     ${profile === 'cis_secondary_sanctions' ? '<div id="cis-review-view" aria-live="polite"></div>' : ''}
     ${profile === 'gulf_maritime_exposure' ? '<div id="gulf-review-view" aria-live="polite"></div>' : ''}
     ${profile === 'market_entry_readiness' ? '<div id="market-entry-review-view" aria-live="polite"></div>' : ''}
+    ${['agent_financial_guard','dual_use_technology_export','corridor_sanctions_assistant'].includes(profile) ? '<div id="fleet-review-view" aria-live="polite"></div>' : ''}
     ${freeTrial ? '<div id="profile-followthrough" hidden><h3>Choose your next step</h3><p>Use the result to collect one missing piece of evidence, then review a revision when ready. Each admitted rerun uses another attempt; changing input does not restore a spent allowance.</p><button type="button" onclick="agendaNextSteps.revise()">Review a revision — no submission</button> · <a href="#scoped-services">Scope a human review</a></div>' : ''}
     <div id="profile-progress" aria-live="polite"></div>
     <details id="profile-response" hidden><summary>Full structured response</summary><pre id="profile-result" style="max-height:600px;overflow:auto"></pre></details>
@@ -219,8 +221,9 @@ function landingHtml(request, env) {
     ${reviewSummaryHtml(workedExample?.response, escapeHtml)}
     <details open><summary>Example request</summary><pre>${escapeHtml(JSON.stringify(workedExample?.request || {}, null, 2))}</pre></details>
     <details open><summary>Saved example result</summary><pre>${escapeHtml(JSON.stringify(workedExample?.response || {}, null, 2))}</pre></details>
+    ${profile === 'agent_financial_guard' && Array.isArray(workedExample?.scenarios) ? `<details><summary>Compare three synthetic pre-sign cases</summary><p>Saved fixtures only: no signing, payment or live checks. Review is always required.</p><ul>${workedExample.scenarios.map(item=>`<li>${escapeHtml(item.label)} — ${escapeHtml(item.verdict)}; ${escapeHtml(item.blocking_reasons.join(', '))}</li>`).join('')}</ul></details>` : ''}
     ${workedExample?.follow_up ? `<details><summary>${escapeHtml(workedExample.follow_up.label || 'After removing the unsupported illustrative claim')}</summary>
-      <p>${profile === 'agentic_interaction_trust' || profile === 'cis_secondary_sanctions' || isKazakhstan ? 'The added records are explicitly synthetic, so they are rejected for evidence coverage. An apparently complete set of placeholder titles is not evidence. Human review remains required.' : profile === 'agent_output_verification' ? 'The fictional customer-count claim was removed. The remaining claim still requires human review; no factual verification or publication permission is granted.' : 'This is a synthetic follow-up. Human review is still required; no action is authorized.'}</p>
+      <p>${profile === 'agentic_interaction_trust' || profile === 'cis_secondary_sanctions' || profile === 'dual_use_technology_export' || isKazakhstan ? 'The added records are explicitly synthetic, so they are rejected for evidence coverage. An apparently complete set of placeholder titles is not evidence. Human review remains required.' : profile === 'agent_output_verification' ? 'The fictional customer-count claim was removed. The remaining claim still requires human review; no factual verification or publication permission is granted.' : 'This is a synthetic follow-up. Human review is still required; no action is authorized.'}</p>
       ${reviewDeltaHtml(workedExample.response, workedExample.follow_up.response, escapeHtml)}
       ${reviewSummaryHtml(workedExample.follow_up.response, escapeHtml)}
       <details><summary>Corrected request and full result</summary><pre>${escapeHtml(JSON.stringify(workedExample.follow_up, null, 2))}</pre></details>
@@ -497,6 +500,9 @@ ${handoffTargets.length ? projectHandoffValue.toString() + '\n' + prepareHandoff
 ${profile === 'critical_minerals_due_diligence' ? MINERAL_WORKFLOW_CLIENT_SCRIPT : ''}
 ${freeTrial && profile === 'agent_output_verification' ? CITATION_REVIEW_SCRIPT : ''}
 ${freeTrial && profile === 'gulf_maritime_exposure' ? GULF_WIZARD_SCRIPT + '\n' + gulfGateHtml.toString() : ''}
+${freeTrial && profile === 'agent_financial_guard' ? financialGuardViewHtml.toString() : ''}
+${freeTrial && profile === 'dual_use_technology_export' ? dualUseViewHtml.toString() : ''}
+${profile === 'corridor_sanctions_assistant' ? corridorPlanHtml.toString() : ''}
 ${freeTrial && profile === 'market_entry_readiness' ? MARKET_ENTRY_WIZARD_SCRIPT + '\n' + marketEntryView.toString() + '\n' + marketEntryViewHtml.toString() + '\n' + marketEntryProgress.toString() + '\n' + marketEntryProgressHtml.toString() : ''}
 ${freeTrial && isKazakhstan ? CORRIDOR_WIZARD_SCRIPT : ''}
 ${freeTrial && isKazakhstan ? corridorOwnerActions.toString() + '\n' + corridorOwnerActionsHtml.toString() : ''}
@@ -536,6 +542,8 @@ function showWorkedExample() {
 }
 var agendaTrialTraceId = null;
 var agendaLastReview = null;
+var agendaLastRecommendedGate = null;
+var agendaLastRoutingInput = null;
 var agendaLastMarketInput = null;
 var agendaHasCompletedResult = false;
 var agendaTrialBlocked = false;
@@ -682,11 +690,15 @@ async function runProfileExample(event, paid, reviewFlow) {
       ${freeTrial ? 'agendaNextSteps.completed();' : ''}
       agendaHasCompletedResult = true;
       var review = body.result?.structuredContent || body;
+      ${profile === 'corridor_sanctions_assistant' ? "agendaLastRecommendedGate = review.handoff_draft ? (review.selected_route?.profile || null) : null; agendaLastRoutingInput = review.handoff_draft ? JSON.stringify(payload) : null;" : ''}
       ${profile === 'critical_minerals_due_diligence' ? 'renderMineralWorkflow(review, payload);' : ''}
       document.getElementById('profile-summary').innerHTML = reviewSummaryHtml(review, safeHtml, ${JSON.stringify(workflow)});
       ${freeTrial && isKazakhstan ? "var corridorActions=document.getElementById('corridor-owner-actions'); if(corridorActions) corridorActions.innerHTML = corridorOwnerActionsHtml(payload.request || payload, review, safeHtml);" : ''}
       ${freeTrial && profile === 'cis_secondary_sanctions' ? "var cisView=document.getElementById('cis-review-view'); if(cisView) cisView.innerHTML = cisReviewViewHtml(payload.request || payload, review, safeHtml);" : ''}
       ${freeTrial && profile === 'gulf_maritime_exposure' ? "var gulfView=document.getElementById('gulf-review-view'); if(gulfView) gulfView.innerHTML = gulfGateHtml(review.evaluation || review, safeHtml);" : ''}
+      ${freeTrial && profile === 'agent_financial_guard' ? "var fleetView=document.getElementById('fleet-review-view');if(fleetView)fleetView.innerHTML=financialGuardViewHtml(review.evaluation || review,safeHtml);" : ''}
+      ${freeTrial && profile === 'dual_use_technology_export' ? "var fleetView=document.getElementById('fleet-review-view');if(fleetView)fleetView.innerHTML=dualUseViewHtml(review.evaluation || review,safeHtml);" : ''}
+      ${profile === 'corridor_sanctions_assistant' ? "var fleetView=document.getElementById('fleet-review-view');if(fleetView)fleetView.innerHTML=corridorPlanHtml(review,safeHtml);" : ''}
       ${freeTrial && profile === 'market_entry_readiness' ? `var marketView=document.getElementById('market-entry-review-view');
         if(marketView) { marketView.innerHTML=marketEntryViewHtml(payload, review.evaluation || review, safeHtml);
           var copy=document.getElementById('market-entry-copy'); if(copy) copy.onclick=async function(){var memo=document.getElementById('market-entry-memo'), status=document.getElementById('market-entry-copy-status');try {await navigator.clipboard.writeText(memo.value);status.textContent='Copied locally.';}catch {memo.focus();memo.select();status.textContent='Select and copy the memo manually.';}}; }` : ''}

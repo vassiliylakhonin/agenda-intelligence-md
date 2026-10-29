@@ -174,7 +174,7 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}, o
     decision = "reject";
     status = "escalate";
     score = 95;
-    advisory = `CRITICAL SECURITY BLOCK: Execution blocked by detected local checks: ${violations.join(" ")} Execution forbidden.`;
+    advisory = `Local checks recommend rejecting this transaction: ${violations.join(" ")} This review does not enforce signing or execution.`;
   } else if (requiresStepUp) {
     decision = "step_up_human_required";
     status = "not_decision_ready";
@@ -214,6 +214,23 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}, o
     };
   }
 
+  // Diagnostic reason codes are not signed authorization, verified policy or a signer control.
+  const denylistHit = SANCTIONED_CRYPTO_ADDRESSES.has(rawRecipient);
+  const blockingReasons = [];
+  if (denylistHit) blockingReasons.push("LOCAL_DENYLIST_MATCH");
+  if (!contractSecurityPassed) blockingReasons.push("CONTRACT_SECURITY_FLAG");
+  if (!promptInjectionPassed) blockingReasons.push("INTENT_PATTERN_FLAG");
+  if (tx.amount_usd > maxSingle) blockingReasons.push("REPORTED_SINGLE_LIMIT_EXCEEDED");
+  if (currentVelocity + tx.amount_usd > dailyVelocity) blockingReasons.push("REPORTED_VELOCITY_LIMIT_EXCEEDED");
+  if (method === "approve" || encodedApprove) blockingReasons.push("APPROVAL_TERMS_UNVERIFIED");
+  if (method === "swap") blockingReasons.push("SWAP_TERMS_UNVERIFIED");
+  if (method === "contract_call") blockingReasons.push("CONTRACT_CALL_UNDECODED");
+  if (!method || method === "unknown") blockingReasons.push("METHOD_UNSPECIFIED");
+  blockingReasons.push("SANCTIONS_AML_UNAVAILABLE", "SPENDING_HISTORY_UNVERIFIED", "POLICY_AUTHORITY_UNVERIFIED");
+  const nextOneThing = hasCriticalViolations
+    ? "Do not sign; have a security or compliance reviewer resolve the reported local flags."
+    : "Obtain independent current screening, verified spending history and authorized policy review before signing.";
+
   return withEvaluationContract({
     contract_version: AGENT_FINANCIAL_GUARD_CONTRACT_VERSION,
     profile: AGENT_FINANCIAL_GUARD_PROFILE_KEY,
@@ -221,6 +238,11 @@ export async function evaluateAgentFinancialTransaction(requestBody, env = {}, o
       status,
       decision,
       score,
+      pre_sign_verdict: hasCriticalViolations ? "REJECT" : "HUMAN_REVIEW",
+      can_auto_sign: false,
+      blocking_reasons: blockingReasons,
+      local_denylist_hit: denylistHit,
+      next_one_thing: nextOneThing,
       ...evaluationContract({financial_guard_verdict:{decision,evidence_gaps:evidenceGaps,violations}}),
       check_status: { sanctions_aml: "not_assessed", local_denylist: SANCTIONED_CRYPTO_ADDRESSES.has(rawRecipient) ? "fail" : "pass",
         contract_security: contractSecurityPassed ? "pass" : "fail", prompt_injection: promptInjectionPassed ? "pass" : "fail",

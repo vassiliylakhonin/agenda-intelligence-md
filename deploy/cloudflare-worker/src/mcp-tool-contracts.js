@@ -915,6 +915,176 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 "type": "string"
               }
             }
+          },
+          "role": {
+            "const": "orientation_only"
+          },
+          "not_a_clearance": {
+            "const": true
+          },
+          "decision_requires": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "route_plan": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "profile",
+                "name",
+                "a2a",
+                "why"
+              ],
+              "properties": {
+                "profile": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "a2a": {
+                  "type": "string"
+                },
+                "why": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "desk_checklist": {
+            "type": "object",
+            "properties": {
+              "bank_compliance": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "insurer": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "bank_compliance",
+              "insurer"
+            ],
+            "additionalProperties": false
+          },
+          "handoff_draft": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "input",
+                  "copied_fields",
+                  "field_mappings",
+                  "required_fields_to_complete",
+                  "note",
+                  "target_profile",
+                  "complete"
+                ],
+                "properties": {
+                  "input": {
+                    "type": "object"
+                  },
+                  "copied_fields": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "field_mappings": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "from",
+                        "to"
+                      ],
+                      "properties": {
+                        "from": {
+                          "type": "string"
+                        },
+                        "to": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "required_fields_to_complete": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "note": {
+                    "type": "string"
+                  },
+                  "target_profile": {
+                    "type": "string"
+                  },
+                  "complete": {
+                    "const": false
+                  }
+                }
+              }
+            ]
+          },
+          "handoff_notice": {
+            "type": "string"
+          },
+          "hs_hint": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "hs6",
+                  "match_in_snapshot",
+                  "snapshot_date",
+                  "source_url",
+                  "notice"
+                ],
+                "properties": {
+                  "hs6": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "match_in_snapshot": {
+                    "type": "boolean"
+                  },
+                  "snapshot_date": {
+                    "type": "string"
+                  },
+                  "source_url": {
+                    "type": "string"
+                  },
+                  "notice": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          },
+          "next_one_thing": {
+            "type": "string"
           }
         },
         "required": [
@@ -1056,12 +1226,9 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
       "inputSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "request"
-        ],
-        "properties": {
-          "request": {
+        "description": "Flat financial request or legacy request wrapper. Do not combine the two forms.",
+        "oneOf": [
+          {
             "title": "AgentFinancialGuardRequest",
             "description": "Deterministic pre-sign financial transaction compliance and firewall check for autonomous AI agents.",
             "x-schema-version": "1",
@@ -1219,8 +1386,176 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                 }
               }
             }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "request"
+            ],
+            "properties": {
+              "request": {
+                "title": "AgentFinancialGuardRequest",
+                "description": "Deterministic pre-sign financial transaction compliance and firewall check for autonomous AI agents.",
+                "x-schema-version": "1",
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "run_id",
+                  "transaction",
+                  "intent"
+                ],
+                "properties": {
+                  "run_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Caller correlation identifier."
+                  },
+                  "agent": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "model": {
+                        "type": "string"
+                      },
+                      "operator": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "transaction": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "network",
+                      "token",
+                      "amount_usd",
+                      "recipient"
+                    ],
+                    "properties": {
+                      "network": {
+                        "type": "string",
+                        "enum": [
+                          "base_mainnet",
+                          "ethereum_mainnet",
+                          "arbitrum_one",
+                          "optimism_mainnet",
+                          "solana_mainnet",
+                          "polygon_mainnet",
+                          "fiat_ach",
+                          "other"
+                        ]
+                      },
+                      "token": {
+                        "type": "string",
+                        "enum": [
+                          "USDC",
+                          "USDT",
+                          "ETH",
+                          "SOL",
+                          "WBTC",
+                          "USD",
+                          "EUR",
+                          "other"
+                        ]
+                      },
+                      "amount_usd": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "recipient": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "contract_address": {
+                        "type": "string"
+                      },
+                      "method": {
+                        "type": "string",
+                        "enum": [
+                          "transfer",
+                          "approve",
+                          "swap",
+                          "contract_call",
+                          "disbursement",
+                          "unknown"
+                        ]
+                      },
+                      "calldata": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "policy_limits": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "max_single_limit_usd": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "daily_velocity_limit_usd": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "velocity_24h_usd": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "intent": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "prompt"
+                    ],
+                    "properties": {
+                      "prompt": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "LLM intent or justification prompt initiating the transaction."
+                      },
+                      "caller_task_id": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "dated_sources": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "source_type",
+                        "title",
+                        "date"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "source_type": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
-        }
+        ]
       },
       "outputSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -1356,6 +1691,29 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                         "not_assessed"
                       ]
                     }
+                  },
+                  "pre_sign_verdict": {
+                    "enum": [
+                      "REJECT",
+                      "HUMAN_REVIEW"
+                    ],
+                    "description": "Local evidence-review route; not authorization or signer enforcement."
+                  },
+                  "can_auto_sign": {
+                    "const": false
+                  },
+                  "blocking_reasons": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "local_denylist_hit": {
+                    "type": "boolean",
+                    "description": "Local static risk list only; not current sanctions screening."
+                  },
+                  "next_one_thing": {
+                    "type": "string"
                   }
                 }
               },
@@ -1742,6 +2100,29 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                                 "not_assessed"
                               ]
                             }
+                          },
+                          "pre_sign_verdict": {
+                            "enum": [
+                              "REJECT",
+                              "HUMAN_REVIEW"
+                            ],
+                            "description": "Local evidence-review route; not authorization or signer enforcement."
+                          },
+                          "can_auto_sign": {
+                            "const": false
+                          },
+                          "blocking_reasons": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "local_denylist_hit": {
+                            "type": "boolean",
+                            "description": "Local static risk list only; not current sanctions screening."
+                          },
+                          "next_one_thing": {
+                            "type": "string"
                           }
                         }
                       },
@@ -11780,6 +12161,57 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                     }
                   },
                   "next_action": {
+                    "type": "string"
+                  }
+                }
+              },
+              "export_review": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "verdict",
+                  "classification_status",
+                  "stage",
+                  "blocking_gaps",
+                  "review_leads",
+                  "next_one_thing",
+                  "notice"
+                ],
+                "properties": {
+                  "verdict": {
+                    "enum": [
+                      "NOT_READY",
+                      "READY_FOR_EXPORT_CONTROL_REVIEW"
+                    ]
+                  },
+                  "classification_status": {
+                    "enum": [
+                      "caller_declared_only",
+                      "not_provided"
+                    ]
+                  },
+                  "stage": {
+                    "enum": [
+                      "file_intake",
+                      "ready_for_classifier_review"
+                    ]
+                  },
+                  "blocking_gaps": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "review_leads": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "next_one_thing": {
+                    "type": "string"
+                  },
+                  "notice": {
                     "type": "string"
                   }
                 }

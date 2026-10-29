@@ -300,6 +300,176 @@
           "type": "string"
         }
       }
+    },
+    "role": {
+      "const": "orientation_only"
+    },
+    "not_a_clearance": {
+      "const": true
+    },
+    "decision_requires": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "route_plan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "profile",
+          "name",
+          "a2a",
+          "why"
+        ],
+        "properties": {
+          "profile": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "a2a": {
+            "type": "string"
+          },
+          "why": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "desk_checklist": {
+      "type": "object",
+      "properties": {
+        "bank_compliance": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "insurer": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "bank_compliance",
+        "insurer"
+      ],
+      "additionalProperties": false
+    },
+    "handoff_draft": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "input",
+            "copied_fields",
+            "field_mappings",
+            "required_fields_to_complete",
+            "note",
+            "target_profile",
+            "complete"
+          ],
+          "properties": {
+            "input": {
+              "type": "object"
+            },
+            "copied_fields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "field_mappings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "required_fields_to_complete": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "note": {
+              "type": "string"
+            },
+            "target_profile": {
+              "type": "string"
+            },
+            "complete": {
+              "const": false
+            }
+          }
+        }
+      ]
+    },
+    "handoff_notice": {
+      "type": "string"
+    },
+    "hs_hint": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hs6",
+            "match_in_snapshot",
+            "snapshot_date",
+            "source_url",
+            "notice"
+          ],
+          "properties": {
+            "hs6": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "match_in_snapshot": {
+              "type": "boolean"
+            },
+            "snapshot_date": {
+              "type": "string"
+            },
+            "source_url": {
+              "type": "string"
+            },
+            "notice": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "next_one_thing": {
+      "type": "string"
     }
   },
   "required": [

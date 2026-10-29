@@ -36,6 +36,14 @@ If only a question is available, start with the
 [Corridor & Sanctions Assistant](https://corridor-sanctions-assistant.agendamcp.dpdns.org)
 for text-based routing and evidence planning. It does not acquire documents.
 
+## Export-review readiness
+
+`export_risk_triage.export_review` separates `NOT_READY` from `READY_FOR_EXPORT_CONTROL_REVIEW`, reports the caller-declared classification status and identifies missing reference categories. The latter label only permits a qualified person to review the file; it does not authorize shipment, establish a classification or decide licensing.
+
+The service's conservative reference checklist asks for a classification note and an end-user statement or certificate; if an ECCN is supplied it also asks for a licence-pathway reference. For an HS6 match in the bundled CHPL snapshot combined with a caller-declared Central Asia/Caspian route, it asks for intermediate-consignee, re-export-assurance and sanctions-screen references. These are internal review prompts, not legal requirements or a determination that an item, party or transaction is controlled. A civilian declaration does not remove the route-based review leads. The snapshot is dated and must not substitute for current official information or expert review.
+
+The gate examines reference metadata, not the authenticity, applicability, freshness or content of these records. Placeholder and explicitly synthetic records do not close gaps. If a configured upstream screen is degraded or reports a flag, the gate retains escalation and human review. No pre-licence or pre-shipment approval is implied by a ready-for-review label.
+
 ## Use the result
 
 Use the response's findings and evidence gaps to prepare document requests and

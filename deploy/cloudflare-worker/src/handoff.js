@@ -46,12 +46,23 @@ export function handoffHtml(targets, escape) {
     '<p>Choose a specialist. Copy compatible fields from the structured input above into a request you can inspect. Preparation sends nothing to that service and consumes no attempt.</p>' +
     '<label for="handoff-target">Specialist</label><select id="handoff-target" style="display:block;width:100%;margin:8px 0;padding:8px">' + targets.map(target =>
       '<option value="' + escape(target.profile) + '">' + escape(target.name) + '</option>').join('') + '</select> ' +
-    '<button type="button" onclick="prepareSpecialistHandoff()">Prepare request from current input</button>' +
+    '<button type="button" onclick="prepareSpecialistHandoff()">Prepare request from current input</button> <button type="button" onclick="prepareRecommendedHandoff()">Prepare recommended gate</button>' +
     '<p id="handoff-status" role="status"></p><textarea id="handoff-input" aria-label="Prepared specialist JSON" rows="8" style="width:100%;box-sizing:border-box;padding:12px;font:13px/1.5 monospace" hidden></textarea>' +
     '<p><a id="handoff-open" hidden target="_blank" rel="noopener">Open specialist</a></p>' +
     '<p>Your question is copied verbatim into the target question field where available; identities, countries and facts are never inferred from prose. Copy the prepared JSON into the specialist’s advanced input, then update its fields and run free schema preflight. No confidential data is put in a URL or stored between visits. Unmapped fields are not transferred.</p></section>';
 }
 export const HANDOFF_CLIENT_SCRIPT = String.raw`
+function prepareRecommendedHandoff() {
+  var status=document.getElementById('handoff-status');
+  try {if(!agendaLastRoutingInput || JSON.stringify(JSON.parse(document.getElementById('profile-request').value))!==agendaLastRoutingInput){status.textContent='The input changed since orientation; rerun it before preparing the recommended gate. Nothing was sent.';return;}}catch {status.textContent='Correct the input and rerun orientation first. Nothing was sent.';return;}
+  var name=agendaLastRecommendedGate;
+  if(name==='middle_corridor_deal_risk') name='kazakhstan';
+  if(name==='kazakhstan_market_entry_readiness') name='market_entry_readiness';
+  var target=agendaHandoffTargets.find(function(item){return item.profile===name;});
+  if(!target){status.textContent='Run the free orientation first and choose a recognized specialist; nothing was sent.';return;}
+  document.getElementById('handoff-target').value=target.profile;
+  prepareSpecialistHandoff();
+}
 function prepareSpecialistHandoff() {
   var status = document.getElementById('handoff-status');
   var output = document.getElementById('handoff-input');
