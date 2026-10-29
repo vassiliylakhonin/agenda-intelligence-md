@@ -8,7 +8,7 @@ export function evaluationContract(response) {
   const routes = ['verdict', 'decision', 'gate_decision', 'triage_recommendation', 'ruling'].map(key => value[key]);
   routes.push(value.operational_decision?.decision);
   let blocked = routes.some(route => BLOCK.has(route)) || Boolean(value.violations?.length);
-  let insufficient = Boolean(value.evidence_gaps?.length || value.blocking_gaps?.length) || routes.some(route => INSUFFICIENT.has(route));
+  let insufficient = value.orientation?.status === 'EVIDENCE_NOT_ASSESSED' || Boolean(value.evidence_gaps?.length || value.blocking_gaps?.length) || routes.some(route => INSUFFICIENT.has(route));
   for (const item of value.results || []) {
     const action = item?.response ? evaluationContract(item.response).next_action : 'insufficient';
     blocked ||= action === 'block';

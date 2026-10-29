@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add an unassessed-evidence orientation and suggested gate to free-text strategic triage, with fail-closed `insufficient` routing. Include a local synthetic walkthrough and human-review integration recipe; existing detailed fields remain available.
+
 - When an Output Verification trial allowance is exhausted, point browser and first-check MCP clients to the separate local answer/source adapter, without implying identical contracts or another hosted allowance.
 - Make the existing A2A free-trial status and evaluation examples directly discoverable in the trial extension, retaining the legacy metadata and existing quotas. Point Output Verification's agent card to a task-focused MCP/A2A quickstart and clarify the structural review boundary.
 

@@ -2,6 +2,8 @@
 
 Live portfolio/demo profile for Agenda Intelligence MD. It is not the default commercial wedge; Kazakhstan/local-forwarder demand should be treated as unvalidated unless fresh discovery evidence proves otherwise.
 
+For a local question → gate → synthetic memo walkthrough, see the [strategic orientation demo](../../examples/strategic-orientation/README.md).
+
 ## Proposition
 
 Bring route, cargo, counterparties, and dated sources. Get an auditable corridor-risk triage with evidence gaps, source coverage, watch-next indicators, and human-review escalation.

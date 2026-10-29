@@ -175,6 +175,8 @@ def validate_examples() -> None:
         elif path in {
             ROOT / "examples" / "output-verification" / "rag-answer.json",
             ROOT / "examples" / "output-verification" / "rag-answer-revised.json",
+            ROOT / "examples" / "strategic-orientation" / "before.json",
+            ROOT / "examples" / "strategic-orientation" / "after.json",
         }:
             if not isinstance(data, dict) or set(data) != {"answer", "sources"}:
                 raise SystemExit(f"{path.relative_to(ROOT)} must contain exactly answer and sources")

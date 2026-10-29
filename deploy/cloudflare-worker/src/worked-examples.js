@@ -7,6 +7,18 @@ export const WORKED_EXAMPLES = {
       "text": "What evidence is needed before entering the Kazakhstan market?"
     },
     "response": {
+      "orientation": {
+        "status": "EVIDENCE_NOT_ASSESSED",
+        "selected_gate": {
+          "name": "Kazakhstan Market-Entry Readiness Gate",
+          "profile": "kazakhstan_market_entry_readiness",
+          "a2a": "https://kazakhstan-market-entry-readiness.agendamcp.dpdns.org"
+        },
+        "next_one_thing": "Send a structured request to https://kazakhstan-market-entry-readiness.agendamcp.dpdns.org/message/send with project_name, partner_or_company, market, decision_question, decision_stage, supplied_sources. See the agent-card for a copy-paste envelope.",
+        "human_review_required": true,
+        "authorization_granted": false,
+        "limitations": "Keyword-based routing only; no evidence completeness, source authenticity, factual truth or clearance assessed."
+      },
       "intent": "evidence_audit",
       "modules": [
         {
@@ -106,7 +118,7 @@ export const WORKED_EXAMPLES = {
         "command": "pip install agenda-intelligence-md",
         "mcp_server_command": "agenda-intelligence-mcp"
       },
-      "next_action": "review",
+      "next_action": "insufficient",
       "decision_kind": "evidence_review",
       "authorization_granted": false,
       "score_kind": "not_scored",
