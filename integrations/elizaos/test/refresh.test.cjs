@@ -24,7 +24,7 @@ test('published Worker diagnostics survive financial and escrow decoding on cano
   assert.equal(result.check_status.sanctions_aml,'not_assessed');
   assert.equal(result.human_review_required,true);
   const escrow=WORKED_EXAMPLES.m2m_escrow_arbiter.response;
-  const ruling=await makeEscrowCall(async(url)=>{seen.push(url);return Response.json(escrow)},WORKED_EXAMPLES.m2m_escrow_arbiter.request.request).evaluate();
+  const ruling=await makeEscrowCall(async(url)=>{seen.push(url);return Response.json(escrow)},(WORKED_EXAMPLES.m2m_escrow_arbiter.request.request || WORKED_EXAMPLES.m2m_escrow_arbiter.request)).evaluate();
   assert.equal(seen[1],escrowEndpoint);
   assert.equal(ruling.authorization_granted,false);
   assert.equal(ruling.next_action,escrow.arbitration_ruling.next_action);
@@ -115,13 +115,13 @@ test('escrow x402 v2 transport preserves review and non-settlement boundaries',a
   const call=makeEscrowCall(async(url,options)=>{
     seen.push({url,body:options.body,headers:options.headers});
     return ++n===1?new Response('',{status:402,headers:{'PAYMENT-REQUIRED':encode(req)}}):Response.json(WORKED_EXAMPLES.m2m_escrow_arbiter.response);
-  },WORKED_EXAMPLES.m2m_escrow_arbiter.request.request);
+  },(WORKED_EXAMPLES.m2m_escrow_arbiter.request.request || WORKED_EXAMPLES.m2m_escrow_arbiter.request));
   await assert.rejects(call.evaluate(),e=>e.status===402);
   const proof=signed();proof.resource.url=escrowEndpoint;proof.accepted=req.accepts[0];proof.payload.authorization.value='500000';
   const result=await call.retryWithPayment({paymentSignature:proof});
   assert.equal(result.authorization_granted,false);assert.equal(result.settlement_authorized,false);assert.equal(result.human_review_required,true);
   assert.equal(seen[1].url,escrowEndpoint);assert.equal(seen[1].body,seen[0].body);
-  assert.deepEqual(JSON.parse(seen[1].body).dispute_claim,WORKED_EXAMPLES.m2m_escrow_arbiter.request.request.dispute_claim);
+  assert.deepEqual(JSON.parse(seen[1].body).dispute_claim,(WORKED_EXAMPLES.m2m_escrow_arbiter.request.request || WORKED_EXAMPLES.m2m_escrow_arbiter.request).dispute_claim);
 });
 
 test('a failed signature-only update cannot poison later x402 recovery',async()=>{

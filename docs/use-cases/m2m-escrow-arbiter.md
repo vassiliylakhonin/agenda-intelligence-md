@@ -19,6 +19,18 @@ binding arbitration award. Current deployment requires human review.
 See [ADR 0027](../adr/0027-financial-and-escrow-evidence-boundaries.md) and
 [ADR 0030](../adr/0030-evidence-review-readiness.md) for evidence boundaries.
 
+## Delivery review and integration
+
+The additive `delivery_review` reports `escrow_action: HOLD`, `proposed_allocation: null`, the hash and schema checks, caller-reported timing and explicitly unverified deadline/SLO. `HOLD` is a recommendation; this endpoint cannot enforce it. A hash pass means only that the supplied bytes match the supplied expected hash. It does not establish who submitted them or when.
+
+`delivery_submission.attestation_references` can name up to ten signed-receipt, object-store, neutral-webhook or Vizier references. These are caller claims only: the service does not fetch, authenticate or verify them, and their presence never changes the hold. Do not include credentials or sensitive document contents. Use a separately trusted verifier and obtain human review before settlement.
+
+MCP accepts either flat request arguments or the legacy `{request: ...}` wrapper; the latter retains its task-envelope response. The local [`review-delivery.mjs`](../../examples/m2m-escrow-arbiter/review-delivery.mjs) helper maps explicit fields to an injected evaluator and fails closed on malformed, authorizing or non-hold responses. It performs no network call or payment on its own; the caller controls evaluator admission.
+
+For planning only, [`policy-what-if.mjs`](../../examples/m2m-escrow-arbiter/policy-what-if.mjs) computes three simplified arithmetic scenarios from explicitly supplied minor units, fee and basis-point assumptions. Its formulas are illustrative, not an interpretation of agreed terms, an actual delivery finding or a payout proposal. The saved page example contrasts matching and changed content; both remain held because time and SLO are not independently verified.
+
+Interaction Trust, Output Verification, Financial Guard and Vizier are separate reviews and authorization boundaries. Opening links transfers no case information; independent authority and human approval remain necessary.
+
 ## Public interfaces
 
 - [Website and fixed synthetic example](https://m2m-escrow-arbiter-a2a.vassiliy-lakhonin.workers.dev/)

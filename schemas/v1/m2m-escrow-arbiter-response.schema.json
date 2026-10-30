@@ -164,6 +164,83 @@
             "evidence_readiness",
             "not_scored"
           ]
+        },
+        "delivery_review": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "escrow_action",
+            "proposed_allocation",
+            "hash_check",
+            "schema_check",
+            "deadline_check",
+            "reported_timing",
+            "slo_check",
+            "independent_attestations",
+            "next_one_thing",
+            "notice"
+          ],
+          "properties": {
+            "escrow_action": {
+              "const": "HOLD"
+            },
+            "proposed_allocation": {
+              "type": "null"
+            },
+            "hash_check": {
+              "enum": [
+                "pass",
+                "fail",
+                "missing"
+              ]
+            },
+            "schema_check": {
+              "enum": [
+                "pass",
+                "fail",
+                "missing",
+                "unsupported",
+                "unverified"
+              ]
+            },
+            "deadline_check": {
+              "const": "unverified"
+            },
+            "reported_timing": {
+              "enum": [
+                "within_deadline",
+                "late",
+                "unknown"
+              ]
+            },
+            "slo_check": {
+              "const": "unverified"
+            },
+            "independent_attestations": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "references_provided",
+                "verification_status"
+              ],
+              "properties": {
+                "references_provided": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10
+                },
+                "verification_status": {
+                  "const": "not_verified"
+                }
+              }
+            },
+            "next_one_thing": {
+              "type": "string"
+            },
+            "notice": {
+              "type": "string"
+            }
+          }
         }
       }
     },

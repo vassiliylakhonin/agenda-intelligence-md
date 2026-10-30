@@ -11,7 +11,7 @@ const contractSources = [
   {"profile": "agenda", "tool": "fleet_directory", "output": "schemas/v1/fleet-directory-response.schema.json"},
   {"profile": "corridor_sanctions_assistant", "tool": "corridor_sanctions_assistant", "output": "schemas/v1/corridor-orientation-response.schema.json"},
   {"profile": "agent_financial_guard", "tool": "agent_financial_pre_sign_check", "input": "schemas/v1/agent-financial-guard-request.schema.json", "compatibleWrappedInput": true, "output": "schemas/v1/agent-financial-guard-response.schema.json", "legacyEnvelope": true},
-  {"profile": "m2m_escrow_arbiter", "tool": "m2m_escrow_arbitration_ruling", "input": "schemas/v1/m2m-escrow-arbiter-request.schema.json", "wrappedInput": true, "output": "schemas/v1/m2m-escrow-arbiter-response.schema.json", "legacyEnvelope": true},
+  {"profile": "m2m_escrow_arbiter", "tool": "m2m_escrow_arbitration_ruling", "input": "schemas/v1/m2m-escrow-arbiter-request.schema.json", "compatibleWrappedInput": true, "output": "schemas/v1/m2m-escrow-arbiter-response.schema.json", "legacyEnvelope": true},
   {
     profile: "kazakhstan",
     tool: "middle_corridor_deal_risk",

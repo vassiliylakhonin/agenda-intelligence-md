@@ -129,9 +129,12 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
 
   let schemaVerified = false;
   let schemaStatus = "not_evaluated";
+  let schemaGrade = "missing";
   if (Object.hasOwn(spec, "expected_schema")) {
     const validation = validateEscrowArtifact(spec.expected_schema, submission.artifact_data, hasArtifact);
     schemaVerified = validation.status === "valid";
+    schemaGrade = validation.status === "valid" ? "pass" : validation.status === "invalid" ? "fail" :
+      !hasArtifact ? "missing" : validation.errors.some(error => /unsupported/i.test(error)) ? "unsupported" : "unverified";
     schemaStatus = schemaVerified ? "passed" : validation.status === "invalid" ? "failed" : "not_evaluated";
     if (validation.status === "invalid") violations.push(...validation.errors);
     if (validation.status === "unverified") { evidenceGaps.push(...validation.errors); needsReview = true; }
@@ -207,6 +210,21 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
   const vizierStatus = "attestation_unavailable";
   const vizierReceipt = null;
 
+  // Independent attestation references are caller declarations, not verified evidence.
+  const referenceCount = Array.isArray(submission.attestation_references) ? submission.attestation_references.length : 0;
+  const deliveryReview = {
+    escrow_action: "HOLD",
+    proposed_allocation: null,
+    hash_check: hashStatus === "passed" ? "pass" : hashStatus === "failed" ? "fail" : "missing",
+    schema_check: schemaGrade,
+    deadline_check: "unverified",
+    reported_timing: Number.isNaN(deadlineMs) || Number.isNaN(submittedMs) ? "unknown" : submittedMs > deadlineMs ? "late" : "within_deadline",
+    slo_check: "unverified",
+    independent_attestations: {references_provided:referenceCount, verification_status:"not_verified"},
+    next_one_thing: hashStatus === "failed" ? "Resolve the reported mismatch between artifact content and the agreed hash." : hashStatus === "not_evaluated" ? "Provide the actual artifact and an agreed expected hash for comparison." : schemaGrade === "fail" ? "Resolve the mismatch between the supplied artifact and the agreed schema." : schemaGrade === "missing" || schemaGrade === "unsupported" || schemaGrade === "unverified" ? "Provide a supported agreed schema and the actual artifact for review." : "Obtain independently verified delivery time and SLO evidence for human review.",
+    notice: "Checks describe supplied content and caller-reported times only. HOLD is a recommendation; this service cannot enforce or authorize settlement."
+  };
+
   return withEvaluationContract({
     contract_version: M2M_ESCROW_ARBITER_CONTRACT_VERSION,
     profile: M2M_ESCROW_ARBITER_PROFILE_KEY,
@@ -216,6 +234,7 @@ export async function evaluateM2MEscrowArbitration(requestBody, env = {}) {
       ruling,
       score,
       escrow_id: requestBody.escrow_id,
+      delivery_review: deliveryReview,
       payout_breakdown: {
         total_escrow_usd: totalEscrow,
         seller_payout_usd: sellerPayout,

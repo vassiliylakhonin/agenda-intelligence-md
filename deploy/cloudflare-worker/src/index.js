@@ -13820,8 +13820,10 @@ function mcpUnknownFields(profile, name, args) {
     if (mcpUsesLegacyRequestWrapper(profile,args,name)) return unknownInputFindings(args.request,schema).map(finding=>({...finding,field:"/request"+finding.field}));
     return unknownInputFindings(args,schema);
   }
-  if (profile === "m2m_escrow_arbiter" && !args.request) {
-    return unknownInputFindings(args, PUBLIC_SCHEMAS["schemas/v1/" + REMEDIATION_PROFILES[profile].request_schema]);
+  if (profile === "m2m_escrow_arbiter") {
+    const schema=PUBLIC_SCHEMAS["schemas/v1/m2m-escrow-arbiter-request.schema.json"];
+    if (mcpUsesLegacyRequestWrapper(profile,args,name)) return unknownInputFindings(args.request,schema).map(finding=>({...finding,field:"/request"+finding.field}));
+    return unknownInputFindings(args,schema);
   }
   if (mcpUsesLegacyRequestWrapper(profile, args, name) && !published.properties?.request) {
     return unknownInputFindings(args.request, published).map(finding => ({...finding, field: "/request" + finding.field}));

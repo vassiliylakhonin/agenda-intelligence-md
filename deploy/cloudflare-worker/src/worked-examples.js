@@ -8888,49 +8888,47 @@ export const WORKED_EXAMPLES = {
     "kind": "precomputed_synthetic_fixture",
     "tool": "m2m_escrow_arbitration_ruling",
     "request": {
-      "request": {
-        "escrow_id": "escrow-m2m-sample-001",
-        "dispute_claim": {
-          "claimant": "buyer",
-          "reason": "Contract deliverable dispute"
-        },
-        "deal_terms": {
-          "buyer_id": "did:agent:0x1111111111111111111111111111111111111111",
-          "seller_id": "did:agent:0x2222222222222222222222222222222222222222",
-          "amount_usd": 500,
-          "currency": "USDC",
-          "deadline_utc": "2026-09-17T18:00:00Z",
-          "arbitration_policy": "pro_rata",
-          "arbitration_fee_pct": 1
-        },
-        "specification": {
-          "deliverable_type": "json_data",
-          "expected_artifact_sha256": "3745b88c1cb20f643625bd02355547cada4b6d2a40926d1e99ae44481bd7245b",
-          "expected_schema": {
-            "type": "object",
-            "required": [
-              "records"
-            ],
-            "additionalProperties": false,
-            "properties": {
-              "records": {
-                "type": "integer",
-                "minimum": 1
-              }
+      "escrow_id": "escrow-m2m-sample-001",
+      "dispute_claim": {
+        "claimant": "buyer",
+        "reason": "Contract deliverable dispute"
+      },
+      "deal_terms": {
+        "buyer_id": "did:agent:0x1111111111111111111111111111111111111111",
+        "seller_id": "did:agent:0x2222222222222222222222222222222222222222",
+        "amount_usd": 500,
+        "currency": "USDC",
+        "deadline_utc": "2026-09-17T18:00:00Z",
+        "arbitration_policy": "pro_rata",
+        "arbitration_fee_pct": 1
+      },
+      "specification": {
+        "deliverable_type": "json_data",
+        "expected_artifact_sha256": "3745b88c1cb20f643625bd02355547cada4b6d2a40926d1e99ae44481bd7245b",
+        "expected_schema": {
+          "type": "object",
+          "required": [
+            "records"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "records": {
+              "type": "integer",
+              "minimum": 1
             }
-          },
-          "min_valid_records_pct": 95
-        },
-        "delivery_submission": {
-          "submitted_at": "2026-09-17T12:00:00Z",
-          "artifact_data": {
-            "records": 1
-          },
-          "telemetry": {
-            "total_items": 1000,
-            "valid_items": 1000,
-            "response_time_ms": 320
           }
+        },
+        "min_valid_records_pct": 95
+      },
+      "delivery_submission": {
+        "submitted_at": "2026-09-17T12:00:00Z",
+        "artifact_data": {
+          "records": 1
+        },
+        "telemetry": {
+          "total_items": 1000,
+          "valid_items": 1000,
+          "response_time_ms": 320
         }
       }
     },
@@ -8946,6 +8944,21 @@ export const WORKED_EXAMPLES = {
         "ruling": "ESCALATE_HUMAN",
         "score": 0,
         "escrow_id": "escrow-m2m-sample-001",
+        "delivery_review": {
+          "escrow_action": "HOLD",
+          "proposed_allocation": null,
+          "hash_check": "pass",
+          "schema_check": "pass",
+          "deadline_check": "unverified",
+          "reported_timing": "within_deadline",
+          "slo_check": "unverified",
+          "independent_attestations": {
+            "references_provided": 0,
+            "verification_status": "not_verified"
+          },
+          "next_one_thing": "Obtain independently verified delivery time and SLO evidence for human review.",
+          "notice": "Checks describe supplied content and caller-reported times only. HOLD is a recommendation; this service cannot enforce or authorize settlement."
+        },
         "payout_breakdown": {
           "total_escrow_usd": 500,
           "seller_payout_usd": 0,
@@ -9026,49 +9039,47 @@ export const WORKED_EXAMPLES = {
       "kind": "precomputed_synthetic_tamper",
       "label": "Changed artifact: hash mismatch, still human review",
       "request": {
-        "request": {
-          "escrow_id": "escrow-m2m-sample-001",
-          "dispute_claim": {
-            "claimant": "buyer",
-            "reason": "Contract deliverable dispute"
-          },
-          "deal_terms": {
-            "buyer_id": "did:agent:0x1111111111111111111111111111111111111111",
-            "seller_id": "did:agent:0x2222222222222222222222222222222222222222",
-            "amount_usd": 500,
-            "currency": "USDC",
-            "deadline_utc": "2026-09-17T18:00:00Z",
-            "arbitration_policy": "pro_rata",
-            "arbitration_fee_pct": 1
-          },
-          "specification": {
-            "deliverable_type": "json_data",
-            "expected_artifact_sha256": "3745b88c1cb20f643625bd02355547cada4b6d2a40926d1e99ae44481bd7245b",
-            "expected_schema": {
-              "type": "object",
-              "required": [
-                "records"
-              ],
-              "additionalProperties": false,
-              "properties": {
-                "records": {
-                  "type": "integer",
-                  "minimum": 1
-                }
+        "escrow_id": "escrow-m2m-sample-001",
+        "dispute_claim": {
+          "claimant": "buyer",
+          "reason": "Contract deliverable dispute"
+        },
+        "deal_terms": {
+          "buyer_id": "did:agent:0x1111111111111111111111111111111111111111",
+          "seller_id": "did:agent:0x2222222222222222222222222222222222222222",
+          "amount_usd": 500,
+          "currency": "USDC",
+          "deadline_utc": "2026-09-17T18:00:00Z",
+          "arbitration_policy": "pro_rata",
+          "arbitration_fee_pct": 1
+        },
+        "specification": {
+          "deliverable_type": "json_data",
+          "expected_artifact_sha256": "3745b88c1cb20f643625bd02355547cada4b6d2a40926d1e99ae44481bd7245b",
+          "expected_schema": {
+            "type": "object",
+            "required": [
+              "records"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "records": {
+                "type": "integer",
+                "minimum": 1
               }
-            },
-            "min_valid_records_pct": 95
-          },
-          "delivery_submission": {
-            "submitted_at": "2026-09-17T12:00:00Z",
-            "artifact_data": {
-              "records": 2
-            },
-            "telemetry": {
-              "total_items": 1000,
-              "valid_items": 1000,
-              "response_time_ms": 320
             }
+          },
+          "min_valid_records_pct": 95
+        },
+        "delivery_submission": {
+          "submitted_at": "2026-09-17T12:00:00Z",
+          "artifact_data": {
+            "records": 2
+          },
+          "telemetry": {
+            "total_items": 1000,
+            "valid_items": 1000,
+            "response_time_ms": 320
           }
         }
       },
@@ -9084,6 +9095,21 @@ export const WORKED_EXAMPLES = {
           "ruling": "ESCALATE_HUMAN",
           "score": 0,
           "escrow_id": "escrow-m2m-sample-001",
+          "delivery_review": {
+            "escrow_action": "HOLD",
+            "proposed_allocation": null,
+            "hash_check": "fail",
+            "schema_check": "pass",
+            "deadline_check": "unverified",
+            "reported_timing": "within_deadline",
+            "slo_check": "unverified",
+            "independent_attestations": {
+              "references_provided": 0,
+              "verification_status": "not_verified"
+            },
+            "next_one_thing": "Resolve the reported mismatch between artifact content and the agreed hash.",
+            "notice": "Checks describe supplied content and caller-reported times only. HOLD is a recommendation; this service cannot enforce or authorize settlement."
+          },
           "payout_breakdown": {
             "total_escrow_usd": 500,
             "seller_payout_usd": 0,

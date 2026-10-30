@@ -28,7 +28,11 @@
       "properties": {
         "claimant": {
           "type": "string",
-          "enum": ["buyer", "seller", "automated_sla_watcher"]
+          "enum": [
+            "buyer",
+            "seller",
+            "automated_sla_watcher"
+          ]
         },
         "reason": {
           "type": "string"
@@ -111,7 +115,10 @@
           ]
         },
         "expected_schema": {
-          "type": ["object", "string"]
+          "type": [
+            "object",
+            "string"
+          ]
         },
         "expected_artifact_sha256": {
           "type": "string"
@@ -127,7 +134,9 @@
         },
         "test_suite_assertions": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -152,10 +161,56 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "total_items": { "type": "number", "minimum": 0 },
-            "valid_items": { "type": "number", "minimum": 0 },
-            "response_time_ms": { "type": "number", "minimum": 0 },
-            "signature": { "type": "string" }
+            "total_items": {
+              "type": "number",
+              "minimum": 0
+            },
+            "valid_items": {
+              "type": "number",
+              "minimum": 0
+            },
+            "response_time_ms": {
+              "type": "number",
+              "minimum": 0
+            },
+            "signature": {
+              "type": "string"
+            }
+          }
+        },
+        "attestation_references": {
+          "type": "array",
+          "maxItems": 10,
+          "description": "Caller-declared references only. Not fetched or verified; no identity, timestamp or delivery proof is established. Do not include credentials.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "issuer",
+              "reference"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "signed_delivery_receipt",
+                  "object_store_attestation",
+                  "neutral_webhook_timestamp",
+                  "vizier_receipt",
+                  "other"
+                ]
+              },
+              "issuer": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "reference": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            }
           }
         }
       }
