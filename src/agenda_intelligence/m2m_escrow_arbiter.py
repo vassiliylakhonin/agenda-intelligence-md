@@ -1,4 +1,4 @@
-"""M2MEscrowArbiter: Deterministic dispute resolution and settlement engine for AI agents."""
+"""Nonbinding M2M escrow delivery-evidence review for human decision makers."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ class PayoutBreakdown:
 
 @dataclass
 class ArbitrationRuling:
-    """Binding arbitration ruling issued for an M2M escrow transaction."""
+    """Nonbinding evidence-review result; no settlement authority is issued."""
 
     ruling: str  # "RELEASE_TO_SELLER" | "REFUND_TO_BUYER" | "PARTIAL_SETTLEMENT" | "ESCALATE_HUMAN"
     status: str  # "decision_ready" | "escalate"
@@ -178,10 +178,12 @@ class M2MEscrowArbiter:
         deadline_str = terms.get("deadline_utc", "")
         submitted_str = sub.get("submitted_at", "")
         deadline_honored = True
+        reported_timing = "unknown"
 
         try:
             deadline_dt = datetime.fromisoformat(deadline_str.replace("Z", "+00:00"))
             submitted_dt = datetime.fromisoformat(submitted_str.replace("Z", "+00:00"))
+            reported_timing = "late" if submitted_dt > deadline_dt else "within_deadline"
             if submitted_dt > deadline_dt:
                 deadline_honored = False
                 delay_sec = int((submitted_dt - deadline_dt).total_seconds())
@@ -219,11 +221,25 @@ class M2MEscrowArbiter:
 
         schema_verified = False
         schema_status = "not_evaluated"
+        schema_grade = "missing"
         if "expected_schema" in spec:
             validation, errors = validate_escrow_artifact(
                 spec["expected_schema"], sub.get("artifact_data"), has_artifact
             )
             schema_verified = validation == "valid"
+            schema_grade = (
+                "pass"
+                if validation == "valid"
+                else (
+                    "fail"
+                    if validation == "invalid"
+                    else (
+                        "missing"
+                        if not has_artifact
+                        else "unsupported" if any("unsupported" in e.lower() for e in errors) else "unverified"
+                    )
+                )
+            )
             schema_status = "passed" if schema_verified else "failed" if validation == "invalid" else "not_evaluated"
             if validation == "invalid":
                 violations.extend(errors)
@@ -312,6 +328,42 @@ class M2MEscrowArbiter:
             "slo_verified": slo_verified,
         }
 
+        references = sub.get("attestation_references", [])
+        delivery_review = {
+            "escrow_action": "HOLD",
+            "proposed_allocation": None,
+            "hash_check": "pass" if hash_status == "passed" else "fail" if hash_status == "failed" else "missing",
+            "schema_check": schema_grade,
+            "deadline_check": "unverified",
+            "reported_timing": reported_timing,
+            "slo_check": "unverified",
+            "independent_attestations": {
+                "references_provided": len(references) if isinstance(references, list) else 0,
+                "verification_status": "not_verified",
+            },
+            "next_one_thing": (
+                "Resolve the reported mismatch between artifact content and the agreed hash."
+                if hash_status == "failed"
+                else (
+                    "Provide the actual artifact and an agreed expected hash for comparison."
+                    if hash_status == "not_evaluated"
+                    else (
+                        "Resolve the mismatch between the supplied artifact and the agreed schema."
+                        if schema_grade == "fail"
+                        else (
+                            "Provide a supported agreed schema and the actual artifact for review."
+                            if schema_grade in {"missing", "unsupported", "unverified"}
+                            else "Obtain independently verified delivery time and SLO evidence for human review."
+                        )
+                    )
+                )
+            ),
+            "notice": (
+                "Checks describe supplied content and caller-reported times only. HOLD is a recommendation; "
+                "this service cannot enforce or authorize settlement."
+            ),
+        }
+
         return ArbitrationRuling(
             ruling=ruling,
             status=status,
@@ -326,6 +378,7 @@ class M2MEscrowArbiter:
                 "ruling": ruling,
                 "status": status,
                 "score": score,
+                "delivery_review": delivery_review,
                 "payout": {
                     "total_escrow_usd": total_escrow,
                     "seller_payout_usd": seller_payout,

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Expose a nonbinding escrow delivery-review block with independent hash/schema grades, unverified timestamps and SLO, and unverified attestation references. Support flat and legacy MCP inputs, provide a local hold-oriented client and a separately labeled hypothetical policy calculator; no payout is authorized.
+
 - Add multi-gate corridor orientation, a local incomplete handoff and a dated HS snapshot hint. Add a conservative dual-use reference-readiness view and Financial Guard pre-sign reason codes with a fail-closed integration example. These are evidence-review aids and never grant export or signing authority.
 
 - Add an optional Kazakhstan entry-model intake, grouped owner plan, scope-checked progress view and locally copyable committee memo. Add an offline agent projection helper and a labeled synthetic follow-up; none changes the gate decision or verifies evidence.

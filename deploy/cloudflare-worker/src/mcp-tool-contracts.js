@@ -2360,12 +2360,9 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
       "inputSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "request"
-        ],
-        "properties": {
-          "request": {
+        "description": "Flat financial request or legacy request wrapper. Do not combine the two forms.",
+        "oneOf": [
+          {
             "title": "M2MEscrowArbiterRequest",
             "description": "Deterministic dispute and delivery verification request for M2M/A2A autonomous escrow contracts.",
             "x-schema-version": "1",
@@ -2542,12 +2539,273 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                         "type": "string"
                       }
                     }
+                  },
+                  "attestation_references": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "description": "Caller-declared references only. Not fetched or verified; no identity, timestamp or delivery proof is established. Do not include credentials.",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "issuer",
+                        "reference"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "signed_delivery_receipt",
+                            "object_store_attestation",
+                            "neutral_webhook_timestamp",
+                            "vizier_receipt",
+                            "other"
+                          ]
+                        },
+                        "issuer": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "reference": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 500
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "request"
+            ],
+            "properties": {
+              "request": {
+                "title": "M2MEscrowArbiterRequest",
+                "description": "Deterministic dispute and delivery verification request for M2M/A2A autonomous escrow contracts.",
+                "x-schema-version": "1",
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "escrow_id",
+                  "deal_terms",
+                  "specification",
+                  "delivery_submission"
+                ],
+                "properties": {
+                  "escrow_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Unique identifier of the escrow deal or on-chain escrow instance."
+                  },
+                  "dispute_id": {
+                    "type": "string",
+                    "description": "Optional dispute claim identifier."
+                  },
+                  "dispute_claim": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "claimant": {
+                        "type": "string",
+                        "enum": [
+                          "buyer",
+                          "seller",
+                          "automated_sla_watcher"
+                        ]
+                      },
+                      "reason": {
+                        "type": "string"
+                      },
+                      "claim_timestamp": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "deal_terms": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "buyer_id",
+                      "seller_id",
+                      "amount_usd",
+                      "currency",
+                      "deadline_utc",
+                      "arbitration_policy"
+                    ],
+                    "properties": {
+                      "buyer_id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "seller_id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "amount_usd": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "currency": {
+                        "type": "string",
+                        "enum": [
+                          "USDC",
+                          "USDT",
+                          "ETH",
+                          "SOL",
+                          "USD",
+                          "EUR",
+                          "other"
+                        ]
+                      },
+                      "deadline_utc": {
+                        "type": "string"
+                      },
+                      "arbitration_policy": {
+                        "type": "string",
+                        "enum": [
+                          "all_or_nothing",
+                          "pro_rata",
+                          "slo_penalty"
+                        ]
+                      },
+                      "arbitration_fee_pct": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      }
+                    }
+                  },
+                  "specification": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "deliverable_type"
+                    ],
+                    "properties": {
+                      "deliverable_type": {
+                        "type": "string",
+                        "enum": [
+                          "json_data",
+                          "code_artifact",
+                          "model_weights",
+                          "api_service",
+                          "analysis_report",
+                          "other"
+                        ]
+                      },
+                      "expected_schema": {
+                        "type": [
+                          "object",
+                          "string"
+                        ]
+                      },
+                      "expected_artifact_sha256": {
+                        "type": "string"
+                      },
+                      "min_valid_records_pct": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "max_latency_seconds": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "test_suite_assertions": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "delivery_submission": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "submitted_at"
+                    ],
+                    "properties": {
+                      "submitted_at": {
+                        "type": "string"
+                      },
+                      "artifact_data": {},
+                      "artifact_sha256": {
+                        "type": "string"
+                      },
+                      "artifact_url": {
+                        "type": "string"
+                      },
+                      "telemetry": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "total_items": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "valid_items": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "response_time_ms": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "signature": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "attestation_references": {
+                        "type": "array",
+                        "maxItems": 10,
+                        "description": "Caller-declared references only. Not fetched or verified; no identity, timestamp or delivery proof is established. Do not include credentials.",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "kind",
+                            "issuer",
+                            "reference"
+                          ],
+                          "properties": {
+                            "kind": {
+                              "enum": [
+                                "signed_delivery_receipt",
+                                "object_store_attestation",
+                                "neutral_webhook_timestamp",
+                                "vizier_receipt",
+                                "other"
+                              ]
+                            },
+                            "issuer": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "reference": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 500
+                            }
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }
             }
           }
-        }
+        ]
       },
       "outputSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -2719,6 +2977,83 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                       "evidence_readiness",
                       "not_scored"
                     ]
+                  },
+                  "delivery_review": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "escrow_action",
+                      "proposed_allocation",
+                      "hash_check",
+                      "schema_check",
+                      "deadline_check",
+                      "reported_timing",
+                      "slo_check",
+                      "independent_attestations",
+                      "next_one_thing",
+                      "notice"
+                    ],
+                    "properties": {
+                      "escrow_action": {
+                        "const": "HOLD"
+                      },
+                      "proposed_allocation": {
+                        "type": "null"
+                      },
+                      "hash_check": {
+                        "enum": [
+                          "pass",
+                          "fail",
+                          "missing"
+                        ]
+                      },
+                      "schema_check": {
+                        "enum": [
+                          "pass",
+                          "fail",
+                          "missing",
+                          "unsupported",
+                          "unverified"
+                        ]
+                      },
+                      "deadline_check": {
+                        "const": "unverified"
+                      },
+                      "reported_timing": {
+                        "enum": [
+                          "within_deadline",
+                          "late",
+                          "unknown"
+                        ]
+                      },
+                      "slo_check": {
+                        "const": "unverified"
+                      },
+                      "independent_attestations": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "references_provided",
+                          "verification_status"
+                        ],
+                        "properties": {
+                          "references_provided": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10
+                          },
+                          "verification_status": {
+                            "const": "not_verified"
+                          }
+                        }
+                      },
+                      "next_one_thing": {
+                        "type": "string"
+                      },
+                      "notice": {
+                        "type": "string"
+                      }
+                    }
                   }
                 }
               },
@@ -3141,6 +3476,83 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                               "evidence_readiness",
                               "not_scored"
                             ]
+                          },
+                          "delivery_review": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "escrow_action",
+                              "proposed_allocation",
+                              "hash_check",
+                              "schema_check",
+                              "deadline_check",
+                              "reported_timing",
+                              "slo_check",
+                              "independent_attestations",
+                              "next_one_thing",
+                              "notice"
+                            ],
+                            "properties": {
+                              "escrow_action": {
+                                "const": "HOLD"
+                              },
+                              "proposed_allocation": {
+                                "type": "null"
+                              },
+                              "hash_check": {
+                                "enum": [
+                                  "pass",
+                                  "fail",
+                                  "missing"
+                                ]
+                              },
+                              "schema_check": {
+                                "enum": [
+                                  "pass",
+                                  "fail",
+                                  "missing",
+                                  "unsupported",
+                                  "unverified"
+                                ]
+                              },
+                              "deadline_check": {
+                                "const": "unverified"
+                              },
+                              "reported_timing": {
+                                "enum": [
+                                  "within_deadline",
+                                  "late",
+                                  "unknown"
+                                ]
+                              },
+                              "slo_check": {
+                                "const": "unverified"
+                              },
+                              "independent_attestations": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "references_provided",
+                                  "verification_status"
+                                ],
+                                "properties": {
+                                  "references_provided": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 10
+                                  },
+                                  "verification_status": {
+                                    "const": "not_verified"
+                                  }
+                                }
+                              },
+                              "next_one_thing": {
+                                "type": "string"
+                              },
+                              "notice": {
+                                "type": "string"
+                              }
+                            }
                           }
                         }
                       },

@@ -216,3 +216,38 @@ def test_remote_cannot_bypass_local_evidence_hold(monkeypatch):
     ruling = arbiter.evaluate_dispute({"escrow_id": "legacy-remote", "deal_terms": {"amount_usd": 500}})
     assert ruling.ruling == "ESCALATE_HUMAN"
     assert ruling.payout.seller_payout_usd == 0
+
+
+def test_local_delivery_review_keeps_attestation_and_timing_unverified():
+    import hashlib
+
+    content = '{"records":1}'
+    payload = {
+        "escrow_id": "test",
+        "deal_terms": {
+            "buyer_id": "buyer",
+            "seller_id": "seller",
+            "amount_usd": 100,
+            "currency": "USD",
+            "deadline_utc": "2026-01-02T00:00:00Z",
+            "arbitration_policy": "all_or_nothing",
+        },
+        "specification": {
+            "deliverable_type": "json_data",
+            "expected_artifact_sha256": hashlib.sha256(content.encode()).hexdigest(),
+            "expected_schema": {"type": "object"},
+        },
+        "delivery_submission": {
+            "submitted_at": "2026-01-01T00:00:00Z",
+            "artifact_data": {"records": 1},
+            "attestation_references": [{"kind": "signed_delivery_receipt", "issuer": "Claimed", "reference": "r"}],
+        },
+    }
+    review = M2MEscrowArbiter().evaluate_dispute(payload, prefer_remote=False).raw["delivery_review"]
+    assert review["escrow_action"] == "HOLD"
+    assert review["proposed_allocation"] is None
+    assert review["hash_check"] == "pass"
+    assert review["schema_check"] == "pass"
+    assert review["deadline_check"] == "unverified"
+    assert review["slo_check"] == "unverified"
+    assert review["independent_attestations"]["verification_status"] == "not_verified"
