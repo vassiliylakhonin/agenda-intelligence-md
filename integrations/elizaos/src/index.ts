@@ -1,4 +1,6 @@
 import type { EvidenceDiagnostics } from "./evaluation.js";
+import { parseDeliveryReview, type DeliveryReview } from "./delivery-review.js";
+export type { DeliveryReview } from "./delivery-review.js";
 import { evidenceDiagnostics } from "./evaluation.js";
 /**
  * Evidence checks for proposed transactions and escrow deliveries.
@@ -55,10 +57,13 @@ export interface EscrowDisputeRequest {
     artifact_sha256?: string;
     artifact_data?: unknown;
     telemetry?: Record<string, any>;
+    /** Caller-provided, unverified references. */
+    attestation_references?: Array<{ kind: "signed_delivery_receipt" | "object_store_attestation" | "neutral_webhook_timestamp" | "vizier_receipt" | "other"; issuer: string; reference: string }>;
   };
 }
 
 export interface EscrowDisputeRuling extends EvidenceDiagnostics {
+  delivery_review?: DeliveryReview;
   settlement_authorized: false;
   ruling: "RELEASE_TO_SELLER" | "REFUND_TO_BUYER" | "PARTIAL_SETTLEMENT" | "ESCALATE_HUMAN";
   status: "decision_ready" | "not_decision_ready";
@@ -184,10 +189,12 @@ export class AgendaGuardClient {
         ["RELEASE_TO_SELLER", "REFUND_TO_BUYER", "PARTIAL_SETTLEMENT"].includes(result.ruling) &&
         Number.isFinite(result.score) && result.score >= 0 && result.score <= 100 && boundedPayout(payout) &&
         Math.round(payout.total_escrow_usd * 100) === Math.round(fallbackAmount * 100);
+      const deliveryReview = parseDeliveryReview(result.delivery_review);
       return {
         ...evidenceDiagnostics(result, false, !ready),
         settlement_authorized: false,
         authorization_granted: false,
+        ...(deliveryReview ? {delivery_review: deliveryReview} : {}),
         score: ready ? result.score : 0,
         ruling: ready ? result.ruling : "ESCALATE_HUMAN",
         status: ready ? "decision_ready" : "not_decision_ready",

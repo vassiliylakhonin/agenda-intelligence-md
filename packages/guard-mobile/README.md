@@ -8,7 +8,7 @@ sign or transfer. No latency guarantee is established by the examples.
 ## Install
 
 ```sh
-npm install @agenda-intelligence/guard-mobile@1.3.0
+npm install @agenda-intelligence/guard-mobile@1.4.0
 ```
 
 Requires Node 20+ or a host providing fetch, AbortController, structuredClone,
@@ -129,3 +129,5 @@ permission to execute. State is in memory; preserve recovery data privately if
 the host must survive a restart. Supplied evidence never authorizes a new payment.
 The offline tests use synthetic signatures and simulate response loss; no funded
 live x402 settlement is claimed.
+
+Escrow responses expose `delivery_review` when the server supplies a valid HOLD-only review. Attestation references remain unverified and no settlement is authorized.

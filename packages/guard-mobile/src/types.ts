@@ -1,3 +1,5 @@
+import type { DeliveryReview } from "./delivery-review.js";
+
 import type { EvidenceDiagnostics } from "./evaluation.js";
 /**
  * Types for @agenda-intelligence/guard-mobile
@@ -120,6 +122,8 @@ export interface DeliverySubmission {
     total_items?: number;
     valid_items?: number;
   };
+  /** Caller-provided references; not verified by the evaluator. */
+  attestation_references?: Array<{ kind: "signed_delivery_receipt" | "object_store_attestation" | "neutral_webhook_timestamp" | "vizier_receipt" | "other"; issuer: string; reference: string }>;
 }
 
 export interface EscrowDisputeInput {
@@ -135,6 +139,7 @@ export interface EscrowDisputeInput {
 export type EscrowRuling = "RELEASE_TO_SELLER" | "REFUND_TO_BUYER" | "PARTIAL_SETTLEMENT" | "ESCALATE_HUMAN";
 
 export interface EscrowDisputeResult extends EvidenceDiagnostics {
+  delivery_review?: DeliveryReview;
   human_review_required?: true;
   settlement_authorized?: false;
   ruling: EscrowRuling;

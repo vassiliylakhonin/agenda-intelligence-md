@@ -29,6 +29,17 @@ test('published Worker diagnostics survive financial and escrow decoding on cano
   assert.equal(ruling.authorization_granted,false);
   assert.equal(ruling.next_action,escrow.arbitration_ruling.next_action);
   assert.equal(ruling.human_review_required,true);
+  assert.deepEqual(ruling.delivery_review,escrow.arbitration_ruling.delivery_review);
+  assert.equal(ruling.delivery_review.escrow_action,'HOLD');
+});
+test('escrow rejects an unsafe or malformed delivery review projection',async()=>{
+  const {WORKED_EXAMPLES}=await import('../../../deploy/cloudflare-worker/src/worked-examples.js');
+  const escrow=structuredClone(WORKED_EXAMPLES.m2m_escrow_arbiter.response);
+  escrow.arbitration_ruling.delivery_review.escrow_action='RELEASE';
+  const input=WORKED_EXAMPLES.m2m_escrow_arbiter.request.request || WORKED_EXAMPLES.m2m_escrow_arbiter.request;
+  const ruling=await makeEscrowCall(async()=>Response.json(escrow),input).evaluate();
+  assert.equal(ruling.delivery_review,undefined);
+  assert.equal(ruling.settlement_authorized,false);
 });
 test('remote authorization claims and conflicting routing cannot authorize or weaken rejection',async()=>{
   const result=await makeCall(async()=>Response.json({financial_guard_verdict:{decision:'reject',score:100,next_action:'review',authorization_granted:true,vizier_status:'vizier_verified'}})).evaluate();
