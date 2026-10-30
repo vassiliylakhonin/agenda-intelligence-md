@@ -25,7 +25,7 @@ To try one assertion in a browser, [check a claim and its source excerpt](https:
 Python 3.9 or later. Install the published package without cloning the repository:
 
 ```bash
-python -m pip install "agenda-intelligence-md==1.23.0"
+python -m pip install "agenda-intelligence-md==1.24.0"
 agenda-intelligence --version
 ```
 
@@ -62,7 +62,7 @@ python3 -m venv .venv
 .venv/bin/agenda-intelligence check examples/evidence-packet/request.json --format json
 ```
 
-For the versioned package, use `python -m pip install "agenda-intelligence-md==1.23.0"` instead of the editable install. The example commands above use files from this checkout.
+For the versioned package, use `python -m pip install "agenda-intelligence-md==1.24.0"` instead of the editable install. The example commands above use files from this checkout.
 
 The bundled synthetic packet reports `packet_status=packet_complete` and `factuality=not_assessed`. A stale or inaccurate source can still pass. Add `--strict` when packet findings should fail a CI step.
 
@@ -237,7 +237,7 @@ HTTP, MCP and A2A trials share one allowance. Hosted x402 supports exact Base na
 
 The [report revision workflow](examples/report-review/README.md) runs locally without paid calls. See [worker diagnostics](docs/worker-remediation.md) for repair fields and service limits.
 
-In version 1.23.0, `agenda-intelligence review-revision original.json revised.json --out handoff.md`
+Since version 1.23.0, `agenda-intelligence review-revision original.json revised.json --out handoff.md`
 compares your two evidence-audit packets: changed claims/source versions,
 remaining findings and a human-review handoff. It never writes the revision or
 approves publication.

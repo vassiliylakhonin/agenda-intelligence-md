@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.0 — 2026-10-30
+
+- Expose the hosted HOLD-only delivery review and accept unverified attestation references. No settlement is authorized.
+
 ## 1.3.0 — 2026-10-18
 
 - Default to the custom Financial Guard and Escrow hostnames.

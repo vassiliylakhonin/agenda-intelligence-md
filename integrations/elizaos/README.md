@@ -7,7 +7,7 @@ An ElizaOS action and standalone REST client for reviewing proposed transactions
 ## Install and compatibility
 
 ```sh
-npm install @agenda-intelligence/plugin-guard@2.1.0
+npm install @agenda-intelligence/plugin-guard@2.2.0
 ```
 
 Node.js 20+ with `fetch` is required. The standalone client has no runtime dependencies. ElizaOS is an optional peer (`>=1.7.2 <2`); the plugin is typed against the published ElizaOS 1.7.2 contract. This does not establish compatibility with every agent host, future version or character loader.
@@ -147,3 +147,5 @@ permission to execute. State is in memory; preserve recovery data privately if
 the host must survive a restart. Supplied evidence never authorizes a new payment.
 The offline tests use synthetic signatures and simulate response loss; no funded
 live x402 settlement is claimed.
+
+Escrow responses expose `delivery_review` when the server supplies a valid HOLD-only review. Attestation references remain unverified and no settlement is authorized.

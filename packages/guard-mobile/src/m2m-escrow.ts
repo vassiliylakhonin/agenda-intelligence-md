@@ -1,4 +1,5 @@
 import { evidenceDiagnostics } from "./evaluation.js";
+import { parseDeliveryReview } from "./delivery-review.js";
 /**
  * M2MEscrowClient
  * Supplied delivery-evidence review; no automatic settlement or verified receipt.
@@ -67,8 +68,10 @@ export class M2MEscrowClient {
       const ready = rulingObj.status === "decision_ready" && rulingObj.ruling !== "ESCALATE_HUMAN" &&
         Number.isFinite(rulingObj.score) && rulingObj.score >= 0 && rulingObj.score <= 100 &&
         boundedPayout(payout) && Math.round(payout.total_escrow_usd * 100) === Math.round(amount * 100);
+      const deliveryReview = parseDeliveryReview(rulingObj.delivery_review);
       return {
         ...evidenceDiagnostics(rulingObj, false, !ready),
+        ...(deliveryReview ? {delivery_review: deliveryReview} : {}),
         ruling: ready ? rulingObj.ruling : "ESCALATE_HUMAN",
         status: ready ? "decision_ready" : "not_decision_ready",
         score: ready ? rulingObj.score : 0,

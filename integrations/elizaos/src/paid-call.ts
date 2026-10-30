@@ -100,7 +100,7 @@ export function createRetainedPaidCall<T>(endpoint: string, payload: unknown,
     const controller = new AbortController();
     const timeout = setTimeout(()=>controller.abort(), timeoutMs);
     try {
-      const headers: Record<string,string> = {"content-type":"application/json", "user-agent":"AgendaElizaGuard/2.1.0"};
+      const headers: Record<string,string> = {"content-type":"application/json", "user-agent":"AgendaElizaGuard/2.2.0"};
       if (trace) headers["x-payment-trace-id"] = trace;
       if (tx) headers["x-payment-tx"] = tx;
       if (signature) headers["x-payment-signature"] = signature;
