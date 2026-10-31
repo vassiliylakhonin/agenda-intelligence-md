@@ -2,23 +2,52 @@
 
 # Agenda Intelligence MD
 
-A deterministic evidence-packet linter for claim-backed AI output. Find broken references, mismatched quotations, unmatched numbers, and missing evidence in AI-generated claims; receive findings and reviewer actions before human review.
+A deterministic evidence-packet linter for claim-backed AI output.
 
-Use it to make an AI answer's evidence trail inspectable in a local workflow, agent pipeline, or CI job. **Packet completeness is not factual truth, source authenticity, or permission to act.**
+It checks whether a claim is supported by the evidence you supply: broken references, mismatched quotations, unmatched numbers, missing evidence, and other evidence-pack integrity problems. It is designed for local workflows, agent pipelines, and CI jobs, and it does not require a model API key.
 
-## Choose a starting point
+This project is not a fact-checker for real-world truth, not a source authenticator, and not permission to act. It validates the evidence relationship in the packet you provide.
 
-| Your task | Start here | What you get |
+## Why this exists
+
+When AI systems produce claims, it is often difficult to tell whether the source text actually supports the statement. Agenda Intelligence MD gives you a deterministic check on the evidence trail instead of trusting a model output at face value.
+
+Use it to:
+
+- validate AI-generated claims before publishing or acting on them
+- review a RAG answer with inline citations and retrieved snippets
+- lint evidence packets in CI or local development
+- review supplier or document handoff packages with explicit evidence gaps
+- attach output verification to agents and workflows
+
+## What it checks
+
+The core checker validates the supplied packet:
+
+- claims resolve to source IDs that actually exist
+- declared quotes match the provided source text
+- numbers and wording are consistent with the supplied evidence
+- evidence gaps and missing support are surfaced as findings
+- packet status is reported in a deterministic way
+
+## What it does not do
+
+Agenda Intelligence MD does not:
+
+- establish factual truth in the world
+- verify source authenticity or provenance
+- certify that a document is trustworthy or authorized
+- grant permission to act or relay a decision
+- replace human review for consequential actions
+
+## Choose your starting point
+
+| Use case | Start here | Result |
 | --- | --- | --- |
-| Check a claim in the browser | [One-claim review](https://output-verification.agendamcp.dpdns.org/#one-claim-review) | Findings on supplied text through a limited hosted trial |
-| Add evidence checks to Python or CI | [First run](#first-run) | A local, deterministic check with no model API key |
-| Review a RAG answer or connect an agent | [Interfaces](#interfaces) | Citation repair guidance, MCP tools and integration examples |
+| Try one claim in a browser | [One-claim review](https://output-verification.agendamcp.dpdns.org/#one-claim-review) | Review a single claim and source excerpt in a hosted trial |
+| Add evidence checks to Python or CI | [First run](#first-run) | A local deterministic check without a model API key |
+| Review a RAG answer or connect an agent | [Interfaces](#interfaces) | Citation repair guidance, MCP tools, and integration examples |
 | Prepare a supplier document handover | [Supplier workflow](#prepare-a-supplier-document-handover) | Missing-document and owner follow-up lists for human review |
-
-
-For hosted agents, the [signed Output Verification loop](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/deployment/output-evaluation-receipts.md) combines native MCP trials or explicitly budgeted x402 v2 calls with stable diagnostic codes and independent request/result receipt verification. Run `node examples/output-verification/replay.mjs` for local synthetic replays without a wallet. A valid signature attests the evaluation; human review remains required.
-
-To try one assertion in a browser, [check a claim and its source excerpt](https://output-verification.agendamcp.dpdns.org/#one-claim-review). Paste public or redacted text and an optional exact quote; the hosted trial shares five campaign attempts per network. [Pilot instructions](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/product/citation-review-pilot.md) explain revision, optional feedback and the limits of this check. No external pilot results are claimed.
 
 ## First run
 
@@ -49,9 +78,13 @@ result = check_evidence_packet(packet)["response"]
 print(result["packet_status"], result["factuality_status"])
 ```
 
-Expected: `packet_complete not_assessed`. The example needs no account, model API
-key or network after installation. It checks the supplied evidence relationship,
-not source authenticity or factual truth.
+Expected output:
+
+```text
+packet_complete not_assessed
+```
+
+This example needs no account, model API key, or network after installation. It checks the supplied evidence relationship, not source authenticity or factual truth.
 
 To run the repository's CLI examples from a source checkout:
 
@@ -62,182 +95,127 @@ python3 -m venv .venv
 .venv/bin/agenda-intelligence check examples/evidence-packet/request.json --format json
 ```
 
-For the versioned package, use `python -m pip install "agenda-intelligence-md==1.24.0"` instead of the editable install. The example commands above use files from this checkout.
+For the published package, use:
 
-The bundled synthetic packet reports `packet_status=packet_complete` and `factuality=not_assessed`. A stale or inaccurate source can still pass. Add `--strict` when packet findings should fail a CI step.
+```bash
+python -m pip install "agenda-intelligence-md==1.24.0"
+```
 
-For document-based review, start with the [local-file review guide](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/evidence-review.md) and [example manifest](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/evidence-review/manifest.json):
+The bundled synthetic packet reports `packet_status=packet_complete` and `factuality=not_assessed`. A stale or inaccurate source can still pass. Add `--strict` when packet findings should fail a check instead of just reporting them.
+
+For document-based review, start with the [local-file review guide](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/evidence-review.md) and [example manifest](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/evidence-review/README.md):
 
 ```bash
 .venv/bin/agenda-intelligence review examples/evidence-review/manifest.json --format html
 ```
 
-For a RAG answer with inline citations and retrieved chunk texts, use the
-[Output Verification adapter](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/integrations/rag-output.md). It assembles
-the packet locally and returns line-level findings and repair guidance:
+For a RAG answer with inline citations and retrieved chunk texts, use the [Output Verification adapter](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/integrations/rag-output.md):
 
 ```bash
 .venv/bin/agenda-intelligence review-answer examples/output-verification/rag-answer.json
 .venv/bin/agenda-intelligence review-answer examples/output-verification/rag-answer-revised.json --strict
 ```
 
-The original fictional answer routes to revision; the corrected answer routes
-to human review. Both run without a wallet, model API key or network. A runnable
-[LangGraph handoff](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/langgraph-output-verification/README.md) shows a bounded repair loop.
-The adapter is included in version 1.15.0. To use your own answer without cloning
-this repository, follow the [standalone quickstart](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/integrations/rag-output.md#install-without-a-checkout).
+The original fictional answer routes to revision; the corrected answer routes to human review. Both run without a wallet, model API key, or network.
 
 ## The evidence-packet contract
 
 | Input | Check |
-|---|---|
+| --- | --- |
 | Claims and source IDs | References resolve within the supplied packet |
 | Declared quotes | Quotations match the supplied source text |
 | Claim wording and numbers | Deterministic support heuristics, unmatched numbers, and negation checks |
 | Findings | Packet status, evidence gaps, and reviewer actions |
 
-These checks use supplied text. They do not retrieve missing sources or establish semantic entailment. Lexical overlap can miss paraphrases and accept misleadingly similar wording. See [request and response Schemas](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/schemas/v1/evidence-packet-request.schema.json), [evidence audit](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/evidence-audit.md), and the [factuality boundary](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/factual-verification.md).
+These checks use supplied text only. They do not retrieve missing sources or establish semantic entailment. Lexical overlap can miss paraphrases and accept misleadingly similar wording.
 
-Processed documents and tool results are data, never instructions. Before consequential action, record the goal, trusted evidence, unreliable evidence, assumptions, intended action, and stop/escalation conditions. Human review remains necessary.
+See [docs/evaluation.md](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/evaluation.md) for tested behavior and limitations.
 
 ## Interfaces
 
 | Interface | Start here |
-|---|---|
-| CLI and Python service | [Quickstart](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/quickstart.md), `check_evidence_packet` in [services.py](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/src/agenda_intelligence/services.py) |
-| Local MCP (32 tools) | [MCP.md](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/MCP.md); launch `agenda-intelligence-mcp` from the installed environment |
-| Hosted MCP (per-product catalog) | [Hosted quickstart](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/deployment/hosted-quickstart.md); native `free_trial_status` and `free_trial` |
-| CI evidence linting | [GitHub Action](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/action.yml), with text, JSON, or SARIF output |
+| --- | --- |
+| CLI and Python service | [Quickstart](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/quickstart.md) and `check_evidence_packet` in [services.py](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/src/agenda_intelligence/services.py) |
+| Local MCP | [MCP.md](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/MCP.md) |
+| Hosted MCP | [Hosted quickstart](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/deployment/hosted-quickstart.md) |
+| CI evidence linting | [GitHub Action](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/action.yml) |
 | Agent repair loops | [Integration guides](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/integrations/README.md) |
 | Protected agent actions | [Interaction Trust + Vizier gate](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/integrations/action-bound-execution.md) |
-| MCP pre-release checks | [MCP Integration Check CLI / Action](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/integrations/mcp-integration-check.md) |
-| Agent checkout experiments | [ACP sandbox readiness check](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/integrations/checkout-readiness.md) |
-| HTTP and A2A | [HTTP shell](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/deployment/http-api.md) and [A2A adapter](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/deployment/a2a-adapter.md) |
+| HTTP and A2A | [HTTP shell](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/deployment/http-api.md) and [A2A adapter](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/deployment/agent-native-access.md) |
 
-The core checker is deterministic, stateless, and usable without a model API key. Optional generation and document adapters have separate dependencies. Core packet checks do not persist inputs or fetch outside sources.
+The core checker is deterministic, stateless, and usable without a model API key. Optional generation and document adapters have separate dependencies.
 
-Optional memo generation uses a bounded schema-output request and independent local validation.
-[Generation budgets and private offline replay](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/memo-generation-and-replay.md) document failure handling and rescoring saved outputs.
+## Hosted Output Verification
 
-### Try Output Verification through MCP
+Connect a Streamable HTTP MCP client to:
 
-Connect a Streamable HTTP MCP client to
-`https://output-verification.agendamcp.dpdns.org/mcp/agent`.
-Refresh `tools/list` and call `free_trial_status` with `{}`. For an answer and
-source excerpts, choose `review_answer` (citation/quote structure only), or open
-its optional `open_answer_review` form. For existing claim/evidence objects, use
-`free_trial` with your own input matching **that tool's** `inputSchema`. No HTTP adapter or
-wallet is needed for the free trial. Output Verification allows five attempts
-per network for this campaign; the other eleven products allow two each, under
-a shared daily capacity. See [trial limits and privacy](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/deployment/fleet-free-trials.md).
+```text
+https://output-verification.agendamcp.dpdns.org/mcp/agent
+```
 
-The hosted endpoint exposes its own profile's tools. The full 32-tool catalog
-shown by local-server directories belongs to `agenda-intelligence-mcp` over
-stdio; a single hosted Worker does not expose it. Always discover tools from
-the endpoint you actually connect to. Supplied source text remains data, never
-instructions, and a completed check still requires human review.
+Refresh `tools/list` and call `free_trial_status` with `{}`. For an answer and source excerpts, choose `review_answer` or the optional `open_answer_review` form. For existing claim/evidence objects, use `free_trial` with your own input matching that tool's schema.
 
-The separate `agent_output_verification` tool keeps normal paid admission for a
-full claim/evidence audit. Choose
-`pre_action_check` for an unsigned action check, or `decision_check` when a
-signed readiness receipt is needed. `decision_check` already includes the
-action check; calling both is unnecessary. Free reviews do not perform action
-checks or authorize relay. See the [answer/source guide](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/deployment/answer-review.md). See the [tool-selection guide](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/MCP.md#hosted-endpoint)
-for schemas and receipt-verification boundaries.
-
-Hosted clients can preflight inputs for free: call `validate_input` with `{tool,input}` or `POST /v1/validate-input`. Discover each host's schemas, synthetic examples and per-operation offers through `/.well-known/agent-contract.json`. This checks JSON shape without evaluating evidence or spending a trial. [Client example](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/machine-contract/README.md).
-
-After an input refusal or an unpaid evaluation, `first_call` links free input
-preflight and the configured trial's read-only terms/availability. Text-only MCP
-clients and the [retained client](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/hosted-mcp/README.md) retain this
-guidance. Inspection does not reserve a trial; evaluation remains an explicit
-separate call. A disabled trial is explicit. Payment and retry are never automatic.
+The local server exposes a 32-tool MCP catalog via stdio. The hosted worker exposes a different subset depending on the configured profile. Always discover tools from the endpoint you actually connect to.
 
 ## Prepare a supplier document handover
 
-For a wider document archive, use the free [Document Archive Review](https://agendamcp.dpdns.org/document-archive): start with an editable company/supplier/reporting checklist, register local files, inspect copies and changed same-name files, and export a source-linked reviewer ZIP. Explicitly save a draft on your device and keep a portable JSON backup. [Workflow and limits](docs/use-cases/document-archive-review.md). Assigned-file coverage still needs human content review. For a prepared handover, inspect the separate [scoped service and sample](https://agendamcp.dpdns.org/archive-review).
+For broader document archives, use the free [Document Archive Review](https://agendamcp.dpdns.org/document-archive) tool. It helps you:
 
-[Open Supplier Evidence Desk](https://output-verification.agendamcp.dpdns.org/supplier-desk)
-for the separate browser workspace; no Python installation is required. Prepare
-an editable checklist, assign owners, attach authorized documents and track
-document requests. Read bounded PDF/DOCX text locally, inspect page/paragraph
-locators and extraction warnings, then explicitly adopt editable excerpts.
+- prepare a supplier or company evidence checklist
+- assign owners for missing items
+- attach authorized documents and source excerpts
+- review extraction warnings and page/paragraph locators
+- export a reviewer PDF, ZIP backup, or JSON backup
 
-Save versions on the device, review expiry and evidence gaps, compare updates,
-and export a reviewer PDF, original-source ZIP with hashes, or complete JSON
-backup. Document contents are not uploaded; saved browser data needs backups.
-Extraction does not authenticate documents, and complete coverage still requires
-human review. This hosted workspace is separate from the Python package's local
-`review` command. See the [workspace guide](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/use-cases/supplier-evidence-desk.md)
-and [prepared real-task pilot](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/service-engagement/supplier-pilot.md).
+This hosted workflow is separate from the local Python `review` command. Extraction does not authenticate documents, and complete coverage still requires human review.
 
-## Work on one concrete task
+See the [workspace guide](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/use-cases/supplier-evidence-desk.md) and the [service-engagement pilot](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/service-engagement/README.md).
 
-For a scoped human-delivered assignment, see the [Project Document Desk and Agent
-Workflow Acceptance offers](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/service-engagement/README.md), an explicitly
-[synthetic document sample](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/service-engagement/project-document-sample.md)
-and the [scope and acceptance template](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/service-engagement/scope.md).
-Availability and a written quote come before agreement. Test prices are hypotheses;
-API payments, clean checks and owner tests are not customer acceptance.
+## Repository layout
 
-## Compatibility profiles and adapters
+- `src/` — core library and claim/evidence checks
+- `examples/` — runnable example packets and integrations
+- `docs/` — references, quickstarts, deployment, and integration guides
+- `api/` — API-oriented surfaces and interfaces
+- `clients/` — client-specific adapters and examples
+- `contracts/` — protocol and schema definitions
+- `analysis-bank/` — memory cards and retrieval guidance
+- `deploy/` — deployment and infra helpers
+- `tests/` and `test/` — validation and regression checks
 
-The repository also retains its strategic-intelligence shell, regional references, domain profiles, and Cloudflare deployments. The [worker guide](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/vertical-workers.md) explains profile-specific behaviour; [deployment documentation](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/deploy/cloudflare-worker/README.md) describes the hosted implementation.
+## Examples and status
 
-The hosted fleet is discoverable at [agendamcp.dpdns.org/.well-known/fleet.json](https://agendamcp.dpdns.org/.well-known/fleet.json). Use the per-product MCP addresses in that directory; [custom-domain connection details](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/deployment/custom-domains.md) cover all twelve profiles and Vizier.
+- [Runnable examples](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/README.md)
+- [Before / after evidence examples](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/README.md)
+- [EU AI Act example](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/source-backed/eu-ai-act.md)
+- [Evaluation notes](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/evaluation.md)
+- [AnalysisBank](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/analysis-bank/README.md)
+- [Adoption record](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/ADOPTION.md)
 
-For mineral procurement, the [pre-offtake agent pilot](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/pilots/critical-minerals-offtake.md) walks through a free documentary check, an updated-evidence rerun and optional native MCP/A2A feedback. It preserves trial limits and human approval; external repeat use and usefulness are not yet established.
+## Development and docs
 
-Hosted demos expose their maintained inputs through live agent cards. Their verdicts are review prompts, not clearance. Trace IDs are not attestations. Signed readiness receipts, where configured, bind a gate result to a request/action; they do not establish source truth or grant permission.
+Read:
 
-The Output Verification gate does not permit relay based on caller-declared evidence. Workflow operators must authenticate actors, record approvals, and enforce boundaries. [Vizier](https://github.com/vassiliylakhonin/vizier) provides a separate delegation-policy layer; loading this checker alone does not enforce it.
+- [AGENTS.md](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/AGENTS.md)
+- [CONTRIBUTING.md](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/CONTRIBUTING.md)
+- [SOURCE_POLICY.md](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/SOURCE_POLICY.md)
 
-Hosted pricing and limits belong to each profile's maintained configuration. Payment interoperability remains experimental and is not certified for standard x402 clients. Hosted demos have no autonomous live source retrieval.
-
-## What this is / What this is not
-
-This is an evidence contract, deterministic preflight, and reviewer-facing tooling. It does not certify factual accuracy, provide legal or financial clearance, authenticate another agent, or replace an operator's action controls.
-
-[Global Think Tank Analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst) owns the general reasoning method. [Central Asia & Caspian](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill) and [Gulf & Middle East](https://github.com/vassiliylakhonin/gulf-middle-east-hybrid-intelligence-skill) own regional depth. Vendored compatibility references here are derived copies.
-
-## Examples and Status
-
-- [Runnable examples](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/README.md) and [Before / after](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/before-after/README.md).
-- [EU AI Act example](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/source-backed/eu-ai-act.md): a dated source-backed snapshot, requiring current-source checks before reuse.
-- [Evaluation notes](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/evaluation.md): tested behaviours and limitations.
-- [AnalysisBank](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/analysis-bank/README.md): inspectable stored analysis and retrieval examples.
-- [Adoption record](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/ADOPTION.md): the evidence for usage claims; demos and tests alone do not establish customer demand.
-
-Implemented surfaces include packet schemas, the Python service, CLI checking, local-file review, and MCP. Hosted workers and optional agent/transaction examples require their own integration and operational review. Their presence does not establish production reliability or independently validated usefulness.
-
-## Documentation and development
-
-Read [AGENTS.md](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/AGENTS.md), [source policy](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/SOURCE_POLICY.md), [security policy](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/SECURITY.md), and [local checks](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/local-checks.md) before contributing. Contracts live under [schemas/v1/](https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/v1.21.2/schemas/v1/); [CHANGELOG.md](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/CHANGELOG.md) records releases, and [Roadmap](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/ROADMAP.md) records direction.
+Common verification command:
 
 ```bash
 make ci
 ```
 
-Run `make verify-local` when changing Worker, discovery, runtime, or validation-guard code. Packaged data mirrors must be updated with their canonical files when applicable.
+Run `make verify-local` when changing Worker, discovery, runtime, or validation-guard code.
 
-[MIT license](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/LICENSE) for the code. The bundled official ACP schema retains its
-[Apache-2.0 license](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/src/agenda_intelligence/data/protocols/acp/2026-04-17/LICENSE)
-and [NOTICE](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/src/agenda_intelligence/data/protocols/acp/2026-04-17/NOTICE).
+## License
 
+This project is distributed under the [MIT License](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/LICENSE).
 
-Machine-readable evaluation routing and its limits: [Evaluation action contract](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/evaluation-actions.md).
+The bundled official ACP schema retains its [Apache-2.0 license](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/src/agenda_intelligence/data/protocols/acp/2026-04-17/LICENSE) and [NOTICE](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/src/agenda_intelligence/data/protocols/acp/2026-04-17/NOTICE).
 
+## Final note
 
-Native agent access: [A2A free trials and standard x402 v2](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/deployment/agent-native-access.md).
-HTTP, MCP and A2A trials share one allowance. Hosted x402 supports exact Base native USDC with HTTP headers and native MCP payment metadata; official-client tests simulate settlement, and no maintainer live payment is claimed.
+Agenda Intelligence MD is best thought of as an evidence contract and preflight checker: a way to make AI-supported claims inspectable, before they become operational decisions.
 
-## Server research
-
-[Middle Corridor & Caspian Research Desk](https://agendamcp.dpdns.org/research) collects named official sources and prepares a source-linked draft on the server. The experimental pilot supports browser, REST and [MCP](https://agendamcp.dpdns.org/v1/research/mcp), with five shared jobs per UTC day and human review required. See the [live example](docs/research/corridor-live-brief-2026-10-27.md) and [interface, limits and verification](docs/use-cases/corridor-research.md). Existing evidence-checking tools remain available.
-
-The [report revision workflow](examples/report-review/README.md) runs locally without paid calls. See [worker diagnostics](docs/worker-remediation.md) for repair fields and service limits.
-
-Since version 1.23.0, `agenda-intelligence review-revision original.json revised.json --out handoff.md`
-compares your two evidence-audit packets: changed claims/source versions,
-remaining findings and a human-review handoff. It never writes the revision or
-approves publication.
+If you want the fastest path in, start with the local Python install and the first-run example above.
