@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test, {beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
@@ -12,6 +12,8 @@ import responseSchema from '../../../schemas/v1/corridor-research-response.schem
 import {RESEARCH_CLIENT} from '../src/research-page.js';
 
 const now=Date.UTC(2026,9,27,12),token='private-caller-capability-1234567890abcdef';
+// Creation, HTTP handlers and execution must share the fixture's seven-day TTL clock.
+beforeEach(t=>t.mock.timers.enable({apis:['Date'],now}));
 const input={question:'What changed on the Aktau Caspian route?',language:'en',lookback_days:30};
 const quote='The source describes port and rail coordination.';
 const analysis=()=>({findings:[{claim:'The source discusses port and rail coordination.',source_id:'S1',quote}],interpretations:[{text:'Operational coordination is a question to investigate for the project.',source_ids:['S1']}],open_questions:['What is the observation period behind the operator data?']});

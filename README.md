@@ -20,7 +20,7 @@ Use it to:
 - review supplier or document handoff packages with explicit evidence gaps
 - attach output verification to agents and workflows
 
-## What it checks
+## What this is
 
 The core checker validates the supplied packet:
 
@@ -30,7 +30,7 @@ The core checker validates the supplied packet:
 - evidence gaps and missing support are surfaced as findings
 - packet status is reported in a deterministic way
 
-## What it does not do
+## What this is not
 
 Agenda Intelligence MD does not:
 
@@ -133,6 +133,8 @@ See [docs/evaluation.md](https://github.com/vassiliylakhonin/agenda-intelligence
 
 ## Interfaces
 
+### Compatibility profiles and adapters
+
 | Interface | Start here |
 | --- | --- |
 | CLI and Python service | [Quickstart](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/docs/quickstart.md) and `check_evidence_packet` in [services.py](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/src/agenda_intelligence/services.py) |
@@ -179,11 +181,12 @@ See the [workspace guide](https://github.com/vassiliylakhonin/agenda-intelligenc
 - `api/` — API-oriented surfaces and interfaces
 - `clients/` — client-specific adapters and examples
 - `contracts/` — protocol and schema definitions
+- `schemas/` — Schemas for requests, evidence packets, and responses
 - `analysis-bank/` — memory cards and retrieval guidance
 - `deploy/` — deployment and infra helpers
 - `tests/` and `test/` — validation and regression checks
 
-## Examples and status
+## Status and examples
 
 - [Runnable examples](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/README.md)
 - [Before / after evidence examples](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/examples/README.md)
@@ -192,13 +195,14 @@ See the [workspace guide](https://github.com/vassiliylakhonin/agenda-intelligenc
 - [AnalysisBank](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/analysis-bank/README.md)
 - [Adoption record](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/ADOPTION.md)
 
-## Development and docs
+## Documentation and development
 
 Read:
 
 - [AGENTS.md](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/AGENTS.md)
 - [CONTRIBUTING.md](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/CONTRIBUTING.md)
 - [SOURCE_POLICY.md](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.21.2/SOURCE_POLICY.md)
+- [Roadmap](ROADMAP.md)
 
 Common verification command:
 
