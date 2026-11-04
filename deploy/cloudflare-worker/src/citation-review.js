@@ -92,7 +92,7 @@ async function runRawReview(event) {
     output.textContent=delta+(evaluation.route==='revise' ? 'REVISE' : 'HUMAN REVIEW')+' — no permission to relay or act.\n'+
       'Next: '+(evaluation.findings.length ? 'Line '+evaluation.findings[0].line+': '+evaluation.findings[0].next_action : evaluation.next_action)+'\n\n'+
       (evaluation.findings.length ? evaluation.findings.map(function(f){return 'Line '+f.line+': '+f.code+(f.source_id ? ' ['+f.source_id+']' : '');}).join('\n') : 'No citation or quote structure issues found.');
-    status.textContent='Completed: '+evaluation.findings.length+' citation/quote issues. One shared trial attempt used. Factuality and semantic support were not assessed.';
+    status.textContent='Completed: '+evaluation.findings.length+' citation/quote issues. One shared trial attempt used. Factuality and semantic support were not assessed. Source authenticity was not assessed. Human review is required.';
     rawLastInput=serialized;rawLastCount=evaluation.findings.length;
     rememberOutputReview('answer_citations',input,payload);
   } catch(error) { status.textContent='The result could not be received. An attempt may have been consumed; previous result is unchanged. No automatic retry.'; }
@@ -145,7 +145,7 @@ export function citationReviewHtml(attempts, allowancePanel) {
       <label for="raw-source">Source text for [s1] (optional)</label><textarea id="raw-source" rows="4" maxlength="20000" style="width:100%;font:inherit;padding:8px"></textarea>
       <p><label><input id="raw-numeric" type="checkbox"> Flag number tokens missing from cited excerpts (optional)</label><br><small>Literal comparison only; formatting may differ. A match does not confirm meaning, units or truth. Unresolved citations are not checked for numbers.</small></p>
       <button id="raw-run" type="submit" class="primary-action primary-action-main">Review answer · uses 1 attempt</button>
-      <p id="raw-status" role="status"></p><pre id="raw-result" hidden></pre>
+      <p id="raw-status" role="status"></p><pre id="raw-result" hidden style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
       <button id="raw-save" type="button" hidden onclick="saveOutputReview('answer_citations')">Save last completed answer review locally</button>
       <p><small>The download contains the checked answer, supplied source text and result. Later edits are not included until checked. Nothing is uploaded by saving; keep the file private if the material is private.</small></p>
     </form>
