@@ -10,6 +10,22 @@ import { createHostedMcpCall, HostedMcpError } from '../../../examples/hosted-mc
 import { publicTargets } from '../scripts/public-conformance.js';
 
 const origin = 'https://example.test';
+
+test('Output summary separates quote occurrence from meaning and authenticity, including a contradictory claim',()=>{
+  const response={verdict:'verify_before_relay',score_scope:'declared_evidence_structure_only',
+    grounded_claim_count:1,claim_count:1,readiness_score:84,evidence_gaps:[],owner_actions:[],
+    factual_verification_performed:false,human_review_required:true};
+  const original=JSON.stringify(response);
+  const escape=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+  const html=reviewSummaryHtml(response,escape);
+  assert.match(html,/Quote occurrence:.*1 of 1/s);
+  assert.match(html,/Meaning.*not assessed/s);
+  assert.match(html,/Source authenticity.*not assessed/s);
+  assert.match(html,/Human review.*required/s);
+  assert.match(html,/decide whether the source supports the claim/i);
+  assert.doesNotMatch(html,/Document coverage only|84\/100|84%/);
+  assert.equal(JSON.stringify(response),original);
+});
 const configured = profile => ({AGENT_PROFILE:profile, BILLING_MODE:'pay_per_call', VIZIER_DISABLED:'1'});
 const quiet = async action => {
   const old = console.log; console.log = () => {};

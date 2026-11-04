@@ -16,7 +16,7 @@ const envFor=()=>({AGENT_PROFILE:'agent_output_verification',WORKER_FREE_TRIAL:'
 async function browser(env=envFor()) {
   const html=await(await handleRequest(new Request(origin+'/?owner_test=1',{headers:{accept:'text/html'}}),env)).text();
   const elements=Object.fromEntries(['citation-claim','citation-source','citation-quote','citation-support','citation-status','citation-run',
-    'raw-answer','raw-source','raw-status','raw-result','raw-run','raw-numeric','citation-demo-before','citation-demo-after',
+    'raw-answer','raw-source','raw-status','raw-result','raw-run','raw-numeric','raw-save','profile-save-review','profile-input-status','profile-validate-input','citation-demo-before','citation-demo-after',
     'profile-run','profile-paid','profile-status','profile-result','profile-summary','profile-progress','profile-response','profile-request',
     'profile-feedback','profile-feedback-status','profile-helpful','profile-blocked','profile-feedback-panel','profile-intake','profile-recovery']
     .map(id=>[id,{value:'',textContent:'',innerHTML:'',hidden:true,disabled:false}]));
@@ -36,6 +36,66 @@ async function browser(env=envFor()) {
 }
 const quiet=async action=>{const old=console.log;console.log=()=>{};try{return await action();}finally{console.log=old;}};
 const run=ui=>ui.context.runCitationReview({preventDefault(){}});
+
+test('both browser forms respect a known exhausted allowance without sending another request',async()=>quiet(async()=>{
+  const ui=await browser();
+  ui.context.agendaTrialBlocked=true;
+  ui.elements['raw-answer'].value='A supplied claim [s1]';
+  ui.elements['raw-source'].value='A supplied claim.';
+  await ui.context.runRawReview({preventDefault(){}});
+  assert.equal(ui.requests.length,0,'known exhaustion must stop the raw form too');
+  assert.match(ui.elements['raw-status'].textContent,/allowance.*exhausted/i);
+  assert.match(ui.elements['raw-status'].textContent,/preserved/i);
+}));
+
+test('an exhausted raw review keeps its result and shares recovery with the claim form',async()=>quiet(async()=>{
+  const ui=await browser();
+  ui.elements['raw-source'].value='A supplied claim.';
+  for(let i=0;i<5;i++){
+    ui.elements['raw-answer'].value='Draft '+i+': A supplied claim [s1]';
+    await ui.context.runRawReview({preventDefault(){}});
+  }
+  const previous=ui.elements['raw-result'].textContent;
+  ui.elements['raw-answer'].value='Changed draft: A supplied claim [s1]';
+  await ui.context.runRawReview({preventDefault(){}});
+  assert.equal(ui.elements['raw-result'].textContent,previous);
+  assert.equal(ui.context.agendaTrialBlocked,true);
+  assert.equal(ui.elements['profile-recovery'].hidden,false);
+  assert.match(ui.elements['raw-status'].textContent,/allowance.*exhausted/i);
+  const count=ui.requests.length;
+  await ui.context.runRawReview({preventDefault(){}});
+  assert.equal(ui.requests.length,count);
+  await ui.context.validateOutputRecoveryInput();
+  const preflight=JSON.parse(ui.requests.at(-1).init.body);
+  assert.equal(preflight.tool,'review_answer');
+  assert.equal(preflight.input.answer,ui.elements['raw-answer'].value);
+  assert.match(ui.elements['profile-input-status'].textContent,/matches the published schema/);
+  assert.equal((await ui.env.PAYMENT_LEDGER.prepare('SELECT COUNT(*) AS n FROM output_verification_trials').first()).n,5);
+}));
+
+test('local exports keep the checked material and survive edits, refusals and a matching contradictory quote',async()=>quiet(async()=>{
+  const ui=await browser();
+  assert.equal(ui.context.getOutputReviewRecord('structured_claims'),null);
+  ui.elements['citation-claim'].value='Schema validation proves factual truth.';
+  ui.elements['citation-source'].value='Schemas enforce structure, not truth.';
+  ui.elements['citation-quote'].value='structure, not truth';
+  ui.elements['citation-support'].value='direct';
+  await run(ui);
+  const saved=JSON.parse(ui.context.getOutputReviewRecord('structured_claims'));
+  assert.equal(saved.schema_version,'output-review-record.v1');
+  assert.equal(saved.input.claims[0].claim,ui.elements['citation-claim'].value);
+  assert.equal(saved.response.grounded_claim_count,1);
+  assert.equal(saved.response.factual_verification_performed,false);
+  assert.match(ui.elements['profile-summary'].innerHTML,/Meaning.*not assessed/s);
+  assert.match(ui.elements['profile-summary'].innerHTML,/contradictory claim/);
+  assert.equal(ui.elements['profile-save-review'].hidden,false);
+  ui.elements['citation-claim'].value='An unchecked later edit.';
+  assert.equal(JSON.parse(ui.context.getOutputReviewRecord('structured_claims')).input.claims[0].claim,saved.input.claims[0].claim);
+  ui.context.fetch=async()=>{throw Error('network');};
+  await run(ui);
+  assert.deepEqual(JSON.parse(ui.context.getOutputReviewRecord('structured_claims')),saved);
+  assert.equal(ui.context.getOutputReviewRecord('answer_citations'),null);
+}));
 
 test('web raw answer, synthetic demo and correction use the real trial without fabricating sources',async()=>quiet(async()=>{
   const ui=await browser();

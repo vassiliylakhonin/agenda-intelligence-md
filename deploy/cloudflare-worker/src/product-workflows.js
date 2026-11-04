@@ -120,11 +120,16 @@ export function reviewSummary(response, workflow = {}) {
 export function reviewSummaryHtml(response, escape, workflow = {}) {
   const summary = reviewSummary(response, workflow);
   if (!summary) return '';
+  const output = response.score_scope === 'declared_evidence_structure_only' &&
+    Number.isInteger(response.claim_count) && Number.isInteger(response.grounded_claim_count);
   const [gaps, remainingGaps, actions] = [summary.gaps.slice(0, 3), summary.gaps.slice(3), summary.actions]
     .map(items => '<ul>' + items.map(item => '<li>' + escape(item) + '</li>').join('') + '</ul>');
   return '<section aria-label="Review summary"><h3>Review summary</h3><p><strong>Returned route:</strong> ' + escape(summary.route) + '</p>' +
     (summary.selectedGate ? '<p><a href="' + escape(summary.selectedGate) + '">Open the selected evidence-review gate</a>. Prepare its required fields; your current input is not sent to another product.</p>' : '') +
-    (summary.referencesOnly ? '<p>Document coverage only: source content and factual truth have not been verified. More declared records do not authorize a decision.</p>' : '') +
+    (output ? '<p><strong>Quote occurrence:</strong> ' + escape(response.grounded_claim_count) + ' of ' + escape(response.claim_count) + ' claims have a quote found in the supplied source text.</p>' +
+      '<ul><li><strong>Meaning and factual truth:</strong> not assessed.</li><li><strong>Source authenticity:</strong> not assessed.</li><li><strong>Human review:</strong> required.</li></ul>' +
+      '<p>Next: inspect each claim and decide whether the source supports the claim, including qualifications, dates and units. A matching quote can accompany a contradictory claim.</p>' :
+      summary.referencesOnly ? '<p>Document coverage only: source content and factual truth have not been verified. More declared records do not authorize a decision.</p>' : '') +
     (summary.leads.length ? '<strong>Review leads and missing inputs</strong><ul>' + summary.leads.map(item => '<li>' + escape(item) + '</li>').join('') + '</ul>' : '') +
     (summary.gaps.length ? '<strong>Evidence to resolve (' + summary.gaps.length + ')</strong>' + gaps +
       (summary.gaps.length > 3 ? '<details><summary>Remaining evidence gaps</summary>' + remainingGaps + '</details>' : '')
