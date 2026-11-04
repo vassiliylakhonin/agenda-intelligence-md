@@ -15,6 +15,33 @@ the exact same extractor, validator, evaluator and upstream provenance.
 The trial performs a live evaluation of submitted redacted evidence. The
 separate worked example remains a precomputed synthetic fixture.
 
+## Browser correction and local review record
+
+The answer form and the structured-claim form use the same network allowance.
+Known exhaustion stops either form before another evaluation request. A refused
+revision keeps the last completed result; free input validation checks the
+currently selected form's contract (`review_answer` or `free_trial`). An unchanged
+completed input is not automatically resubmitted.
+
+The claim summary reports quote occurrence separately from unassessed meaning,
+factual truth and source authenticity. Even a matching quote can accompany a
+contradictory claim. A reviewer must check meaning, dates, units and qualifications.
+
+Each form offers an explicit local JSON download after completion:
+
+- `schema_version`: `output-review-record.v1`;
+- `review_kind`: `answer_citations` or `structured_claims`;
+- `completed_at`: the browser's local observation time in ISO format;
+- `input`: the input associated with that completed response;
+- `response`: the service response, retaining its existing verdict and scope;
+- `scope`: the structural-check boundary and human-review requirement.
+
+Later unsent edits and refused revisions do not replace this record. The download
+includes the supplied source text; saving performs no upload, evaluation or
+payment. It is a local review record, not an authenticated receipt or proof of
+source authenticity. Page memory is cleared when the page is closed or reloaded;
+download explicitly if the record is needed later.
+
 ## Response contract
 
 - **200:** the normal verification response plus `trial`: terms,

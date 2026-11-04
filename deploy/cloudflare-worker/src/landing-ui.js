@@ -117,6 +117,7 @@ function landingHtml(request, env) {
   const reviewPanel = `    <div id="profile-review" hidden><h3 id="profile-review-title">Last completed check</h3>
     ${profile === 'critical_minerals_due_diligence' ? '<div id="mineral-workflow" hidden></div>' : ''}
     <div id="profile-summary" aria-live="polite"></div>
+    ${freeTrial && profile === 'agent_output_verification' ? `<button id="profile-save-review" type="button" hidden onclick="saveOutputReview('structured_claims')">Save last completed claim check locally</button><p><small>The download contains the checked claims, supplied source text and result. Later edits are not included until checked. Saving uploads nothing.</small></p>` : ''}
     ${isKazakhstan ? '<div id="corridor-owner-actions" aria-live="polite"></div>' : ''}
     ${profile === 'cis_secondary_sanctions' ? '<div id="cis-review-view" aria-live="polite"></div>' : ''}
     ${profile === 'gulf_maritime_exposure' ? '<div id="gulf-review-view" aria-live="polite"></div>' : ''}
@@ -414,7 +415,7 @@ function landingHtml(request, env) {
       <button id="profile-run" type="submit">${routingTool ? 'Route question free' : freeTrial ? 'Run free evidence check' : 'Evaluate evidence'}</button>
       ${freeTrial ? `<button id="profile-paid" type="button" hidden onclick="runProfileExample(event, true)">Choose paid evaluation — ${trialTerms.paid_price_usdc} USDC</button>` : ''}
       <p id="profile-status" role="status"></p>
-      ${freeTrial ? `<div id="profile-recovery" hidden><h3>Continue without losing your work</h3><p id="profile-recovery-message">Your edited input stays here. You can inspect the saved synthetic example without another trial attempt.</p><button id="profile-validate-input" type="button" onclick="agendaNextSteps.validateInput()">Validate this input free — no trial attempt</button> · <button type="button" onclick="showWorkedExample()">View saved example — no trial attempt</button><p id="profile-input-status" role="status"></p>${profile === 'agent_output_verification' ? `<p>Need to check your own answer offline? <a href="${REPOSITORY_URL}/blob/main/docs/integrations/rag-output.md#install-without-a-checkout">Use the local Python answer review</a>. It has a different input and result contract and does not reset this hosted allowance.</p>` : ''}<p><a href="#scoped-services">Need a finished review? Describe one assignment</a></p></div>` : ''}
+      ${freeTrial ? `<div id="profile-recovery" hidden><h3>Continue without losing your work</h3><p id="profile-recovery-message">Your edited input stays here. You can inspect the saved synthetic example without another trial attempt.</p><button id="profile-validate-input" type="button" onclick="${profile === 'agent_output_verification' ? 'validateOutputRecoveryInput()' : 'agendaNextSteps.validateInput()'}">Validate this input free — no trial attempt</button> · <button type="button" onclick="showWorkedExample()">View saved example — no trial attempt</button><p id="profile-input-status" role="status"></p>${profile === 'agent_output_verification' ? `<p>Need to check your own answer offline? <a href="${REPOSITORY_URL}/blob/main/docs/integrations/rag-output.md#install-without-a-checkout">Use the local Python answer review</a>. It has a different input and result contract and does not reset this hosted allowance.</p>` : ''}<p><a href="#scoped-services">Need a finished review? Describe one assignment</a></p></div>` : ''}
     </form>
     ${freeTrial && profile === 'agent_output_verification' ? '' : reviewPanel}
   </div>` : ""}
@@ -633,6 +634,7 @@ async function runProfileExample(event, paid, reviewFlow) {
   var button = document.getElementById('profile-run');
   var status = document.getElementById('profile-status');
   var result = document.getElementById('profile-result');
+  ${freeTrial && profile === 'agent_output_verification' ? "outputRecoveryKind='structured_claims';" : ''}
   ${freeTrial ? `if (!paid && agendaTrialBlocked) {
     status.textContent = 'Free allowance is exhausted. Check availability again, view the saved example, or explicitly choose a paid evaluation. Your input is preserved.';
     setTrialRecovery(true);
@@ -693,6 +695,7 @@ async function runProfileExample(event, paid, reviewFlow) {
       ${freeTrial ? 'agendaNextSteps.completed();' : ''}
       agendaHasCompletedResult = true;
       var review = body.result?.structuredContent || body;
+      ${freeTrial && profile === 'agent_output_verification' ? "rememberOutputReview('structured_claims',payload,review);" : ''}
       ${profile === 'corridor_sanctions_assistant' ? "agendaLastRecommendedGate = review.handoff_draft ? (review.selected_route?.profile || null) : null; agendaLastRoutingInput = review.handoff_draft ? JSON.stringify(payload) : null;" : ''}
       ${profile === 'critical_minerals_due_diligence' ? 'renderMineralWorkflow(review, payload);' : ''}
       document.getElementById('profile-summary').innerHTML = reviewSummaryHtml(review, safeHtml, ${JSON.stringify(workflow)});
