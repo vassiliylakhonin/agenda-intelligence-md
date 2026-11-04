@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Require all mandatory Middle Corridor source categories before returning `review_ready`. Route incomplete dossiers to hold or stage-specific escalation before considering the coverage score, so contextual documents cannot produce a proceed action while required evidence is missing. Apply the rule in Python, local A2A and Cloudflare Worker responses.
+
 - Keep both Output browser forms behind their shared known quota state, retain the last completed result after a refused revision, and offer an explicit local JSON download containing the checked input and result. Wrap answer findings on narrow screens and show quote occurrence separately from unassessed meaning, factual truth and source authenticity; evaluation, scoring and admission contracts are unchanged.
 
 ## 1.24.0 — 2026-10-30

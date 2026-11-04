@@ -2,6 +2,7 @@ import json
 import re
 from pathlib import Path
 
+import pytest
 from jsonschema import Draft202012Validator
 
 from agenda_intelligence.mcp_server import source_plan
@@ -20,6 +21,88 @@ REQUIRED_BEFORE_GO = {
     "insurance_clause_or_underwriter_note",
     "vessel_or_carrier_history",
 }
+
+
+@pytest.mark.parametrize(
+    "stage, expected_decision",
+    [
+        ("pre_signature", "escalate"),
+        ("pre_shipment", "escalate"),
+        ("in_transit", "hold"),
+        ("post_incident", "hold"),
+        ("committee_review", "hold"),
+        ("other", "hold"),
+    ],
+)
+@pytest.mark.parametrize("missing_source", sorted(REQUIRED_BEFORE_GO))
+@pytest.mark.parametrize("context_count, expected_score", [(0, 68), (1, 78), (2, 88)])
+def test_middle_corridor_required_gap_blocks_ready_and_proceed(
+    stage, expected_decision, missing_source, context_count, expected_score
+):
+    from agenda_intelligence import services
+    from agenda_intelligence.a2a_adapter import handle_jsonrpc
+
+    source_types = sorted(REQUIRED_BEFORE_GO - {missing_source})
+    source_types += ["port_operator_notice", "carrier_note"][:context_count]
+    request = {
+        "route": "Aktau -> Baku -> Poti",
+        "cargo": "ceramic tiles",
+        "counterparties": [{"role": "forwarder", "name": "Forwarder A"}],
+        "dated_sources": [
+            {"id": kind, "source_type": kind, "title": "Document record", "date": "2026-11-01"} for kind in source_types
+        ],
+        "risk_question": "Which evidence gaps need review?",
+        "decision_stage": stage,
+    }
+    result = services.middle_corridor_deal_risk(request)
+    assert result["valid"] is True
+    response = result["response"]
+    assert response["minimum_sources_before_go"] == [missing_source]
+    assert response["decision_readiness_score"] == expected_score
+    assert response["decision_readiness_label"] == "partial"
+    assert response["operational_decision"]["decision"] == expected_decision
+    assert "looks complete" not in response["operational_decision"]["rationale"]
+    assert response["human_review_required"] is True
+    wire = handle_jsonrpc(
+        {
+            "jsonrpc": "2.0",
+            "id": "required-gap",
+            "method": "message/send",
+            "params": {"capability": "middle_corridor_deal_risk", "request": request},
+        }
+    )
+    transported = wire["result"]["metadata"]["response"]
+    assert transported["operational_decision"] == response["operational_decision"]
+    assert transported["decision_readiness_label"] == "partial"
+
+
+@pytest.mark.parametrize(
+    "context_count, score, label", [(0, 80, "partial"), (1, 90, "review_ready"), (2, 100, "review_ready")]
+)
+def test_middle_corridor_complete_metadata_preserves_human_review_route(context_count, score, label):
+    from agenda_intelligence import services
+
+    source_types = sorted(REQUIRED_BEFORE_GO) + ["port_operator_notice", "carrier_note"][:context_count]
+    request = {
+        "route": "Aktau -> Baku -> Poti",
+        "cargo": "ceramic tiles",
+        "counterparties": [{"role": "forwarder", "name": "Forwarder A"}],
+        "dated_sources": [
+            {"id": kind, "source_type": kind, "title": "Document record", "date": "2026-11-01"} for kind in source_types
+        ],
+        "risk_question": "Which evidence gaps need review?",
+        "decision_stage": "in_transit",
+    }
+    result = services.middle_corridor_deal_risk(request)
+    assert result["valid"] is True
+    response = result["response"]
+    assert response["minimum_sources_before_go"] == []
+    assert response["triage_recommendation"] == "ready_for_human_review"
+    assert response["decision_readiness_score"] == score
+    assert response["decision_readiness_label"] == label
+    assert response["operational_decision"]["decision"] == "proceed"
+    assert response["human_review_required"] is True
+
 
 FORBIDDEN_CLEARANCE_WORDING = [
     re.compile(pattern, re.IGNORECASE)
