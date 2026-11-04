@@ -1625,6 +1625,62 @@ function baseDealRiskRequest(overrides = {}) {
   };
 }
 
+test("worker deal-risk required gaps block ready and proceed at every decision stage", () => {
+  const required = [
+    "counterparty_registry_extract", "beneficial_ownership_source", "sanctions_list_extract",
+    "customs_or_regulatory_source", "insurance_clause_or_underwriter_note", "vessel_or_carrier_history"
+  ];
+  const stages = {
+    pre_signature: "escalate", pre_shipment: "escalate", in_transit: "hold",
+    post_incident: "hold", committee_review: "hold", other: "hold"
+  };
+  for (const [stage, decision] of Object.entries(stages)) {
+    for (const missing of required) {
+      for (const [contextCount, score] of [[0, 68], [1, 78], [2, 88]]) {
+        const sourceTypes = required.filter(kind => kind !== missing)
+          .concat(["port_operator_notice", "carrier_note"].slice(0, contextCount));
+        const response = dealRiskContractResponseForRequest(baseDealRiskRequest({
+          cargo: "ceramic tiles",
+          decision_stage: stage,
+          dated_sources: sourceTypes.map(kind => ({
+            id: kind, source_type: kind, title: "Document record", date: "2026-11-01"
+          }))
+        }));
+        const scenario = `${stage}, missing ${missing}, context ${contextCount}`;
+        assert.deepEqual(response.minimum_sources_before_go, [missing], scenario);
+        assert.equal(response.decision_readiness_score, score, scenario);
+        assert.equal(response.decision_readiness_label, "partial", scenario);
+        assert.equal(response.operational_decision.decision, decision, scenario);
+        assert.doesNotMatch(response.operational_decision.rationale, /looks complete/, scenario);
+        assert.equal(response.human_review_required, true, scenario);
+      }
+    }
+  }
+});
+
+test("worker deal-risk complete metadata preserves the human-review route", () => {
+  const required = [
+    "counterparty_registry_extract", "beneficial_ownership_source", "sanctions_list_extract",
+    "customs_or_regulatory_source", "insurance_clause_or_underwriter_note", "vessel_or_carrier_history"
+  ];
+  for (const [contextCount, score, label] of [[0, 80, "partial"], [1, 90, "review_ready"], [2, 100, "review_ready"]]) {
+    const sourceTypes = required.concat(["port_operator_notice", "carrier_note"].slice(0, contextCount));
+    const response = dealRiskContractResponseForRequest(baseDealRiskRequest({
+      cargo: "ceramic tiles",
+      decision_stage: "in_transit",
+      dated_sources: sourceTypes.map(kind => ({
+        id: kind, source_type: kind, title: "Document record", date: "2026-11-01"
+      }))
+    }));
+    assert.deepEqual(response.minimum_sources_before_go, []);
+    assert.equal(response.triage_recommendation, "ready_for_human_review");
+    assert.equal(response.decision_readiness_score, score);
+    assert.equal(response.decision_readiness_label, label);
+    assert.equal(response.operational_decision.decision, "proceed");
+    assert.equal(response.human_review_required, true);
+  }
+});
+
 test("worker deal-risk contract flags high-risk jurisdiction (ADR 0015 parity)", () => {
   const resp = dealRiskContractResponseForRequest(
     baseDealRiskRequest({

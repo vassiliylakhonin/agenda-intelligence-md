@@ -2218,7 +2218,7 @@ def _middle_corridor_readiness(request_json: dict, supplied_sources: list[str]) 
             + (context_present / len(MIDDLE_CORRIDOR_READINESS_CONTEXT)) * 20
         ),
     )
-    if score >= 85:
+    if score >= 85 and required_present == len(MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO):
         return score, "review_ready"
     if score >= 50:
         return score, "partial"
@@ -2232,8 +2232,8 @@ def _middle_corridor_operational_decision(
 
     Restates the existing triage as the booking verb a forwarder/ops reader needs (quote, hold, or
     escalate?). Triage routing only - not clearance, approval, a sanctions determination, or advice.
-    It never issues a hard reject (a compliance/legal call); it stops at hold or escalate. Human
-    review remains required before any commercial action.
+    Incomplete required evidence routes to hold or escalation. Complete dossiers still
+    require human sign-off before any commercial action.
     """
     gate = {
         "pre_signature": "quote / sign the booking",
@@ -2245,7 +2245,7 @@ def _middle_corridor_operational_decision(
     if "escalate" in triage_recommendation or "high" in risk_signal:
         decision = "escalate"
         rationale = f"Route to compliance or legal before you {gate}."
-    elif readiness_score < 40:
+    elif triage_recommendation != "ready_for_human_review" or readiness_score < 40:
         decision = "hold"
         rationale = f"Do not {gate} yet; request the missing evidence first."
     elif readiness_score < 70:

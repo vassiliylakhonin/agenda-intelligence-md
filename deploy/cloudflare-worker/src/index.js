@@ -10918,7 +10918,8 @@ function decisionReadinessForStructuredRequest(request, suppliedSources) {
 
   return {
     score,
-    label: score >= 85 ? "review_ready" : score >= 50 ? "partial" : "not_decision_ready"
+    label: score >= 85 && requiredPresent === MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO.length
+      ? "review_ready" : score >= 50 ? "partial" : "not_decision_ready"
   };
 }
 
@@ -10986,7 +10987,7 @@ function operationalDecisionForStructuredRequest(request, triageRecommendation, 
   if (String(triageRecommendation).includes("escalate") || String(riskSignal).includes("high")) {
     return { decision: "escalate", applies_to: gate, rationale: `Route to compliance or legal before you ${gate}.` };
   }
-  if (score < 40) {
+  if (triageRecommendation !== "ready_for_human_review" || score < 40) {
     return { decision: "hold", applies_to: gate, rationale: `Do not ${gate} yet; request the missing evidence first.` };
   }
   if (score < 70) {
