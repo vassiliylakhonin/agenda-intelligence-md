@@ -4,7 +4,7 @@ import { hostedAccess } from './hosted-access.js';
 // hints, never permissions to execute an action or attest source authenticity.
 export const PROFILE_TASKS = Object.freeze({
   agenda: 'Turn a strategic-risk question into an evidence plan and a matching specialist tool. Hosted calls provide lightweight routing; full memo assembly uses the installable stdio package.',
-  kazakhstan: 'Find missing documents in a Kazakhstan / Middle Corridor trade-deal file before signature, shipment or committee review.',
+  kazakhstan: 'Send the route, cargo, counterparties and dated sources for a Kazakhstan / Middle Corridor deal. Get missing documents and review steps before signature, shipment or committee review.',
   cis_secondary_sanctions: 'Review a CIS counterparty evidence pack for secondary-sanctions exposure questions and missing due-diligence records.',
   agentic_interaction_trust: 'Find missing identity, authorization and scope evidence before accepting an agent-mediated action.',
   agent_output_verification: 'Check an AI answer and supplied sources for missing references and quote mismatches before human review. The audit also flags caller-declared unsupported claims.',

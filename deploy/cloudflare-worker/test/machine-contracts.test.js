@@ -113,3 +113,34 @@ test('card and all payment manifest aliases advertise the same configured offers
   assert.deepEqual(cardExtensionParams(card).x_agenda_intelligence.x402.offers,primary.offers);
   assert.match(cardExtensionParams(card).x_agenda_intelligence.x402.pricing_tiers_scope,/optional/);
 });
+
+test('flagship cards lead to the matching contract and distinguish regular and trial access', async () => {
+  for (const [profile, tool] of [
+    ['kazakhstan', 'middle_corridor_deal_risk'],
+    ['agent_output_verification', 'agent_output_verification']
+  ]) {
+    const environment = {...env, AGENT_PROFILE: profile, WORKER_FREE_TRIAL: '1'};
+    const get = async (url, config = environment) => {
+      const response = await handleRequest(new Request(url), config);
+      assert.equal(response.status, 200, url);
+      return response.json();
+    };
+    const cardUrl = origin + '/.well-known/agent-card.json';
+    const card = await get(cardUrl);
+    const {onboarding, x402} = cardExtensionParams(card).x_agenda_intelligence;
+    const primary = onboarding.primary_evaluation;
+    assert.equal(primary.tool, tool);
+    assert.equal(primary.mcp_endpoint, origin + '/mcp/agent');
+    const offer = (await get(primary.pricing_url)).offers.find(item => item.tool === tool);
+    assert.deepEqual(primary, {...offer, mcp_endpoint: onboarding.mcp_endpoint, pricing_url: x402.manifest_url});
+    assert.ok(card.description.includes(`${offer.price_usdc} USDC per evaluation`));
+    assert.equal((await get(primary.example_url)).example_available, true);
+    assert.ok((await get(primary.input_schema_url)).$schema);
+    assert.equal(onboarding.first_evaluation.payment_required, false);
+    assert.equal(primary.payment_required, true);
+
+    const freeCard = await get(cardUrl, {...environment, BILLING_MODE: 'freemium'});
+    assert.equal(cardExtensionParams(freeCard).x_agenda_intelligence.onboarding.primary_evaluation.payment_required, false);
+    assert.doesNotMatch(freeCard.description, /USDC per evaluation/);
+  }
+});

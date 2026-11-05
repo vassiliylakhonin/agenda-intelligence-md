@@ -1333,8 +1333,21 @@ function agentCard(request, env = {}) {
   const accessSummary = access.free_routing ? `Routing through ${access.free_routing.tool} is free and consumes no trial attempt. Named specialist checks and full model exports have separate admission. Discovery, saved examples and heartbeat are free.` : env.BILLING_MODE === 'pay_per_call'
     ? `${trial ? `${trial.attempts_per_network} free live attempts on your own input at ${trial.endpoint}, subject to shared-network and fleet daily limits. ` : ''}Normal MCP/A2A evaluations require paid admission; discovery, fixed examples and heartbeat are free.`
     : 'Free base triage, subject to configured authentication and quotas.';
-  shaped.description = `${PROFILE_TASKS[profile] || 'Review supplied evidence using the published contract.'} ${accessSummary} Supplied-evidence review, not independent factual verification or clearance; mandatory human review before consequential action. Caller must invoke and enforce the result in its integration. ${shaped.description}`;
+  const flagshipTool = profile === 'kazakhstan' ? 'middle_corridor_deal_risk'
+    : profile === 'agent_output_verification' ? 'agent_output_verification' : null;
+  const flagshipOffer = flagshipTool && shaped.x_agenda_intelligence.x402.offers.find(offer => offer.tool === flagshipTool);
+  const flagshipPrice = flagshipOffer?.payment_required
+    ? ` Configured price for ${flagshipTool}: ${flagshipOffer.price_usdc} USDC per evaluation. Read the current terms at ${access.pricing_url} and check the operation's payment challenge before paying.`
+    : '';
+  shaped.description = `${PROFILE_TASKS[profile] || 'Review supplied evidence using the published contract.'} ${accessSummary}${flagshipPrice} Supplied-evidence review, not independent factual verification or clearance; mandatory human review before consequential action. Caller must invoke and enforce the result in its integration. ${shaped.description}`;
   shaped.x_agenda_intelligence.onboarding = agentOnboarding(profile, env, origin);
+  if (flagshipOffer) {
+    shaped.x_agenda_intelligence.onboarding.primary_evaluation = {
+      ...flagshipOffer,
+      mcp_endpoint: shaped.x_agenda_intelligence.onboarding.mcp_endpoint,
+      pricing_url: access.pricing_url
+    };
+  }
   shaped.x_agenda_intelligence.machine_contract = `${origin}/.well-known/agent-contract.json`;
   shaped.x_agenda_intelligence.free_a2a_triage = {
     scope: accessSummary,
@@ -2968,7 +2981,7 @@ function applyAgentOutputVerificationProfile(card, request) {
   card.skills = [
     {
       id: "agent-output-verification",
-      name: "AI report evidence quality review",
+      name: "Evidence audit for AI reports and policy memos",
       description:
         "Review AI-generated report and memo claims against supplied source text. Check evidence-reference consistency, missing source IDs and quoted excerpts; return structural evidence gaps, repair steps and a relay-readiness verdict. Human review is required; this does not establish factual truth, semantic entailment, source authenticity or permission to publish.",
       tags: [
@@ -2979,6 +2992,9 @@ function applyAgentOutputVerificationProfile(card, request) {
         "evidence-readiness",
         "quality-evaluation",
         "evidence-validation",
+        "evidence-audit",
+        "claim-support",
+        "provenance",
         "report-review",
         "quote-checking",
         "trust-and-safety",
@@ -3056,9 +3072,7 @@ function applyAgentOutputVerificationProfile(card, request) {
 // no triage, scoring, screening, or retrieval of its own; those live in the
 // named gates below.
 
-// Appended to each structured gate's card description so a human landing on any
-// one gate is routed to the same front door and commercial process rather than
-// navigating nine cards blind. One factual navigation line, no traction claim.
+// Trade-facing cards share an orientation and intake route.
 const PROVIDER_FRONT_DOOR_POINTER =
   " New to these gates? Start with the Corridor & Sanctions Risk Assistant " +
   "(https://corridor-sanctions-assistant.agendamcp.dpdns.org) for plain-language orientation. " +
@@ -3430,8 +3444,9 @@ function applyAgentFinancialGuardProfile(card, request) {
   card.description =
     "External, application-level pre-sign evidence review for wallet-bearing agents. " +
     "Checks a local risk denylist, approval patterns and intent; caller-reported spending history is unverified. " +
-    "Non-rejected transactions require human review. No transaction authorization or current sanctions clearance." +
-    PROVIDER_FRONT_DOOR_POINTER;
+    "Non-rejected transactions require human review. No transaction authorization or current sanctions clearance. " +
+    "For evidence of the requesting agent's identity, delegation or tool scope, use Agentic Interaction Trust Gate " +
+    "(https://interaction-trust.agendamcp.dpdns.org).";
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
@@ -3460,8 +3475,9 @@ function applyM2MEscrowArbiterProfile(card, request) {
   card.documentationUrl = discovery.documentation_url;
   card.description =
     "External evidence review for agent-to-agent delivery disputes and proposed escrow allocations. " +
-    "Checks hashes, a bounded offline JSON Schema subset and SLO evidence. Unsupported schemas require human review; no settlement is executed or authorized." +
-    PROVIDER_FRONT_DOOR_POINTER;
+    "Checks hashes, a bounded offline JSON Schema subset and SLO evidence. Unsupported schemas require human review; no settlement is executed or authorized. " +
+    "For citation or quote checks on a delivered AI report, use Agent Output Verification " +
+    "(https://output-verification.agendamcp.dpdns.org).";
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
