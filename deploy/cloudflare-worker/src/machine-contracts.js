@@ -7,8 +7,9 @@ import {x402Enabled,x402Requirements} from './x402-v2.js';
 import {INPUT_VALIDATION_TOOL,INPUT_VALIDATION_PATH,INPUT_VALIDATION_MAX_BYTES} from './input-validation.js';
 import {evaluationAmount,isFreeRoutingTool} from './pricing-policy.js';
 import {settlementDiscovery} from './payment-discovery.js';
+import {MEMO_QUALITY_TOOL} from './memo-quality-gate.js';
 export {evaluationAmount} from './pricing-policy.js';
-export const FREE_MACHINE_TOOLS=new Set(['fleet_directory','decision_policies_list','free_trial_status','free_trial','free_trial_feedback','review_answer','open_answer_review',INPUT_VALIDATION_TOOL]);
+export const FREE_MACHINE_TOOLS=new Set(['fleet_directory','decision_policies_list','free_trial_status','free_trial','free_trial_feedback','review_answer','open_answer_review',INPUT_VALIDATION_TOOL,MEMO_QUALITY_TOOL]);
 export const toolSchemaUrl=(origin,name,kind='input')=>`${origin}/.well-known/schemas/tools/${name}/${kind}.schema.json`;
 export function publicToolSchema(origin,tool,kind) {
   const schema=kind==='input'?tool.inputSchema:tool.outputSchema;
