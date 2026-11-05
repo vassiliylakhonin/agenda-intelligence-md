@@ -24,10 +24,13 @@ import { projectHandoffValue, prepareHandoff, handoffHtml, HANDOFF_CLIENT_SCRIPT
 // Browser presentation only. Runtime decisions are supplied by the controller.
 import { BASE_USDC_WALLET, DOCS_URL, PACKAGE_URL, REPOSITORY_URL, SUPPORT_CONTACT_EMAIL, SUPPORT_HOURS_LOCAL, VERSION, MIDDLE_CORRIDOR_DOCS_URL, TIER_MICRO_CHECK_USDC_AMOUNT, TIER_MICRO_DISPUTE_USDC_AMOUNT, TIER_PRO_USDC_AMOUNT } from "./profiles.js";
 
-export function createLandingRenderer({ originFromRequest, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES, fleetDirectoryResponse, inputSchemaForProfile }) {
+export function createLandingRenderer({ originFromRequest, publicSiteOrigin, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES, fleetDirectoryResponse, inputSchemaForProfile }) {
 function landingHtml(request, env) {
   const origin = originFromRequest(request);
+  const canonicalOrigin = publicSiteOrigin(request, env);
   const profile = agentProfile(request, env);
+  const publicGate = fleetDirectoryResponse().gates.find(gate => gate.profile === profile);
+  const mcpUrl = escapeHtml(`${canonicalOrigin}/mcp/agent`);
   const handoffTargets = ['agenda','corridor_sanctions_assistant'].includes(profile)
     ? fleetDirectoryResponse().gates.filter(gate => !['agenda','corridor_sanctions_assistant'].includes(gate.profile))
       .map(gate => ({profile:gate.profile,name:PRODUCT_WORKFLOWS[gate.profile]?.task || gate.profile,origin:gate.canonical_endpoint,schema:inputSchemaForProfile(gate.profile)}))
@@ -43,18 +46,18 @@ function landingHtml(request, env) {
 
   const title = escapeHtml(card.name);
   const presentation = {
-    agenda: ["Agenda Intelligence — evidence review", "Route agent requests through an external evidence-review boundary. See the missing inputs and hand the decision to a person.", null],
-    kazakhstan: ["Middle Corridor deal evidence review", "External evidence gate for a corridor deal: review route, cargo, counterparties and dated sources before a human decision.", "kazakhstan"],
-    agentic_interaction_trust: ["Agent interaction evidence review", "Zero-trust review of a counterparty agent request: inspect claimed identity, action and dated evidence before human review. No identity verification.", "agentic_interaction_trust"],
-    agent_output_verification: ["Agent Output Evidence Linter", "Check an AI report and supplied sources for broken references and quote issues before human review.", "agent_output_verification"],
-    agent_financial_guard: ["Agent Financial Guard", "External pre-sign evidence check for agent wallets. Local risk flags are not current sanctions clearance, verified spending history or enforced limits.", "agent_financial_guard"],
-    m2m_escrow_arbiter: ["M2M Escrow Evidence Review", "Review supplied agent-to-agent delivery evidence against hashes and supported schemas. No automatic payout; missing evidence goes to a person.", "m2m_escrow_arbiter"],
-    cis_secondary_sanctions: ["CIS counterparty evidence review", "External evidence gate for CIS counterparties: inspect ownership and sanctions gaps, with source freshness shown where available.", "cis_secondary_sanctions"],
-    gulf_maritime_exposure: ["Gulf maritime evidence review", "External evidence gate for vessel, voyage and insurance files. Not continuous AIS or threat monitoring.", "gulf_maritime_exposure"],
-    market_entry_readiness: ["Kazakhstan market-entry readiness", "External evidence gate for Kazakhstan market entry: identify missing project, partner and regulatory sources before human review.", "kazakhstan_market_entry_readiness"],
-    critical_minerals_due_diligence: ["Critical minerals evidence review", "External evidence gate for supplied origin, ownership and supply-chain records before human due-diligence review.", "critical_minerals_due_diligence"],
-    dual_use_technology_export: ["Dual-use export evidence review", "External evidence gate for supplied HS/ECCN, end-user and diversion-risk records. No classification, licence or clearance.", "dual_use_technology_export"],
-    corridor_sanctions_assistant: ["Corridor & Sanctions Request Assistant", "Find the right external evidence-review gate for a corridor question. Routing only; no sanctions decision.", null]
+    agenda: ["AI and Trade Evidence Review Tools | Agenda Intelligence", "Choose a review for an AI report, an agent action or a trade dossier. See the required documents and the tools that can review them.", null],
+    kazakhstan: ["Middle Corridor Shipment Document Review", "Find missing documents in a Kazakhstan and Middle Corridor shipment file before signature, dispatch or bank review.", "kazakhstan"],
+    agentic_interaction_trust: ["AI Agent Identity and Delegation Evidence Review", "Find missing identity, delegation and tool scope evidence before accepting another AI agent’s proposed action.", "agentic_interaction_trust"],
+    agent_output_verification: ["AI Report Citation Checker | Output Verification", "Check an AI report against supplied source text for missing references and mismatched quotes before human review.", "agent_output_verification"],
+    agent_financial_guard: ["Wallet Transaction Review Before Signing | Agent Financial Guard", "Review a proposed agent wallet transfer or token approval against its declared intent and supplied policy before a human signs.", "agent_financial_guard"],
+    m2m_escrow_arbiter: ["Escrow Delivery Evidence Review for AI Agents", "Compare a delivered artifact with agreed hashes, supported schemas and delivery deadlines for human dispute review.", "m2m_escrow_arbiter"],
+    cis_secondary_sanctions: ["CIS Counterparty Ownership and Sanctions Evidence Review", "Find missing ownership and secondary sanctions evidence before onboarding a CIS or Central Asia counterparty.", "cis_secondary_sanctions"],
+    gulf_maritime_exposure: ["Gulf Voyage and Vessel Document Review", "Identify missing vessel, voyage and insurance records for a Gulf or Red Sea shipping review.", "gulf_maritime_exposure"],
+    market_entry_readiness: ["Kazakhstan Market Entry Due Diligence Checklist", "Find missing partner, permit and project records before a Kazakhstan market entry decision.", "kazakhstan_market_entry_readiness"],
+    critical_minerals_due_diligence: ["Critical Minerals Supplier and Offtake Due Diligence", "Find missing origin, ownership and traceability documents before reviewing a mineral supplier or signing an offtake agreement.", "critical_minerals_due_diligence"],
+    dual_use_technology_export: ["Dual-Use Export Document Review for HS, ECCN and End Use", "Find missing classification, end-user and route evidence before sending a technology shipment file for export review.", "dual_use_technology_export"],
+    corridor_sanctions_assistant: ["Find a Trade Route or Sanctions Evidence Review", "Describe the route, shipment or counterparty question to find the relevant service and see what information it needs.", null]
   }[profile] || [card.name, card.description, null];
   const tagline = presentation[1];
   const guide = GATE_REQUEST_GUIDES[presentation[2]];
@@ -96,13 +99,13 @@ function landingHtml(request, env) {
     kazakhstan: "Aktau → Poti shipment → document gaps before bank review",
     cis_secondary_sanctions: "Counterparty ownership → ownership and sanctions evidence gaps",
     corridor_sanctions_assistant: "Route question → selected gate and required fields",
-    agent_financial_guard: "Proposed transfer → local risk flags + UNKNOWN limits when policy is absent",
-    m2m_escrow_arbiter: "Delivery claim → artifact evidence gaps; no settlement",
-    agent_output_verification: "Agent answer → unsupported claims + evidence gaps",
+    agent_financial_guard: "A proposed token approval conflicts with the stated intent. Review the approval before signing.",
+    m2m_escrow_arbiter: "A delivery dispute needs the agreed hash, the supported schema and the submission time checked against the deadline.",
+    agent_output_verification: "A report claims a customer count. The checker flags the missing evidence and asks for the source excerpt and matching quote.",
     agentic_interaction_trust: "Third-party agent request → identity and action evidence gaps",
     gulf_maritime_exposure: "Gulf voyage → vessel, insurance and port-document gaps",
     market_entry_readiness: "Kazakhstan entry plan → partner and permit evidence gaps",
-    critical_minerals_due_diligence: "Mineral supply chain → origin and ownership evidence gaps",
+    critical_minerals_due_diligence: "A proposed offtake is missing scoped origin and ownership records. Request them from the supplier before review.",
     dual_use_technology_export: "Electronics shipment → HS/ECCN and end-user evidence gaps"
   }[profile] || "Supplied case → evidence gaps + next human-review step";
   const consoleId = freeTrial ? (profile === 'agent_output_verification' ? 'one-claim-review' : isKazakhstan ? 'corridor-wizard' : profile === 'cis_secondary_sanctions' ? 'cis-wizard' : profile === 'gulf_maritime_exposure' ? 'gulf-wizard' : profile === 'market_entry_readiness' ? 'market-entry-wizard' : 'profile-console') : isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : "profile-console";
@@ -142,9 +145,9 @@ function landingHtml(request, env) {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escapeHtml(presentation[0])}</title>
 <meta name="description" content="${escapeHtml(tagline)}">
-<link rel="canonical" href="${escapeHtml(origin)}/">
+<link rel="canonical" href="${escapeHtml(canonicalOrigin)}/">
 <meta property="og:type" content="website">
-<meta property="og:url" content="${escapeHtml(origin)}/">
+<meta property="og:url" content="${escapeHtml(canonicalOrigin)}/">
 <meta property="og:title" content="${escapeHtml(presentation[0])}">
 <meta property="og:description" content="${escapeHtml(tagline)}">
 <link rel="ai-catalog" href="${origin}/.well-known/ai-catalog.json">
@@ -196,11 +199,10 @@ function landingHtml(request, env) {
 <body>
 <main>
   ${new URL(request.url).searchParams.get('owner_test') === '1' ? '<p role="status">Owner test mode: this page marks example and evaluation requests as self-declared operator traffic. Normal payment rules apply.</p>' : ''}
-  <h1>${escapeHtml(presentation[0])}</h1>
+  <h1>${escapeHtml(presentation[0].split(' | ', 1)[0])}</h1>
   <p class="tagline">${escapeHtml(tagline)}</p>
 
   <div class="status-row"><span class="badge">Live evaluation · v${escapeHtml(VERSION)}</span><span class="badge">Human review required</span><span class="badge">Profile: ${escapeHtml(profile)}</span></div>
-  <p>Need help delivering a document or fixing an agent workflow? <a href="#scoped-services">Scope one assignment with a person</a>.</p>
   ${profile === 'agenda' ? taskChooserHtml(fleetDirectoryResponse(), escapeHtml) : ''}
   <section aria-label="Your review workflow">
     <h2>${escapeHtml(workflow.task)}</h2>
@@ -209,16 +211,14 @@ function landingHtml(request, env) {
     <p><strong>Next step:</strong> ${escapeHtml(workflow.next)}</p>
   </section>
   <div class="primary-actions">
-    <a class="primary-action primary-action-main" href="#${consoleId}">${freeTrial ? 'Check my evidence free' : env.BILLING_MODE === "pay_per_call" ? "Evaluate with a signed payment" : "Try free (50 requests/hour)"}</a>
+    <a class="primary-action primary-action-main" href="#${consoleId}">${routingTool ? 'Route my question free' : freeTrial ? 'Check my evidence free' : env.BILLING_MODE === "pay_per_call" ? "Evaluate with a signed payment" : "Try free (50 requests/hour)"}</a>
     <button type="button" class="primary-action" onclick="${exampleAction}" style="cursor:pointer">Run a worked example</button>
-    <a class="primary-action" href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent(`Enterprise integration — ${card.name}`)}">Discuss enterprise integration</a>
-    <a class="primary-action" href="${origin}/profiles/confidential-project-room">Open confidential project room</a>
+    <a class="primary-action" href="#connect-mcp">Connect MCP</a>
   </div>
   <div class="card" aria-label="Example result"><strong>Example, synthetic input:</strong> ${escapeHtml(heroExample)}<br>
     ${fixtureVerdict
       ? `<strong>Example output:</strong> ${escapeHtml(sampleOutput.result.metadata.verdict_standard.reason_code)} · ${escapeHtml(sampleOutput.result.metadata.verdict_standard.next_permitted_action)} · Gap: ${escapeHtml(sampleOutput.result.metadata.verdict_standard.evidence_gaps[0])}`
-      : `<strong>Example output:</strong> a structured verdict with reason_code, evidence_gaps, next_permitted_action and labeled sources. Open the free precomputed example for its supplied input and result.`}<br>
-    <small>Supplied facts are not independently verified; a source with no verified date is labeled as_of: null. This traceable verdict is not attested telemetry or authorization. Human review before action.</small></div>
+      : `<small>Open the worked example to see its input and saved result.</small>`}</div>
   <section id="worked-example" class="card" hidden>
     <h2>Free worked example</h2><p><strong>Precomputed synthetic fixture.</strong> No wallet, payment or trial attempt required. You can reopen it after your live allowance is exhausted. This saved example is not a live evaluation of your edited input or current sources.</p>
     ${reviewSummaryHtml(workedExample?.response, escapeHtml)}
@@ -233,7 +233,18 @@ function landingHtml(request, env) {
     </details>` : ''}
   </section>
   <nav><a href="https://agendamcp.dpdns.org/">All profiles</a> · <a href="https://vizier.agendamcp.dpdns.org/">Vizier authorization</a> · <a href="${origin}/trust">Trust &amp; limitations</a> · <a href="${origin}/privacy">Privacy</a></nav>
-  <p>Connect your agent: <a href="${origin}/.well-known/first-check.mjs" download>download the first-check client</a> · <a href="${REPOSITORY_URL}/blob/main/examples/hosted-mcp/FIRST_CHECK.md">Connection, input and result guide</a>. Node.js 20+, no packages. Inspection is free; evaluation is an explicit command using the configured shared trial allowance.</p>
+  <section id="connect-mcp" class="card" aria-labelledby="connect-mcp-title">
+    <h2 id="connect-mcp-title">Connect your agent</h2>
+    <p>Add this HTTPS address as a remote MCP server using Streamable HTTP.</p>
+    <label for="mcp-url">MCP server URL</label>
+    <input id="mcp-url" value="${mcpUrl}" readonly style="display:block;width:100%;max-width:100%;box-sizing:border-box" onclick="this.select()">
+    <button type="button" onclick="copyMcpUrl()">Copy MCP URL</button> <span id="mcp-copy-status" role="status"></span>
+    ${publicGate ? `<p>Main tool <code>${escapeHtml(publicGate.tool_name)}</code>. <a href="${escapeHtml(publicGate.example_url)}">Example input</a> · <a href="${escapeHtml(publicGate.input_schema_url)}">Input schema</a></p>` : ''}
+    <p><a href="${escapeHtml(canonicalOrigin)}/.well-known/first-check.mjs" download>Download the first-check client</a> · <a href="${REPOSITORY_URL}/blob/main/examples/hosted-mcp/FIRST_CHECK.md">Connection, input and result guide</a> · <a href="${REPOSITORY_URL}/tree/main/examples/hosted-mcp">Integration examples</a></p>
+    <p><a href="${escapeHtml(canonicalOrigin)}/.well-known/agent-card.json">A2A agent card</a> · <a href="${escapeHtml(canonicalOrigin)}/api/openapi.json">OpenAPI</a> · <a href="${escapeHtml(canonicalOrigin)}/.well-known/x402">Evaluation pricing</a></p>
+    <small>Connecting and listing tools are free. Check the tool’s trial or payment terms before requesting an evaluation.</small>
+  </section>
+  <p><a href="#scoped-services">Scope an assignment with a person</a> · <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent(`Enterprise integration — ${card.name}`)}">Discuss enterprise integration</a> · <a href="${origin}/profiles/confidential-project-room">Open confidential project room</a></p>
   ${profile === 'agentic_interaction_trust' ? `<p>Integrating an A2A or MCP action? <a href="${REPOSITORY_URL}/blob/main/examples/agentic-interaction-trust/README.md">Use the minimal-input and three-stage review guide</a>. This is a hold for review, not action authorization.</p>` : ''}
   ${profile === "agenda" ? `<div class="card"><h2>Agent security and trade evidence</h2><p><a href="https://vizier.agendamcp.dpdns.org/">Vizier</a> checks proposed agent actions. Financial Guard, Interaction Trust and Output Verification review the evidence around those actions.</p><p><a href="https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/">Middle Corridor</a> and the regional and supply-chain profiles structure evidence for human trade-risk review.</p><a href="${origin}/.well-known/agents.json">Browse the complete profile registry</a></div>` : ""}
   <h2>What this is</h2>
@@ -467,8 +478,6 @@ function landingHtml(request, env) {
     <li><span class="label">Health (JSON):</span> <a href="${origin}/health">/health</a></li>
   </ul></details>
 
-  <h2>Connect your agent</h2>
-  <p>Use the <a href="${REPOSITORY_URL}/tree/main/examples/hosted-mcp">shared runnable MCP client</a> with this Worker's published tool and input schema. It exposes payment requirements and retains the original request for explicit recovery; it never sends funds or signs automatically.</p>
   ${profile === "agent_output_verification" ? `<h3>Output Verification hand-off</h3>
   <p>Use the <a href="${REPOSITORY_URL}/tree/main/examples/output-verification">runnable Node integration</a> to submit claims and evidence, inspect payment requirements and retain the exact request for recovery. The example never sends funds or signs automatically. Review the returned evidence gaps before any publication or action.</p>` : ""}
 
@@ -532,6 +541,19 @@ function evidenceGapsHtml(result) {
   return result.evidence_gaps && result.evidence_gaps.length
     ? '<div style="margin-top:10px"><strong>Evidence requiring review:</strong><ul>' + result.evidence_gaps.map(function(item) { return '<li>' + safeHtml(item) + '</li>'; }).join('') + '</ul></div>'
     : '';
+}
+
+async function copyMcpUrl() {
+  var input = document.getElementById('mcp-url');
+  var status = document.getElementById('mcp-copy-status');
+  try {
+    await navigator.clipboard.writeText(input.value);
+    status.textContent = 'MCP URL copied.';
+  } catch {
+    input.focus();
+    input.select();
+    status.textContent = 'Copy the selected address.';
+  }
 }
 
 function showWorkedExample() {

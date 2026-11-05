@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Give each hosted profile a task-specific search title and a visible MCP connection block with its tool, input example and schema. Publish preferred custom-domain URLs for legacy HTML pages and keep search sitemaps focused on public pages.
+
 - Surface the configured per-evaluation price, schema and example for the primary Output Verification and Middle Corridor operations on their A2A cards. Clarify evidence-audit discovery and route the Financial Guard and escrow listings to related agent-review tools.
 
 - Validate standard x402 HTTP 402 admission in the public smoke check, including payment requirements and body/header consistency, while retaining legacy JSON-RPC admission checks. Cover both deployment modes with real-handler regressions.

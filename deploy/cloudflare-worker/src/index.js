@@ -14664,7 +14664,13 @@ function statusInfo(request, env) {
   return status;
 }
 
-function robotsTxt(request) {
+function publicSiteOrigin(request, env = {}) {
+  const origin = originFromRequest(request);
+  if (!new URL(origin).hostname.endsWith('.vassiliy-lakhonin.workers.dev')) return origin;
+  return fleetDirectoryResponse().gates.find(gate => gate.profile === agentProfile(request, env))?.canonical_endpoint || origin;
+}
+
+function robotsTxt(request, env = {}) {
   const origin = originFromRequest(request);
   return [
     "User-agent: *",
@@ -14684,18 +14690,15 @@ function robotsTxt(request) {
     "Allow: /",
     "",
     `Agentmap: ${origin}/.well-known/ai-catalog.json`,
-    `Sitemap: ${origin}/sitemap.xml`
+    `Sitemap: ${publicSiteOrigin(request, env)}/sitemap.xml`
   ].join("\n");
 }
 
-function sitemapXml(request) {
+function sitemapXml(request, env) {
   const origin = originFromRequest(request);
-  const paths = [
-    "/", "/trust", "/privacy", "/terms", "/sample-dossier", "/supplier-desk", "/supplier-review", "/document-archive", "/archive-review",
-    "/profiles/confidential-project-room", "/.well-known/agent-card.json",
-    "/.well-known/ai-catalog.json", "/.well-known/mcp/server-card.json",
-    "/api/openapi.json", "/llms.txt"
-  ];
+  const paths = agentProfile(request, env) === 'agenda'
+    ? ['/', '/trust', '/privacy', '/terms', '/sample-dossier', '/supplier-desk', '/supplier-review', '/document-archive', '/archive-review']
+    : ['/'];
   const urls = paths.map((path) => `  <url><loc>${origin}${path}</loc></url>`).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
 }
@@ -14735,7 +14738,7 @@ const DISCOVERY_REDIRECTS = Object.freeze({
 const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#173f5f"/><path d="M14 45 28 14h9l13 31h-9l-3-8H26l-3 8zm15-16h7l-3-9z" fill="#fff"/></svg>`;
 
 const landingHtml = createLandingRenderer({
-  originFromRequest, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES,
+  originFromRequest, publicSiteOrigin, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES,
   fleetDirectoryResponse, inputSchemaForProfile: profile => workerTrialAdapter(profile).inputSchema
 });
 
@@ -16328,11 +16331,13 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
   }
 
   if (request.method === "GET" && url.pathname === "/robots.txt") {
-    return textResponse(robotsTxt(request), 200, aiCatalogHeaders(request));
+    return textResponse(robotsTxt(request, env), 200, aiCatalogHeaders(request));
   }
 
   if (request.method === "GET" && url.pathname === "/sitemap.xml") {
-    return new Response(sitemapXml(request), {
+    const canonicalOrigin = publicSiteOrigin(request, env);
+    if (canonicalOrigin !== url.origin) return Response.redirect(`${canonicalOrigin}/sitemap.xml`, 308);
+    return new Response(sitemapXml(request, env), {
       status: 200,
       headers: {
         "content-type": "application/xml; charset=utf-8",
