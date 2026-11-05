@@ -67,3 +67,37 @@ test('public navigation and llms guide point to the reachable custom-domain flee
   assert.ok(guide.includes('https://output-verification.agendamcp.dpdns.org'));
   assert.doesNotMatch(guide, /https:\/\/[a-z-]+-a2a\.vassiliy-lakhonin\.workers\.dev/);
 });
+
+test('every profile landing links its MCP setup and uses a search sitemap for public pages', async () => {
+  const fleet = await get('/.well-known/fleet.json', {AGENT_PROFILE: 'agenda'});
+  const titles = new Set();
+  for (const gate of fleet.gates) {
+    const origin = gate.canonical_endpoint;
+    const env = {AGENT_PROFILE: gate.profile};
+    const page = await (await handleRequest(new Request(origin + '/', {headers: {accept: 'text/html'}}), env)).text();
+    titles.add(page.match(/<title>([^<]+)<\/title>/)?.[1]);
+    assert.ok(page.includes(`<link rel="canonical" href="${origin}/">`));
+    assert.ok(page.includes(`id="mcp-url" value="${gate.mcp_endpoint}"`));
+    assert.ok(page.includes(`<code>${gate.tool_name}</code>`));
+    assert.ok(page.includes(`href="${gate.example_url}"`));
+    assert.ok(page.includes('href="#connect-mcp"'));
+    const sitemap = await (await handleRequest(new Request(origin + '/sitemap.xml'), env)).text();
+    assert.ok(sitemap.includes(`<loc>${origin}/</loc>`));
+    assert.doesNotMatch(sitemap, /\.well-known|openapi\.json|llms\.txt/);
+    if (gate.profile !== 'agenda') assert.equal(sitemap.match(/<loc>/g).length, 1);
+  }
+  assert.equal(titles.size, fleet.gates.length);
+  assert.ok(!titles.has(undefined));
+});
+
+test('legacy Worker HTML points at the preferred site while its A2A card keeps the serving origin', async () => {
+  const legacy = 'https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev';
+  const current = 'https://output-verification.agendamcp.dpdns.org';
+  const page = await (await handleRequest(new Request(legacy + '/', {headers: {accept: 'text/html'}}))).text();
+  assert.ok(page.includes(`<link rel="canonical" href="${current}/">`));
+  const map = await handleRequest(new Request(legacy + '/sitemap.xml'));
+  assert.equal(map.status, 308);
+  assert.equal(map.headers.get('location'), current + '/sitemap.xml');
+  const card = await (await handleRequest(new Request(legacy + '/.well-known/agent-card.json'))).json();
+  assert.equal(card.supportedInterfaces[0].url, legacy + '/message/send');
+});
