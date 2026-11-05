@@ -7,6 +7,7 @@ import { withEvaluationContract } from "./evaluation-contract.js";
 import { addSkillDiscovery } from './skill-discovery.js';
 import { addCatalogOnboarding, catalogOperation, catalogDemoContent } from './catalog-demo.js';
 import { catalogSetupContent } from './catalog-onboarding.js';
+import { MEMO_QUALITY_TOOL, MEMO_QUALITY_EXAMPLE, isMemoQualityCall, memoQualityInput, memoQualityResult } from './memo-quality-gate.js';
 import {routingToolForProfile,isFreeRoutingTool} from './pricing-policy.js';
 import {x402DiscoveryExtension,settlementDiscovery} from './payment-discovery.js';
 import { agentOnboarding, PROFILE_TASKS, profileWorkflow } from './agent-onboarding.js';
@@ -1108,9 +1109,9 @@ function agentCard(request, env = {}) {
       },
       {
         id: "agenda-validate-memo",
-        name: "Strategic-risk memo validation",
+        name: "Strategic-Risk Memo Quality Gate",
         description:
-          "Routes callers to the packaged validate_memo MCP tool, which validates strategic-risk memos against the agenda-memo JSON schema and returns contract errors before analyst or agent handoff.",
+          "Check a strategic-risk memo against the Agenda Memo JSON schema. Get field-level errors, missing source references and weak follow-up actions before human review. Free bounded hosted MCP and A2A evaluation.",
         tags: [
           "schema-validation",
           "memo-validation",
@@ -1118,9 +1119,9 @@ function agentCard(request, env = {}) {
           "strategic-risk"
         ],
         examples: [
-          "Validate this strategic-risk memo before it is sent to an analyst workflow."
+          JSON.stringify({tool: MEMO_QUALITY_TOOL, ...MEMO_QUALITY_EXAMPLE})
         ],
-        inputModes: ["application/json"],
+        inputModes: ["application/json", "text/plain"],
         outputModes: ["application/json"]
       },
       {
@@ -1341,6 +1342,15 @@ function agentCard(request, env = {}) {
     : '';
   shaped.description = `${PROFILE_TASKS[profile] || 'Review supplied evidence using the published contract.'} ${accessSummary}${flagshipPrice} Supplied-evidence review, not independent factual verification or clearance; mandatory human review before consequential action. Caller must invoke and enforce the result in its integration. ${shaped.description}`;
   shaped.x_agenda_intelligence.onboarding = agentOnboarding(profile, env, origin);
+  if (profile === 'agenda') {
+    shaped.x_agenda_intelligence.onboarding.memo_quality_gate = {
+      tool: MEMO_QUALITY_TOOL, payment_required: false, mcp_endpoint: `${origin}/mcp/agent`,
+      example_url: `${origin}/.well-known/examples/tools/${MEMO_QUALITY_TOOL}.json`,
+      input_schema_url: toolSchemaUrl(origin, MEMO_QUALITY_TOOL),
+      a2a: { endpoint: `${origin}/message/send`, method: 'SendMessage', protocol_version: '1.0',
+        part: {data: {tool: MEMO_QUALITY_TOOL, ...MEMO_QUALITY_EXAMPLE}, mediaType: 'application/json'} }
+    };
+  }
   if (flagshipOffer) {
     shaped.x_agenda_intelligence.onboarding.primary_evaluation = {
       ...flagshipOffer,
@@ -13377,7 +13387,7 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
     }
     const toolArguments = params.arguments ?? {};
     const legacyRequestWrapper = mcpUsesLegacyRequestWrapper(profile, toolArguments, name);
-    const unknown=mcpUnknownFields(profile,name,toolArguments);
+    const unknown=name===MEMO_QUALITY_TOOL ? [] : mcpUnknownFields(profile,name,toolArguments);
     if(unknown.length)return respond(id,mcpToolResult({code:'invalid_input',error:'INVALID_TOOL_INPUT',evaluation_performed:false,attempt_consumed:false,
       remediation:inputRemediation(unknown,'.well-known/schemas/tools/'+name+'/input.schema.json',{profile})},true));
     const callParams = mcpArgumentsToParams(profile, toolArguments, name);
@@ -13724,9 +13734,11 @@ async function handleMcpPost(request, env, ctx) {
       const result=await handleMcpJsonRpc(payload, request, env, ctx);
       return jsonResponse(result,mcpHttpStatus(request,payload,result));
     }
+    const memoQuality = isMemoQualityCall(profile,{capability:payload.params?.name});
     const freeRouting = isFreeRoutingTool(profile,payload.params?.name);
-    const rate = await checkRateLimit(request, env, profile, profile, freeRouting);
+    const rate = await checkRateLimit(request, env, profile, profile, freeRouting || memoQuality);
     if (rate.limited) {
+      if (memoQuality) return jsonResponse(memoQualityRateError(payload.id, rate.limit),429,{'retry-after':'3600','cache-control':'no-store'});
       if (freeRouting) return jsonResponse(jsonRpcError(payload.id ?? null,-32002,
         'Free routing hourly limit reached. Wait for the next UTC hour; do not pay for routing.',
         {code:'free_routing_quota_exceeded',limit_per_hour:rate.limit}),429,{'retry-after':'3600','cache-control':'no-store'});
@@ -13884,7 +13896,23 @@ function rawContractCheck(profile, body, schemaOverride = null, allowHints = tru
   return findings.length ? inputRemediation(findings, selected || ".well-known/schemas/tools/" + row.tool + "/input.schema.json", {profile}) : null;
 }
 
+function memoQualityRateError(id, limit) {
+  return jsonRpcError(id ?? null, -32002,
+    'Free memo quality hourly limit reached. Wait for the next UTC hour.',
+    {code:'memo_quality_quota_exceeded',limit_per_hour:limit});
+}
+
 async function runProfileRequest(profile, params, request, env = {}) {
+  if (isMemoQualityCall(profile, params)) {
+    const input = memoQualityInput(params);
+    const checked = validatePublishedInput(profile, {tool: MEMO_QUALITY_TOOL, input}, false);
+    const response = memoQualityResult(input, checked);
+    const chars = receivedChars(params);
+    return { result: {kind:'task', id:crypto.randomUUID(), status:{state:'TASK_STATE_COMPLETED'},
+      metadata:{product_profile:profile, operation:MEMO_QUALITY_TOOL, response},
+      artifacts:[{name:'Strategic-risk memo quality findings', parts:[{data:response, mediaType:'application/json'}]}]},
+      promptChars:chars, structuredChars:chars, modulesUsed:[MEMO_QUALITY_TOOL] };
+  }
   const invalid=rawContractCheck(profile,params,null,true,true);
   if(invalid && !["decision_check","decision_verify","decision_policies_list","fleet_directory","corridor_bankability_screen","cis_secondary_sanctions_batch","screen_dual_use_hs_code","pre_action_check"].includes(params.capability)) {
     return {result:{kind:"task",id:crypto.randomUUID(),status:{state:"TASK_STATE_INPUT_REQUIRED"},metadata:{product_profile:profile,valid:false,source_retrieval_live:false,live_retrieval:false,human_review_required:true,support_contact:SUPPORT_CONTACT_EMAIL,response:{error:"invalid_input",remediation:invalid}},artifacts:[]},promptChars:receivedChars(params),structuredChars:0,modulesUsed:[profile]};
@@ -14237,10 +14265,12 @@ async function handlePost(request, env, ctx) {
         "cache-control": "no-store"
       });
     }
+    const memoQuality = isMemoQualityCall(profile,payload.params);
     const freeRouting = isFreeRoutingCall(profile,payload.params || {});
     const rate = method === "GetTask" || method === "CancelTask"
-      ? { limited: false } : await checkRateLimit(request, env, profile, profile, freeRouting);
+      ? { limited: false } : await checkRateLimit(request, env, profile, profile, freeRouting || memoQuality);
     if (rate.limited) {
+      if (memoQuality) return a2aJsonResponse(memoQualityRateError(payload.id, rate.limit),429,{'retry-after':'3600','cache-control':'no-store'});
       if (freeRouting) return a2aJsonResponse(jsonRpcError(payload.id ?? null,-32002,
         'Free routing hourly limit reached. Wait for the next UTC hour; do not pay for routing.',
         {code:'free_routing_quota_exceeded',limit_per_hour:rate.limit}),429,{'retry-after':'3600','cache-control':'no-store'});
@@ -15473,6 +15503,7 @@ function paidOperation(request, body, profile) {
   if ((path.startsWith('/mcp') || path === '/message/send' || path === '/') && body.jsonrpc !== '2.0') return { errors: ['Invalid JSON-RPC envelope'], validationCategory: 'invalid_jsonrpc' };
   if (!params || typeof params !== 'object' || Array.isArray(params)) return { errors: ['Request must be an object'], validationCategory: 'invalid_request_object' };
   const protocolCall = path.startsWith('/mcp') || path === '/message/send' || path === '/';
+  if (protocolCall && isMemoQualityCall(profile, params)) return {free:true, memoQuality:true};
   if (protocolCall && ((profile === 'agenda' && params.capability === 'fleet_directory') ||
       (profile === 'agent_output_verification' && params.capability === 'decision_policies_list') ||
       (profile === 'corridor_sanctions_assistant' && name === 'corridor_sanctions_assistant' && !extractText(params).trim()))) return { free: true };
@@ -15888,8 +15919,8 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
         : executePaidRequest(request,body,env,0,noExecution,undefined,{replayOnly:true}));
     }
     if (wantsPayment || standardProof) return reply(jsonResponse({ code: 'payment_not_applicable' }, 400));
-    if (operation?.routing && request.headers.has('x-payment-signature')) return reply(jsonResponse({code:'payment_not_applicable'},400));
-    return operation?.free ? handleRequestInner(request, operation.routing ? env : { ...env, BILLING_MODE: 'freemium' }, ctx) : execute();
+    if ((operation?.routing || operation?.memoQuality) && request.headers.has('x-payment-signature')) return reply(jsonResponse({code:'payment_not_applicable'},400));
+    return operation?.free ? handleRequestInner(request, operation.routing || operation.memoQuality ? env : { ...env, BILLING_MODE: 'freemium' }, ctx) : execute();
   }
   const attempt_id = crypto.randomUUID();
   const payment_trace_id = paymentTraceId(request);

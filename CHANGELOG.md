@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Make Strategic-Risk Memo Quality Gate callable on the hosted Agenda MCP and A2A endpoints. The free bounded review returns Agenda Memo schema errors, provenance gaps and follow-up findings. The agent card includes a runnable synthetic example.
+
 - Give each hosted profile a task-specific search title and a visible MCP connection block with its tool, input example and schema. Publish preferred custom-domain URLs for legacy HTML pages and keep search sitemaps focused on public pages.
 
 - Surface the configured per-evaluation price, schema and example for the primary Output Verification and Middle Corridor operations on their A2A cards. Clarify evidence-audit discovery and route the Financial Guard and escrow listings to related agent-review tools.

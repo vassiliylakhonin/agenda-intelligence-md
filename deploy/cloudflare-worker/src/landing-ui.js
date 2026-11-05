@@ -240,6 +240,7 @@ function landingHtml(request, env) {
     <input id="mcp-url" value="${mcpUrl}" readonly style="display:block;width:100%;max-width:100%;box-sizing:border-box" onclick="this.select()">
     <button type="button" onclick="copyMcpUrl()">Copy MCP URL</button> <span id="mcp-copy-status" role="status"></span>
     ${publicGate ? `<p>Main tool <code>${escapeHtml(publicGate.tool_name)}</code>. <a href="${escapeHtml(publicGate.example_url)}">Example input</a> · <a href="${escapeHtml(publicGate.input_schema_url)}">Input schema</a></p>` : ''}
+    ${profile === 'agenda' ? `<p>Checking a drafted risk memo? <a href="${REPOSITORY_URL}/blob/main/docs/deployment/memo-quality-gate.md">Run the free Strategic-Risk Memo Quality Gate</a>.</p>` : ''}
     <p><a href="${escapeHtml(canonicalOrigin)}/.well-known/first-check.mjs" download>Download the first-check client</a> · <a href="${REPOSITORY_URL}/blob/main/examples/hosted-mcp/FIRST_CHECK.md">Connection, input and result guide</a> · <a href="${REPOSITORY_URL}/tree/main/examples/hosted-mcp">Integration examples</a></p>
     <p><a href="${escapeHtml(canonicalOrigin)}/.well-known/agent-card.json">A2A agent card</a> · <a href="${escapeHtml(canonicalOrigin)}/api/openapi.json">OpenAPI</a> · <a href="${escapeHtml(canonicalOrigin)}/.well-known/x402">Evaluation pricing</a></p>
     <small>Connecting and listing tools are free. Check the tool’s trial or payment terms before requesting an evaluation.</small>
