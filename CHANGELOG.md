@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Surface the configured per-evaluation price, schema and example for the primary Output Verification and Middle Corridor operations on their A2A cards. Clarify evidence-audit discovery and route the Financial Guard and escrow listings to related agent-review tools.
+
 - Validate standard x402 HTTP 402 admission in the public smoke check, including payment requirements and body/header consistency, while retaining legacy JSON-RPC admission checks. Cover both deployment modes with real-handler regressions.
 
 - Require all mandatory Middle Corridor source categories before returning `review_ready`. Route incomplete dossiers to hold or stage-specific escalation before considering the coverage score, so contextual documents cannot produce a proceed action while required evidence is missing. Apply the rule in Python, local A2A and Cloudflare Worker responses.

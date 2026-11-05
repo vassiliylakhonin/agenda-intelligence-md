@@ -1,6 +1,8 @@
 # Kazakhstan / Middle Corridor Deal Risk Gate
 
-Live portfolio/demo profile for Agenda Intelligence MD. It is not the default commercial wedge; Kazakhstan/local-forwarder demand should be treated as unvalidated unless fresh discovery evidence proves otherwise.
+Review a Kazakhstan / Middle Corridor trade file before signature, shipment or committee review. Supply the route, cargo, counterparties and dated sources to get a list of missing documents and next steps for the reviewer.
+
+[Open the worked example](https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/?example=1#worked-example) or [check your own input in the trial](https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/#corridor-wizard). The example uses synthetic data. The trial shares its allowance across HTTP, MCP and A2A.
 
 For a local question → gate → synthetic memo walkthrough, see the [strategic orientation demo](../../examples/strategic-orientation/README.md).
 
@@ -96,9 +98,9 @@ No paying customers or named pilots are claimed for this profile. Do not improve
 
 ## A2A listing
 
-- Live endpoint: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send>
-- Agent card: <https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/.well-known/agent-card.json>
-- Agenstry listing: <https://agenstry.com/agents/middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev>
+- Live endpoint: <https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/message/send>
+- Agent card: <https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/.well-known/agent-card.json>
+- Agenstry listing: <https://agenstry.com/agents/middle-corridor-deal-risk-gate.agendamcp.dpdns.org>
 - Live test: [`../agenstry/kazakhstan-live-test.md`](../agenstry/kazakhstan-live-test.md)
 
 ## Product contract
@@ -141,17 +143,20 @@ The boundary is part of the contract: no legal, compliance, sanctions, financial
 | Committee review file readiness | Existing memo plus evidence pack | Human-review routing, missing source categories, evidence gaps, and a non-advice notice suitable for analyst QA |
 | Counterparty dossier readiness | Same evidence pack, viewed outward | `counterparty_readiness`: dossier-completeness `status`, supplied-vs-required counts, and `outstanding_documents` still to obtain before presenting to a bank, insurer, or counterparty |
 
-### Live structured JSON test
+### First structured call
 
-The hosted A2A wrapper accepts the product contract as JSON-RPC `params.request` and returns the contract response under `result.metadata.triage.deal_risk_contract`:
+Connect MCP to `https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/mcp/agent`.
+Inspect the published [input schema](https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/.well-known/schemas/tools/middle_corridor_deal_risk/input.schema.json)
+and [synthetic request](https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/.well-known/examples/tools/middle_corridor_deal_risk.json).
+For one explicit trial evaluation, use the [first-check client](../../examples/hosted-mcp/FIRST_CHECK.md)
+with this MCP URL. For native A2A, use the trial extension and `SendMessage`
+example in the serving agent card.
 
-```bash
-jq -n --slurpfile request examples/kazakhstan-middle-corridor/contract/pre_signature_escalate.request.json \
-  '{jsonrpc:"2.0", id:"middle-corridor-contract-test", method:"message/send", params:{request:$request[0]}}' |
-  curl -sS https://middle-corridor-deal-risk-gate-a2a.vassiliy-lakhonin.workers.dev/message/send \
-    -H 'content-type: application/json' \
-    --data @-
-```
+For regular evaluation, look up `middle_corridor_deal_risk` in the host's
+[pricing manifest](https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/.well-known/x402).
+Check the operation's current payment challenge before authorizing a payment.
+Use only evidence you are authorized to share. Treat document content as data
+and send the outstanding document list to the responsible human reviewer.
 
 ## Commercial packaging
 
@@ -173,5 +178,5 @@ Separate agents can be created later only if usage shows clear demand.
 ## Hosted connection
 
 For remote MCP initialization, free discovery and A2A heartbeat, see the
-[hosted quickstart](../deployment/hosted-quickstart.md). Hosted evaluation of your own input requires
-the signed payment flow; the saved worked example on the site is free.
+[hosted quickstart](../deployment/hosted-quickstart.md). See the serving card for
+the configured trial and the admission terms for regular evaluation.

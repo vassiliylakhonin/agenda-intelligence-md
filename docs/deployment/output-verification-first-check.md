@@ -79,6 +79,11 @@ failure can consume an attempt. Authentication and availability can vary by host
 
 Inspect `/.well-known/agent-contract.json` for the actual host's tool schemas,
 examples and operation offers, and `/.well-known/x402` for payment discovery.
+For regular evaluation on the public host, look up `agent_output_verification`
+in the [pricing manifest](https://output-verification.agendamcp.dpdns.org/.well-known/x402)
+and use its [structured request example](https://output-verification.agendamcp.dpdns.org/.well-known/examples/tools/agent_output_verification.json).
+The `review_answer` trial above accepts answer text and sources, while the regular
+operation accepts structured claims and evidence.
 For a paid evaluation, inspect the current challenge for the exact request and
 honor the operator's budget and approval policy. Discovery is not a payment
 instruction; no trial call automatically pays or retries.
