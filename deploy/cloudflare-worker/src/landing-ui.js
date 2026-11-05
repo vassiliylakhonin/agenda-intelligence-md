@@ -1,6 +1,8 @@
 import { TRIAL_NEXT_STEPS_SCRIPT } from './trial-next-steps.js';
 import { MINERAL_WORKFLOW_CLIENT_SCRIPT } from './mineral-workflow-client.js';
-import { WORKED_EXAMPLES } from "./worked-examples.js";
+import { WORKED_EXAMPLES, FOCUSED_WORKED_EXAMPLES } from "./worked-examples.js";
+import { CATALOG_CASES } from "./catalog-cases.js";
+import { MEMO_QUALITY_TOOL } from "./memo-quality-gate.js";
 import { PAYMENT_CLIENT_SCRIPT } from "./payment-client.js";
 import { pricingHtml } from "./commercial-catalog.js";
 import { outputTrialEnabled, outputTrialTerms } from './output-trial.js';
@@ -111,6 +113,9 @@ function landingHtml(request, env) {
   const consoleId = freeTrial ? (profile === 'agent_output_verification' ? 'one-claim-review' : isKazakhstan ? 'corridor-wizard' : profile === 'cis_secondary_sanctions' ? 'cis-wizard' : profile === 'gulf_maritime_exposure' ? 'gulf-wizard' : profile === 'market_entry_readiness' ? 'market-entry-wizard' : 'profile-console') : isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : "profile-console";
   const exampleAction = "showWorkedExample()";
   const workedExample = WORKED_EXAMPLES[profile];
+  const featuredCase = CATALOG_CASES[profile];
+  const featuredFixture = FOCUSED_WORKED_EXAMPLES[profile];
+  const primaryOffer = card.x_agenda_intelligence.onboarding?.primary_evaluation;
   const workflow = PRODUCT_WORKFLOWS[profile];
   const useMcp = !endpoint || profile === 'kazakhstan';
   const consoleEndpoint = useMcp ? '/mcp' : endpoint;
@@ -212,15 +217,19 @@ function landingHtml(request, env) {
   </section>
   <div class="primary-actions">
     <a class="primary-action primary-action-main" href="#${consoleId}">${routingTool ? 'Route my question free' : freeTrial ? 'Check my evidence free' : env.BILLING_MODE === "pay_per_call" ? "Evaluate with a signed payment" : "Try free (50 requests/hour)"}</a>
-    <button type="button" class="primary-action" onclick="${exampleAction}" style="cursor:pointer">Run a worked example</button>
+    <button type="button" class="primary-action" onclick="${exampleAction}" style="cursor:pointer">${featuredCase ? escapeHtml(featuredCase[0]) : 'Run a worked example'}</button>
     <a class="primary-action" href="#connect-mcp">Connect MCP</a>
   </div>
-  <div class="card" aria-label="Example result"><strong>Example, synthetic input:</strong> ${escapeHtml(heroExample)}<br>
+  <div class="card" aria-label="Example result"><strong>Example, synthetic input:</strong> ${escapeHtml(featuredCase?.[1] || heroExample)}<br>
     ${fixtureVerdict
       ? `<strong>Example output:</strong> ${escapeHtml(sampleOutput.result.metadata.verdict_standard.reason_code)} · ${escapeHtml(sampleOutput.result.metadata.verdict_standard.next_permitted_action)} · Gap: ${escapeHtml(sampleOutput.result.metadata.verdict_standard.evidence_gaps[0])}`
       : `<small>Open the worked example to see its input and saved result.</small>`}</div>
   <section id="worked-example" class="card" hidden>
     <h2>Free worked example</h2><p><strong>Precomputed synthetic fixture.</strong> No wallet, payment or trial attempt required. You can reopen it after your live allowance is exhausted. This saved example is not a live evaluation of your edited input or current sources.</p>
+    ${featuredFixture ? `<h3>${escapeHtml(featuredCase[0])}</h3>
+      ${reviewSummaryHtml(featuredFixture.response, escapeHtml)}
+      <details><summary>Focused synthetic request and result</summary><pre>${escapeHtml(JSON.stringify(featuredFixture, null, 2))}</pre></details>
+      <h3>Full product walkthrough</h3>` : ''}
     ${reviewSummaryHtml(workedExample?.response, escapeHtml)}
     <details open><summary>Example request</summary><pre>${escapeHtml(JSON.stringify(workedExample?.request || {}, null, 2))}</pre></details>
     <details open><summary>Saved example result</summary><pre>${escapeHtml(JSON.stringify(workedExample?.response || {}, null, 2))}</pre></details>
@@ -240,7 +249,9 @@ function landingHtml(request, env) {
     <input id="mcp-url" value="${mcpUrl}" readonly style="display:block;width:100%;max-width:100%;box-sizing:border-box" onclick="this.select()">
     <button type="button" onclick="copyMcpUrl()">Copy MCP URL</button> <span id="mcp-copy-status" role="status"></span>
     ${publicGate ? `<p>Main tool <code>${escapeHtml(publicGate.tool_name)}</code>. <a href="${escapeHtml(publicGate.example_url)}">Example input</a> · <a href="${escapeHtml(publicGate.input_schema_url)}">Input schema</a></p>` : ''}
-    ${profile === 'agenda' ? `<p>Checking a drafted risk memo? <a href="${REPOSITORY_URL}/blob/main/docs/deployment/memo-quality-gate.md">Run the free Strategic-Risk Memo Quality Gate</a>.</p>` : ''}
+    ${profile === 'agenda' || isKazakhstan ? `<p>Checking a drafted risk memo? Call <code>${MEMO_QUALITY_TOOL}</code> free. <a href="${escapeHtml(canonicalOrigin)}/.well-known/examples/tools/${MEMO_QUALITY_TOOL}.json">Memo input</a> · <a href="${REPOSITORY_URL}/blob/main/docs/deployment/memo-quality-gate.md">MCP and A2A instructions</a>.</p>` : ''}
+    ${profile === 'dual_use_technology_export' ? '<p>Only have a six-digit HS code? <a href="https://corridor-sanctions-assistant.agendamcp.dpdns.org/.well-known/schemas/tools/screen_dual_use_hs_code/input.schema.json">Inspect the separate preliminary HS check</a>. Use this site’s full export tool for your ECCN, end-user and dated documents.</p>' : ''}
+    ${isEscrowArbiter && primaryOffer?.payment_required ? `<p>Full evaluation: <strong>${primaryOffer.price_usdc} USDC</strong> per admitted paid call. The saved hash and deadline example is free.</p>` : ''}
     <p><a href="${escapeHtml(canonicalOrigin)}/.well-known/first-check.mjs" download>Download the first-check client</a> · <a href="${REPOSITORY_URL}/blob/main/examples/hosted-mcp/FIRST_CHECK.md">Connection, input and result guide</a> · <a href="${REPOSITORY_URL}/tree/main/examples/hosted-mcp">Integration examples</a></p>
     <p><a href="${escapeHtml(canonicalOrigin)}/.well-known/agent-card.json">A2A agent card</a> · <a href="${escapeHtml(canonicalOrigin)}/api/openapi.json">OpenAPI</a> · <a href="${escapeHtml(canonicalOrigin)}/.well-known/x402">Evaluation pricing</a></p>
     <small>Connecting and listing tools are free. Check the tool’s trial or payment terms before requesting an evaluation.</small>

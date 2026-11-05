@@ -1,5 +1,6 @@
-import { WORKED_EXAMPLES } from './worked-examples.js';
+import { WORKED_EXAMPLES, FOCUSED_WORKED_EXAMPLES } from './worked-examples.js';
 import { reviewSummary } from './product-workflows.js';
+import { CATALOG_CASES } from './catalog-cases.js';
 
 export const CATALOG_DEMO_PROMPT = 'Show a free worked example';
 export const CATALOG_STARTERS = Object.freeze([
@@ -10,7 +11,7 @@ export const CATALOG_STARTERS = Object.freeze([
 
 // Explicit read-only setup. Never reinterpret a case, context, capability,
 // attachment or task continuation as a request for setup.
-export function catalogOperation(body) {
+export function catalogOperation(body, profile) {
   if (!body || body.jsonrpc !== '2.0' ||
       !['SendMessage', 'message/send', 'tasks/send'].includes(body.method) ||
       Object.keys(body).some(key => !['jsonrpc', 'id', 'method', 'params'].includes(key)) ||
@@ -24,7 +25,9 @@ export function catalogOperation(body) {
   const part = message.parts[0];
   if (!part || Object.keys(part).some(key => !['kind', 'text'].includes(key)) ||
       (part.kind && part.kind !== 'text') || typeof part.text !== 'string') return null;
-  return CATALOG_STARTERS.find(item => item.prompt.toLowerCase() === part.text.trim().toLowerCase())?.operation || null;
+  const command = part.text.trim().toLowerCase();
+  if (CATALOG_CASES[profile]?.[0]?.toLowerCase() === command) return 'focused_worked_example';
+  return CATALOG_STARTERS.find(item => item.prompt.toLowerCase() === command)?.operation || null;
 }
 
 export function isCatalogDemo(body) {
@@ -44,12 +47,14 @@ export function addCatalogOnboarding(card, profile, origin) {
     .filter(value => !isJsonExample(value) && !CATALOG_STARTERS.some(item => item.prompt === value))
     .map(text => ({skill_id: skill.id, text})));
   card.skills = card.skills.map(skill => ({...skill, examples: (skill.examples || []).filter(isJsonExample)}));
+  const focus = CATALOG_CASES[profile];
+  const starters = focus ? [{prompt: focus[0], operation: 'focused_worked_example'}, ...CATALOG_STARTERS] : CATALOG_STARTERS;
   card.skills[0] = {
     ...card.skills[0],
-    description: card.skills[0].description +
+    description: (focus ? focus[1] + ' Send "' + focus[0] + '" alone for a free saved case. ' : '') + card.skills[0].description +
       ` Send "${CATALOG_DEMO_PROMPT}", "Show input requirements" or "Show free trial options" alone for read-only setup without payment or a trial attempt. These commands do not evaluate your input. Other evaluation examples use the published input contract and admission.`,
     inputModes: [...new Set([...(card.skills[0].inputModes || card.defaultInputModes || []), 'text/plain'])],
-    examples: [...CATALOG_STARTERS.map(item => item.prompt), ...card.skills[0].examples]
+    examples: [...starters.map(item => item.prompt), ...card.skills[0].examples]
   };
   card.x_agenda_intelligence.catalog_demo = {
     operation: 'worked_example', prompt: CATALOG_DEMO_PROMPT,
@@ -61,7 +66,7 @@ export function addCatalogOnboarding(card, profile, origin) {
   };
   card.x_agenda_intelligence.catalog_onboarding = {
     schema_version: 1, endpoint: `${origin}/message/send`, method: 'SendMessage',
-    commands: CATALOG_STARTERS,
+    commands: starters,
     input: 'Send one exact command as a single text part, without case data, metadata or continuation.',
     evaluation_performed: false, attempt_consumed: false, authorization_granted: false,
     evaluation_intents: intents,
@@ -70,9 +75,12 @@ export function addCatalogOnboarding(card, profile, origin) {
   return card;
 }
 
-export function catalogDemoContent(profile, origin, trial) {
-  const example = structuredClone(WORKED_EXAMPLES[profile]);
+export function catalogDemoContent(profile, origin, trial, focused = false) {
+  const general = WORKED_EXAMPLES[profile];
+  const focus = FOCUSED_WORKED_EXAMPLES[profile];
+  const example = general ? structuredClone(focused && focus ? {kind: general.kind, ...focus} : general) : null;
   if (!example) return null;
+  const caseDescription = focused ? CATALOG_CASES[profile]?.[1] : null;
   const summary = reviewSummary(example.response);
   const followUp = reviewSummary(example.follow_up?.response);
   const next = {
@@ -82,7 +90,8 @@ export function catalogDemoContent(profile, origin, trial) {
       : 'Open the product page and read its input and access requirements before submitting your own evidence.'
   };
   const markdown = [
-    '# Saved worked example',
+    focused ? '# ' + CATALOG_CASES[profile][0] : '# Saved worked example',
+    ...(caseDescription ? [caseDescription] : []),
     'Precomputed synthetic example. Your own material has not been evaluated. No payment or trial attempt was consumed.',
     '## Illustrative input',
     '```json\n' + JSON.stringify(example.request, null, 2) + '\n```',
@@ -100,6 +109,6 @@ export function catalogDemoContent(profile, origin, trial) {
   return { markdown, data: {
     schema_version: 1, kind: 'precomputed_synthetic_fixture', product_profile: profile,
     evaluation_performed: false, attempt_consumed: false, authorization_granted: false,
-    human_review_required: true, example, next
+    human_review_required: true, ...(caseDescription ? {case_description:caseDescription} : {}), example, next
   } };
 }

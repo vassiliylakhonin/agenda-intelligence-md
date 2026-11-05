@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { handleRequest, agentCard, toSpecWireCard } from '../src/index.js';
 import { CATALOG_DEMO_PROMPT, isCatalogDemo } from '../src/catalog-demo.js';
-import { WORKED_EXAMPLES } from '../src/worked-examples.js';
+import { CATALOG_CASES } from '../src/catalog-cases.js';
+import { WORKED_EXAMPLES, FOCUSED_WORKED_EXAMPLES } from '../src/worked-examples.js';
 import { validateAgentCard } from '../scripts/verify-agent-card.js';
 
 const origin = 'https://example.test';
@@ -25,7 +26,8 @@ test('all twelve catalog previews return actual saved fixtures without evaluatio
       const env = {...baseEnv, AGENT_PROFILE: profile, PAYMENT_LEDGER: forbiddenStore, AGENDA_USAGE: forbiddenStore};
       const card = agentCard(new Request(origin), env);
       assert.deepEqual(validateAgentCard(toSpecWireCard(card)), [], profile);
-      assert.equal(card.skills[0].examples[0], CATALOG_DEMO_PROMPT);
+      assert.equal(card.skills[0].examples[0], CATALOG_CASES[profile]?.[0] || CATALOG_DEMO_PROMPT);
+      assert.ok(card.skills[0].examples.includes(CATALOG_DEMO_PROMPT));
       assert.ok(card.skills[0].inputModes.includes('text/plain'));
       const response = await send(requestBody(), env);
       assert.equal(response.status, 200, profile);
@@ -69,6 +71,26 @@ test('saved previews preserve configured authentication, protocol checks and pay
   assert.equal((await send(requestBody(), publicEnv, {'a2a-version': '0.3'})).status, 400);
   const missingId = requestBody(); delete missingId.params.message.messageId;
   assert.equal((await send(missingId, publicEnv)).status, 400);
+});
+
+test('every named profile walkthrough returns its synthetic case and refuses payment', async () => {
+  for (const [profile, [prompt]] of Object.entries(CATALOG_CASES)) {
+    const body = requestBody();
+    body.params.message.parts[0].text = prompt;
+    const env = {...baseEnv, AGENT_PROFILE:profile};
+    const response = await send(body, env);
+    assert.equal(response.status, 200, profile);
+    assert.equal(response.headers.get('payment-required'), null);
+    const task = (await response.json()).result.task;
+    assert.equal(task.metadata.operation, 'focused_worked_example');
+    assert.equal(task.metadata.attempt_consumed, false);
+    assert.equal(task.metadata.evaluation_performed, false);
+    const {example} = task.artifacts[0].parts[1].data;
+    const expected = FOCUSED_WORKED_EXAMPLES[profile] || WORKED_EXAMPLES[profile];
+    assert.deepEqual(example.request, expected.request);
+    assert.deepEqual(example.response, expected.response);
+    assert.equal((await send(body,env,{'payment-signature':'synthetic-proof'})).status, 400);
+  }
 });
 
 test('case data, metadata, continuations, attachments and prompt suffixes never select a saved preview', async () => {

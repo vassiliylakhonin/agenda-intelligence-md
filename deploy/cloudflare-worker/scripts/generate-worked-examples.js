@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {handleRequest} from '../src/index.js';
+import {CORRIDOR_MEMO_EXAMPLE, MEMO_QUALITY_TOOL} from '../src/memo-quality-gate.js';
 const profiles=['agenda','kazakhstan','cis_secondary_sanctions','agentic_interaction_trust','agent_output_verification','gulf_maritime_exposure','market_entry_readiness','critical_minerals_due_diligence','dual_use_technology_export','corridor_sanctions_assistant','agent_financial_guard','m2m_escrow_arbiter'];
-const examples={};const log=console.log;console.log=()=>{};
+const examples={}, focused={};const log=console.log;console.log=()=>{};
 for(const profile of profiles){
  const env={AGENT_PROFILE:profile,VIZIER_DISABLED:'1',LIVE_RETRIEVAL_ENABLED:'0'};
  const call=body=>handleRequest(new Request('https://example.test/mcp',{method:'POST',body:JSON.stringify(body),headers:{'content-type':'application/json','user-agent':'agenda-intelligence-fixture-generator/1.0'}}),env);
@@ -14,6 +15,40 @@ for(const profile of profiles){
  const response=await(await call({jsonrpc:'2.0',id:2,method:'tools/call',params:{name:tool.name,arguments:args}})).json();
  if(response.error||response.result?.isError)throw Error('invalid fixture '+profile);
  examples[profile]={kind:'precomputed_synthetic_fixture',tool:tool.name,request:args,response:response.result.structuredContent?.metadata?.response || response.result.structuredContent};
+ const focus=structuredClone(args);
+ let focusTool=tool.name, focusInput=focus, changed=true;
+ switch(profile) {
+  case 'kazakhstan':
+   focusTool=MEMO_QUALITY_TOOL;focusInput=CORRIDOR_MEMO_EXAMPLE;break;
+  case 'agent_output_verification':
+   focus.claims=[{...focus.claims[0],supporting_quotes:[{evidence_id:'release-note',quote:'confirmed for 10 October 2026'}]}];break;
+  case 'gulf_maritime_exposure':
+   focus.vessel.imo='0000000';
+   focus.voyage.route_note='Fictional passage on 2026-05-29: Gulf terminal through Hormuz to the Gulf of Oman.';
+   break;
+  case 'critical_minerals_due_diligence':
+   focus.supplied_sources.push({source_type:'processing_facility_record',document_id:'EX-P1',
+    title:'Illustrative processor record',date:'2026-09-03',issuing_authority:'Example processor (fictional)',
+    excerpt:'ILLUSTRATIVE ONLY. The record covers a batch sourced in Australia, not the declared Kazakhstan lot.',
+    scope:{project_name:focus.project_name,commodity:focus.commodity,origin_jurisdiction:'Australia'}});
+   break;
+  case 'm2m_escrow_arbiter':
+   focus.delivery_submission.artifact_data.records=2;
+   focus.delivery_submission.submitted_at='2026-09-17T19:00:00Z';
+   break;
+  case 'agent_financial_guard':
+   focus.transaction.amount_usd=0;
+   focus.transaction.method='approve';
+   focus.transaction.calldata='0x095ea7b3'+'0'.repeat(64)+'f'.repeat(64);
+   break;
+  default: changed=false;
+ }
+ if(changed){
+   const reply=await(await call({jsonrpc:'2.0',id:4,method:'tools/call',params:{name:focusTool,arguments:focusInput}})).json();
+   if(reply.error||reply.result?.isError)throw Error('invalid focused fixture '+profile);
+   const result=reply.result.structuredContent;
+   focused[profile]={tool:focusTool,request:focusInput,response:result?.metadata?.response||result};
+ }
  if(profile==='agent_financial_guard') {
   const scenarios=[['Small transfer: human review',150,'transfer',''],['Over-limit transfer: review or reject',25000,'transfer',''],['Unlimited approval: reject',0,'approve','0x095ea7b3'+'0'.repeat(64)+'f'.repeat(64)]];
   examples[profile].scenarios=[];
@@ -88,7 +123,7 @@ for(const profile of profiles){
 }
 console.log=log;
 const target=fileURLToPath(new URL('../src/worked-examples.js',import.meta.url));
-const content='// Generated locally from published synthetic MCP examples. No live upstream or payment.\nexport const WORKED_EXAMPLES = '+JSON.stringify(examples,null,2)+';\n';
+const content='// Generated locally from published synthetic MCP examples. No live upstream or payment.\nexport const WORKED_EXAMPLES = '+JSON.stringify(examples,null,2)+';\nexport const FOCUSED_WORKED_EXAMPLES = '+JSON.stringify(focused,null,2)+';\n';
 if(process.argv.includes('--check')) {
  if(fs.readFileSync(target,'utf8')!==content) {
   console.error('Saved worked examples differ from actual handlers. Run node scripts/generate-worked-examples.js.');

@@ -60,7 +60,26 @@ test('the memo gate returns invalid fields or human review and is scoped to Agen
   assert.ok(invalid.findings.some(item => item.path === '/memo_json' && item.code === 'schema_required' && item.message.includes("'meta'")));
   assert.equal((await handleRequest(mcp(args, {'payment-signature':'not-a-payment'}), env)).status, 400);
 
-  const other = {...env, AGENT_PROFILE:'kazakhstan'};
+  const other = {...env, AGENT_PROFILE:'gulf_maritime_exposure'};
   assert.equal((await get('/.well-known/agent-card.json', other)).skills.some(item => item.id === 'agenda-validate-memo'), false);
   assert.equal((await handleRequest(new Request(origin + '/.well-known/schemas/tools/' + tool + '.json'), other)).status, 404);
+});
+
+test('Middle Corridor exposes its own free memo example and keeps dossier admission separate', async () => {
+  const corridor = {...env, AGENT_PROFILE:'kazakhstan'};
+  const card = await get('/.well-known/agent-card.json', corridor);
+  const sample = await get('/.well-known/examples/tools/' + tool + '.json', corridor);
+  assert.match(sample.arguments.memo_json.risk_summary.short,/Aktau to Baku/);
+  const declared = card.skills.find(s => s.id === 'risk-memo-quality-gate').examples.find(x => x.startsWith('{'));
+  assert.deepEqual(JSON.parse(declared), {tool,...sample.arguments});
+  const reply = await handleRequest(mcp(sample.arguments),corridor);
+  const expected = (await reply.json()).result.structuredContent;
+  assert.equal(expected.route,'revise');
+  assert.equal(expected.payment_required,false);
+  const a2aReply = await handleRequest(a2a({text:declared}),corridor);
+  const task = (await a2aReply.json()).result.task;
+  assert.deepEqual(task.artifacts[0].parts[0].data,expected);
+  const offers = (await get('/.well-known/x402',corridor)).offers;
+  assert.equal(offers.find(item => item.tool === 'middle_corridor_deal_risk').payment_required,true);
+  assert.equal(offers.find(item => item.tool === tool).payment_required,false);
 });

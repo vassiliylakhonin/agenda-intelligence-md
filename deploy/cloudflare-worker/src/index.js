@@ -6,8 +6,9 @@ import {isA2ATrial, a2aTrialInput, a2aTrialDiscovery, A2A_TRIAL_URI} from "./a2a
 import { withEvaluationContract } from "./evaluation-contract.js";
 import { addSkillDiscovery } from './skill-discovery.js';
 import { addCatalogOnboarding, catalogOperation, catalogDemoContent } from './catalog-demo.js';
+import { CATALOG_CASES } from './catalog-cases.js';
 import { catalogSetupContent } from './catalog-onboarding.js';
-import { MEMO_QUALITY_TOOL, MEMO_QUALITY_EXAMPLE, isMemoQualityCall, memoQualityInput, memoQualityResult } from './memo-quality-gate.js';
+import { MEMO_QUALITY_TOOL, MEMO_QUALITY_EXAMPLE, CORRIDOR_MEMO_EXAMPLE, isMemoQualityCall, memoQualityInput, memoQualityResult } from './memo-quality-gate.js';
 import {routingToolForProfile,isFreeRoutingTool} from './pricing-policy.js';
 import {x402DiscoveryExtension,settlementDiscovery} from './payment-discovery.js';
 import { agentOnboarding, PROFILE_TASKS, profileWorkflow } from './agent-onboarding.js';
@@ -1335,20 +1336,24 @@ function agentCard(request, env = {}) {
     ? `${trial ? `${trial.attempts_per_network} free live attempts on your own input at ${trial.endpoint}, subject to shared-network and fleet daily limits. ` : ''}Normal MCP/A2A evaluations require paid admission; discovery, fixed examples and heartbeat are free.`
     : 'Free base triage, subject to configured authentication and quotas.';
   const flagshipTool = profile === 'kazakhstan' ? 'middle_corridor_deal_risk'
-    : profile === 'agent_output_verification' ? 'agent_output_verification' : null;
+    : profile === 'agent_output_verification' ? 'agent_output_verification'
+    : profile === 'm2m_escrow_arbiter' ? 'm2m_escrow_arbitration_ruling' : null;
   const flagshipOffer = flagshipTool && shaped.x_agenda_intelligence.x402.offers.find(offer => offer.tool === flagshipTool);
   const flagshipPrice = flagshipOffer?.payment_required
     ? ` Configured price for ${flagshipTool}: ${flagshipOffer.price_usdc} USDC per evaluation. Read the current terms at ${access.pricing_url} and check the operation's payment challenge before paying.`
     : '';
-  shaped.description = `${PROFILE_TASKS[profile] || 'Review supplied evidence using the published contract.'} ${accessSummary}${flagshipPrice} Supplied-evidence review, not independent factual verification or clearance; mandatory human review before consequential action. Caller must invoke and enforce the result in its integration. ${shaped.description}`;
+  const focusedCase = CATALOG_CASES[profile];
+  const focusedIntro = focusedCase ? `${focusedCase[1]} Try the saved example: "${focusedCase[0]}". It uses fictional inputs and shows the output before you submit your own material. ` : '';
+  shaped.description = `${PROFILE_TASKS[profile] || 'Review supplied evidence using the published contract.'} ${focusedIntro}${accessSummary}${flagshipPrice} Supplied-evidence review, not independent factual verification or clearance; mandatory human review before consequential action. Caller must invoke and enforce the result in its integration. ${shaped.description}`;
   shaped.x_agenda_intelligence.onboarding = agentOnboarding(profile, env, origin);
-  if (profile === 'agenda') {
+  if (profile === 'agenda' || profile === 'kazakhstan') {
+    const memoExample = profile === 'kazakhstan' ? CORRIDOR_MEMO_EXAMPLE : MEMO_QUALITY_EXAMPLE;
     shaped.x_agenda_intelligence.onboarding.memo_quality_gate = {
       tool: MEMO_QUALITY_TOOL, payment_required: false, mcp_endpoint: `${origin}/mcp/agent`,
       example_url: `${origin}/.well-known/examples/tools/${MEMO_QUALITY_TOOL}.json`,
       input_schema_url: toolSchemaUrl(origin, MEMO_QUALITY_TOOL),
       a2a: { endpoint: `${origin}/message/send`, method: 'SendMessage', protocol_version: '1.0',
-        part: {data: {tool: MEMO_QUALITY_TOOL, ...MEMO_QUALITY_EXAMPLE}, mediaType: 'application/json'} }
+        part: {data: {tool: MEMO_QUALITY_TOOL, ...memoExample}, mediaType: 'application/json'} }
     };
   }
   if (flagshipOffer) {
@@ -2846,7 +2851,7 @@ function applyAgentProfile(card, request, env = {}) {
       id: "risk-memo-quality-gate",
       name: "Risk memo quality gate",
       description:
-        "Scores a corridor-risk memo for structure, evidence discipline, source coverage, decision-readiness, watch-next indicators, uncertainty handling, and required fixes before analyst or management handoff.",
+        "Check a structured Middle Corridor risk memo for schema issues, missing source references, weak follow-up and vague watch indicators. The named hosted MCP/A2A tool is free within the hourly limit and leaves the memo for human review.",
       tags: [
         "memo-validation",
         "evidence-audit",
@@ -2856,8 +2861,7 @@ function applyAgentProfile(card, request, env = {}) {
         "strategic-risk"
       ],
       examples: [
-        "Quality-gate this Kazakhstan corridor-risk memo before it goes to a client or committee.",
-        "Return pass/fail reasons and required fixes for a Middle Corridor risk memo."
+        JSON.stringify({tool: MEMO_QUALITY_TOOL, ...CORRIDOR_MEMO_EXAMPLE})
       ],
       inputModes: ["application/json", "text/plain"],
       outputModes: ["application/json", "text/markdown"]
@@ -14118,7 +14122,7 @@ function a2aJsonResponse(body, status = 200, headers = {}) {
 
 async function handleCatalogReadCommand(payload, request, env) {
   const profile = agentProfile(request, env), version = requestedA2aVersion(request, payload);
-  const operation = catalogOperation(payload);
+  const operation = catalogOperation(payload, profile);
   const reply = (body, status = 200) => a2aJsonResponse(body, status,
     {'A2A-Version': version || A2A_PROTOCOL_VERSION, 'cache-control': 'no-store'});
   const fail = (code, message, status) => reply(jsonRpcError(payload.id, code, message), status);
@@ -14137,8 +14141,8 @@ async function handleCatalogReadCommand(payload, request, env) {
     return fail(-32602, 'Do not send payment credentials to a read-only catalogue command', 400);
   }
   const origin = new URL(request.url).origin;
-  const content = operation === 'worked_example'
-    ? catalogDemoContent(profile, origin, hostedAccess(profile, env).free_trial)
+  const content = ['worked_example','focused_worked_example'].includes(operation)
+    ? catalogDemoContent(profile, origin, hostedAccess(profile, env).free_trial, operation === 'focused_worked_example')
     : catalogSetupContent(operation, profile, origin, env, hostedMcpTools(profile, request, env), VERSION);
   if (!content) return fail(-32601, 'Read-only catalogue command is not available for this product', 404);
   const task = {
@@ -14248,10 +14252,10 @@ async function handlePost(request, env, ctx) {
     return a2aJsonResponse(error, _error.status === 413 ? 413 : 200);
   }
   const method = payload && typeof payload === "object" ? payload.method : null;
-  if (catalogOperation(payload)) return handleCatalogReadCommand(payload, request, env);
+  const profile = agentProfile(request, env);
+  if (catalogOperation(payload, profile)) return handleCatalogReadCommand(payload, request, env);
   if (isA2ATrial(payload)) return handleA2ATrial(payload,request,env,ctx);
   if (MESSAGE_SEND_METHODS.has(method) || method === "GetTask" || method === "CancelTask") {
-    const profile = agentProfile(request, env);
     if (!isProductionAuthorized(request, env, profile)) {
       const error = jsonRpcError(
           payload.id ?? null,
@@ -15878,7 +15882,7 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
     }
     return execute();
   }
-  if ((path === '/message/send' || path === '/') && catalogOperation(body)) return handleCatalogReadCommand(body, request, env);
+  if ((path === '/message/send' || path === '/') && catalogOperation(body, profile)) return handleCatalogReadCommand(body, request, env);
   if ((path === '/message/send' || path === '/') && isA2ATrial(body)) return handleA2ATrial(body,request,env,ctx);
   const metaProof = path.startsWith('/mcp') && body?.method === 'tools/call' ? body.params?._meta?.['x402/payment'] : undefined;
   let standardProof;
