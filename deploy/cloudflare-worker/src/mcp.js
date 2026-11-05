@@ -16,7 +16,7 @@ import { PROFILE_REGISTRY } from "./profiles.js";
 import { MCP_TOOL_CONTRACTS } from "./mcp-tool-contracts.js";
 import { hostedAccessNote } from "./hosted-access.js";
 import {isFreeRoutingTool} from './pricing-policy.js';
-import { MEMO_QUALITY_SPEC, MEMO_QUALITY_TOOL } from './memo-quality-gate.js';
+import { CORRIDOR_MEMO_SPEC, MEMO_QUALITY_SPEC, MEMO_QUALITY_TOOL } from './memo-quality-gate.js';
 
 export const MCP_PROTOCOL_VERSION = "2026-07-28";
 
@@ -167,7 +167,7 @@ export const CORRIDOR_BANKABILITY_SPEC = {
 // the stdio server's tool names for the same contract, so an agent that learned
 // the tool locally can call the hosted one without relearning it.
 const PROFILE_TOOLS = {
-  kazakhstan: {
+  kazakhstan: [{
     name: "middle_corridor_deal_risk",
     bringsEvidence: true,
     argKey: "request",
@@ -175,7 +175,7 @@ const PROFILE_TOOLS = {
       "Screen a Kazakhstan / Middle Corridor (Trans-Caspian) trade deal for sanctions-adjacent and corridor risk " +
       "before signature, shipment, insurer handoff, or committee review. Returns a triage recommendation, risk " +
       "signal, decision-readiness score, supplied vs. minimum-required source categories, and evidence gaps. "
-  },
+  }, CORRIDOR_MEMO_SPEC],
   cis_secondary_sanctions: [
     {
       name: "cis_secondary_sanctions_exposure",

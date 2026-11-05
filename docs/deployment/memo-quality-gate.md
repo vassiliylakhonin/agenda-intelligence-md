@@ -12,11 +12,15 @@ escalate. Route the result to the responsible human reviewer.
 
 ## MCP
 
-Connect via Streamable HTTP at `https://agendamcp.dpdns.org/mcp/agent`.
+Connect via Streamable HTTP at `https://agendamcp.dpdns.org/mcp/agent` or
+`https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/mcp/agent`.
 Call `strategic_risk_memo_quality_gate` with `{ "memo_json": { ... } }`.
 The [published tool example](https://agendamcp.dpdns.org/.well-known/examples/tools/strategic_risk_memo_quality_gate.json)
 contains a complete synthetic input under `arguments`. The result is in
 `result.structuredContent`.
+The [Middle Corridor example](https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/.well-known/examples/tools/strategic_risk_memo_quality_gate.json)
+uses the same contract and a fictional shipment memo. The shipment dossier
+evaluation is a separate tool with its own admission.
 
 ## A2A
 

@@ -11,6 +11,7 @@
   ],
   "middle-corridor-deal-risk-gate-a2a": [
     "middle_corridor_deal_risk",
+    "strategic_risk_memo_quality_gate",
     "free_trial_status",
     "free_trial",
     "free_trial_feedback",

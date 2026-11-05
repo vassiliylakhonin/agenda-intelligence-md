@@ -14,12 +14,21 @@ export const MEMO_QUALITY_EXAMPLE = {
   }
 };
 
+export const CORRIDOR_MEMO_EXAMPLE = {
+  memo_json: {
+    ...MEMO_QUALITY_EXAMPLE.memo_json,
+    risk_summary: {short: 'A synthetic Aktau to Baku shipment memo.', detailed: 'A reviewer needs a dated booking record before forwarding the memo.'},
+    analysis: {facts:['The freight forwarder confirmed the booking.'], assessments:[], assumptions:[], unknowns:[]},
+    audit: {validation_score:0, provenance:[{basis:'fact', claim:'The freight forwarder confirmed the booking.'}]}
+  }
+};
+
 export const MEMO_QUALITY_SPEC = {
   name: MEMO_QUALITY_TOOL,
   argKey: 'request',
   legacyWrapper: false,
   summary: 'Check a strategic-risk memo against the Agenda Memo schema and flag missing source references, weak follow-up actions and vague monitoring before human review.',
-  inputSchema: { type: 'object', required: ['memo_json'], additionalProperties: false, properties: { memo_json: memoSchema }, examples: [MEMO_QUALITY_EXAMPLE] },
+  inputSchema: { $schema: 'https://json-schema.org/draft/2020-12/schema', type: 'object', required: ['memo_json'], additionalProperties: false, properties: { memo_json: memoSchema }, examples: [MEMO_QUALITY_EXAMPLE] },
   outputSchema: {
     $schema: 'https://json-schema.org/draft/2020-12/schema',
     type: 'object',
@@ -35,6 +44,9 @@ export const MEMO_QUALITY_SPEC = {
   }
 };
 
+export const CORRIDOR_MEMO_SPEC = {...MEMO_QUALITY_SPEC,
+  inputSchema: {...MEMO_QUALITY_SPEC.inputSchema, examples: [CORRIDOR_MEMO_EXAMPLE]}};
+
 function memoPart(params) {
   const part = params?.message?.parts?.[0];
   if (part?.data) return part.data;
@@ -45,7 +57,8 @@ function memoPart(params) {
 }
 
 export function isMemoQualityCall(profile, params) {
-  return profile === 'agenda' && (params?.capability === MEMO_QUALITY_TOOL || memoPart(params)?.tool === MEMO_QUALITY_TOOL);
+  return (profile === 'agenda' || profile === 'kazakhstan') &&
+    (params?.capability === MEMO_QUALITY_TOOL || memoPart(params)?.tool === MEMO_QUALITY_TOOL);
 }
 
 export function memoQualityInput(params) {

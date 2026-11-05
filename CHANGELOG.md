@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add service-specific catalog walkthroughs and a free hosted memo quality tool on Middle Corridor. Saved walkthroughs do not evaluate customer input or consume trials.
+
 - Make Strategic-Risk Memo Quality Gate callable on the hosted Agenda MCP and A2A endpoints. The free bounded review returns Agenda Memo schema errors, provenance gaps and follow-up findings. The agent card includes a runnable synthetic example.
 
 - Give each hosted profile a task-specific search title and a visible MCP connection block with its tool, input example and schema. Publish preferred custom-domain URLs for legacy HTML pages and keep search sitemaps focused on public pages.
