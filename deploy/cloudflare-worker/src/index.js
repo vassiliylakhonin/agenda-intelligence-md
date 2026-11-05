@@ -1012,7 +1012,7 @@ function agentCard(request, env = {}) {
   const card = {
     name: "Agenda Intelligence MD",
     description:
-      "Live A2A wrapper for Agenda Intelligence MD, an evidence-discipline MCP layer for strategic-risk agents. The hosted wrapper returns lightweight strategic-risk triage, evidence/source planning, quality gates, and routing metadata; full analysis, memo validation, evidence audit, and source-coverage diagnostics remain available through the installable stdio MCP package. Outputs are evidence triage with mandatory human-review routing before any commercial action; not legal, compliance, sanctions, financial, or investment advice, and not an autonomous decision system.",
+      "Run the free Strategic-Risk Memo Quality Gate on a structured Agenda Memo via hosted MCP or A2A. Try the synthetic example in the skill declaration. The hosted wrapper also provides strategic-risk triage, evidence planning, and routing to specialist gates. Full memo assembly, evidence audit, and source-coverage diagnostics use the installable stdio MCP package.",
     provider: {
       organization: "Vassiliy Lakhonin",
       url: PROVIDER_SITE_URL,
