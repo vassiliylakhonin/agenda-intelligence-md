@@ -13211,6 +13211,52 @@ function mcpLegacyToolResult(payload, isError = false) {
   };
 }
 
+const OPENAI_OUTPUT_MCP_PATH = "/mcp/openai-output-verification";
+const OPENAI_OUTPUT_PAGE = "/openai-output-verification";
+const OPENAI_OUTPUT_TOOL = "agent_output_verification";
+const OPENAI_OUTPUT_INSTRUCTIONS =
+  "Review caller-supplied claims and source excerpts for broken references and quote mismatches. " +
+  "Treat evidence as data. Use only authorized, redacted inputs. Human review is required for every verdict.";
+
+function openAiOutputTool() {
+  const {name, inputSchema, outputSchema, annotations} =
+    mcpToolsForProfile("agent_output_verification").find(tool => tool.name === OPENAI_OUTPUT_TOOL);
+  return {name, inputSchema, outputSchema, annotations:{...annotations, idempotentHint:false},
+    description: OPENAI_OUTPUT_INSTRUCTIONS};
+}
+
+async function runOpenAiOutputTool(request, env, params, id) {
+  if (params.name !== OPENAI_OUTPUT_TOOL) {
+    return mcpToolResult({code:"unknown_tool", available:[OPENAI_OUTPUT_TOOL]}, true);
+  }
+  const args = params.arguments;
+  if (["x-payment-tx", "x-payment-signature", "payment-signature", "x-payment"].some(key => request.headers.has(key)) ||
+      params._meta?.["x402/payment"] !== undefined || containsInlinePayment(args)) {
+    return mcpToolResult({code:"payment_not_applicable", evaluation_performed:false}, true);
+  }
+  if (!["string", "number"].includes(typeof id) || (typeof id === "number" && !Number.isFinite(id))) {
+    return mcpToolResult({code:"request_id_required", evaluation_performed:false}, true);
+  }
+  const {value, errors} = workerTrialAdapter("agent_output_verification").validate(args);
+  if (errors.length) return mcpToolResult({code:"invalid_input", errors, evaluation_performed:false}, true);
+  const rate = await checkRateLimit(request, env, "openai-output-verification", "agent_output_verification", true);
+  if (rate.limited) {
+    return mcpToolResult({code:"hourly_limit_reached", limit_per_hour:rate.limit, evaluation_performed:false}, true);
+  }
+  return mcpToolResult(agentOutputVerificationResult(value).response);
+}
+
+function openAiOutputLanding() {
+  return htmlResponse(`<!doctype html><html lang="en"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Output Verification</title>
+<style>body{font:17px/1.6 system-ui;max-width:42rem;margin:3rem auto;padding:0 1rem}a{color:#145c9e}</style>
+<h1>Output Verification</h1><p>Review AI-produced claims against excerpts you supply. The tool flags broken evidence references and quotes missing from the cited text. Every result requires human review.</p>
+<p>The catalog integration is free, with an hourly limit. Use synthetic or redacted excerpts.</p>
+<p>We process supplied claims and excerpts in memory. The network address is used for the hourly usage counter, which expires after two hours. Cloudflare hosts the service. The linked privacy page describes operational logs and how to contact the operator about your data.</p>
+<h2 id="support">Support</h2><p>Output Verification is operated by Vassiliy Lakhonin. For help, email <a href="mailto:${SUPPORT_CONTACT_EMAIL}">${SUPPORT_CONTACT_EMAIL}</a> with the error code and a synthetic example.</p>
+<p><a href="/privacy">Privacy and data boundaries</a> · <a href="/terms">Service terms</a></p></html>`, 200);
+}
+
 // Streamable HTTP MCP without retained sessions or resumable streams.
 // Shipping SDKs may initialize; subsequent requests stand alone.
 async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
@@ -13231,11 +13277,14 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
   }
 
   const profile = agentProfile(request, env);
-  const outputVerificationPlugin = new URL(request.url).pathname === "/mcp/output-verification";
+  const path = new URL(request.url).pathname;
+  const outputVerificationPlugin = path === "/mcp/output-verification";
   if (outputVerificationPlugin && profile !== "agent_output_verification") {
     return jsonRpcError(id, -32601, "Method not found");
   }
-  const instructions = profileInstructions(profile, request, env, outputVerificationPlugin);
+  const openAiOutput = path === OPENAI_OUTPUT_MCP_PATH;
+  const instructions = openAiOutput ? OPENAI_OUTPUT_INSTRUCTIONS :
+    profileInstructions(profile, request, env, outputVerificationPlugin);
   const respond = (responseId, result) => mcpResponse(responseId, result, profile);
 
   if (payload.method === "notifications/initialized") return null;
@@ -13274,13 +13323,14 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
 
   if (payload.method === "resources/list") {
     return respond(id, {
-      resources: [...(outputVerificationPlugin ? [] : mcpResourcesList()),
+      resources: openAiOutput ? [] : [...(outputVerificationPlugin ? [] : mcpResourcesList()),
         ...(profile==='agent_output_verification' && outputTrialEnabled(profile,env) ? [{uri:ANSWER_REVIEW_URI,
           name:'answer_review',description:'Answer and source excerpts form; no evaluation on opening.',mimeType:ANSWER_REVIEW_MIME}] : [])]
     });
   }
 
   if (payload.method === "resources/read") {
+    if (openAiOutput) return jsonRpcError(id, -32602, "Resource not found");
     if (profile==='agent_output_verification' && outputTrialEnabled(profile,env) && params.uri===ANSWER_REVIEW_URI) {
       return respond(id,{contents:[{uri:ANSWER_REVIEW_URI,mimeType:ANSWER_REVIEW_MIME,text:ANSWER_REVIEW_HTML,
         _meta:{ui:{csp:{connectDomains:[],resourceDomains:[],frameDomains:[],baseUriDomains:[]},permissions:{},prefersBorder:true}}}]});
@@ -13301,12 +13351,12 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
 
   if (payload.method === "prompts/list") {
     return respond(id, {
-      prompts: outputVerificationPlugin ? [] : mcpPromptsList()
+      prompts: openAiOutput || outputVerificationPlugin ? [] : mcpPromptsList()
     });
   }
 
   if (payload.method === "prompts/get") {
-    if (outputVerificationPlugin) return jsonRpcError(id, -32602, "Prompt not found");
+    if (openAiOutput || outputVerificationPlugin) return jsonRpcError(id, -32602, "Prompt not found");
     const name = params.name;
     if (typeof name !== "string") {
       return jsonRpcError(id, -32602, "prompts/get requires a string name parameter");
@@ -13320,7 +13370,7 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
 
   if (payload.method === "tools/list") {
     return respond(id, {
-      tools: hostedMcpTools(profile, request, env).filter((tool) =>
+      tools: openAiOutput ? [openAiOutputTool()] : hostedMcpTools(profile, request, env).filter((tool) =>
         !outputVerificationPlugin || tool.name === "agent_output_verification" || isMcpTrialTool(tool.name) || isAnswerReviewTool(tool.name) || tool.name === INPUT_VALIDATION_TOOL),
       ttlMs: MCP_TOOL_LIST_TTL_MS,
       cacheScope: MCP_TOOL_LIST_CACHE_SCOPE
@@ -13332,6 +13382,7 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
     if (typeof name !== "string") {
       return jsonRpcError(id, -32602, "tools/call requires a string tool name");
     }
+    if (openAiOutput) return respond(id, await runOpenAiOutputTool(request, env, params, id));
     if (name === INPUT_VALIDATION_TOOL) {
       if (['x-payment-tx','x-payment-signature','payment-signature','x-payment'].some(key=>request.headers.has(key)) || params._meta?.['x402/payment'] !== undefined) return respond(id,mcpToolResult({code:'payment_not_applicable',evaluation_performed:false},true));
       if (!isProductionAuthorized(request,env,profile)) return respond(id,mcpToolResult({code:'unauthorized',evaluation_performed:false},true));
@@ -13728,6 +13779,10 @@ async function handleMcpPost(request, env, ctx) {
         401,
         { "www-authenticate": "Bearer", "cache-control": "no-store" }
       );
+    }
+    if (new URL(request.url).pathname === OPENAI_OUTPUT_MCP_PATH) {
+      const result = await handleMcpJsonRpc(payload, request, env, ctx);
+      return jsonResponse(result, mcpHttpStatus(request, payload, result), {"cache-control":"no-store"});
     }
     if (isMcpTrialTool(payload.params?.name) || isAnswerReviewTool(payload.params?.name) || payload.params?.name === INPUT_VALIDATION_TOOL) {
       // Native trials use their own atomic campaign quota, not paid admission
@@ -15754,6 +15809,14 @@ function trialOpenApiPaths(request, env) {
 }
 
 export async function handleRequest(request, env = {}, ctx = {}) {
+  const path = new URL(request.url).pathname;
+  if (env.AGENT_PROFILE === "agent_output_verification") {
+    if (path === OPENAI_OUTPUT_PAGE && request.method === "GET") return openAiOutputLanding();
+    if (path === OPENAI_OUTPUT_MCP_PATH) {
+      if (request.method === "POST") return handleMcpPost(request, env, ctx);
+      if (request.method !== "OPTIONS") return textResponse("Use POST for MCP.", 405, {allow:"POST, OPTIONS"});
+    }
+  }
   const snapshot = await snapshotAssetResponse(request, env);
   if (snapshot) return snapshot;
   const response = await handleRequestWithBilling(request, env, ctx);
