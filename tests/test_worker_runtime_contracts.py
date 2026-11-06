@@ -50,6 +50,93 @@ def test_compact_answer_review_has_valid_contract_and_invalid_input_consumes_no_
     assert result["count"]["count"] == 1
 
 
+def test_openai_catalog_output_audit_is_free_and_scoped():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Worker protocol tests need Node.js")
+    root = Path(__file__).resolve().parents[1]
+    program = """
+      import {handleRequest} from './deploy/cloudflare-worker/src/index.js';
+      const log = console.log;
+      console.log = () => {};
+      const usage = new Map();
+      const env = {
+        AGENT_PROFILE:'agent_output_verification', BILLING_MODE:'pay_per_call',
+        X402_STANDARD:'1', OUTPUT_EVALUATION_RECEIPTS:'1', RATE_LIMIT_PER_HOUR:'5',
+        AGENDA_USAGE:{get:async key=>usage.get(key), put:async (key,value)=>usage.set(key,value)}
+      };
+      const route = '/mcp/openai-output-verification';
+      const call = async (method, params = {}, options = {}) => {
+        const response = await handleRequest(new Request('https://example.test' + (options.path || route), {
+          method:'POST', headers:{'content-type':'application/json','cf-connecting-ip':'192.0.2.4',...options.headers},
+          body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})
+        }), options.env || env);
+        return {status:response.status, payment:response.headers.get('payment-required'),
+          body:response.headers.get('content-type')?.includes('json') ? await response.json() : null};
+      };
+      const name = 'agent_output_verification';
+      const claim = (id, text, source = 'e1', quote = text) => ({
+        claim_id:id, claim:text, support_level:'direct', evidence_ids:[source],
+        supporting_quotes:[{evidence_id:source,quote}]
+      });
+      const evidence = [{evidence_id:'e1',source_type:'illustrative_placeholder',
+        content:'Cargo A arrived on Monday. Cargo B arrived on Tuesday.'}];
+      const first = claim('c1','Cargo A arrived on Monday.');
+      const args = [
+        {claims:[first],evidence},
+        {claims:[first,claim('c2','Cargo B arrived on Tuesday.')],evidence},
+        {claims:[first,claim('c2','Cargo C arrived.','e2')],evidence},
+        {claims:[claim('c1','Cargo A arrived on Friday.')],evidence},
+        {claims:[first,{claim_id:'c2',claim:'Volumes tripled.',support_level:'unsupported'}],evidence}
+      ];
+      const listed = await call('tools/list');
+      const blocked = await call('tools/call',{name:'decision_check',arguments:{}});
+      const invalid = await call('tools/call',{name,arguments:{}});
+      const payment = await call('tools/call',{name,arguments:args[0]},{headers:{'payment-signature':'synthetic'}});
+      const positives = [];
+      for (const input of args) positives.push(await call('tools/call',{name,arguments:input}));
+      const limited = await call('tools/call',{name,arguments:args[0]});
+      const legacy = await call('tools/call',{name,arguments:args[0]},{path:'/mcp/output-verification'});
+      const otherProfile = await call('tools/list',{}, {env:{...env,AGENT_PROFILE:'kazakhstan'}});
+      log(JSON.stringify({listed,blocked,invalid,payment,positives,limited,legacy,otherProfile,args}));
+    """
+    run = subprocess.run(
+        [node, "--input-type=module", "-e", program], cwd=root, check=True, capture_output=True, text=True, timeout=30
+    )
+    result = json.loads(run.stdout)
+    [spec] = result["listed"]["body"]["result"]["tools"]
+    assert spec["name"] == "agent_output_verification"
+    assert spec["annotations"]["readOnlyHint"] is False
+    for key, code in {
+        "blocked": "unknown_tool",
+        "invalid": "invalid_input",
+        "payment": "payment_not_applicable",
+        "limited": "hourly_limit_reached",
+    }.items():
+        assert result[key]["payment"] is None
+        reply = result[key]["body"]["result"]
+        assert reply["isError"] is True
+        assert reply["structuredContent"]["code"] == code
+    payloads = []
+    for args, response in zip(result["args"], result["positives"], strict=True):
+        Draft202012Validator(spec["inputSchema"]).validate(args)
+        assert response["payment"] is None
+        assert response["body"]["result"]["isError"] is False
+        payload = response["body"]["result"]["structuredContent"]
+        Draft202012Validator(spec["outputSchema"]).validate(payload)
+        assert payload["human_review_required"] is True
+        assert payload["factual_verification_performed"] is False
+        assert "evaluation_receipt" not in payload
+        payloads.append(payload)
+    assert payloads[0]["grounded_claim_count"] == 1
+    assert payloads[1]["grounded_claim_count"] == 2
+    assert "EVIDENCE_REFERENCE_MISSING" in payloads[2]["reason_codes"]
+    assert "QUOTE_MISMATCH" in payloads[3]["reason_codes"]
+    assert payloads[4]["verdict"] == "block_unsafe_claims"
+    assert result["legacy"]["payment"]
+    assert result["otherProfile"]["status"] == 404
+
+
 def test_fleet_trials_validate_examples_and_responses_and_refuse_empty_input():
     node = shutil.which("node")
     if not node:
