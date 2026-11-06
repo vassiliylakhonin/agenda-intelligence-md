@@ -240,6 +240,8 @@ function landingHtml(request, env) {
       ${reviewSummaryHtml(workedExample.follow_up.response, escapeHtml)}
       <details><summary>Corrected request and full result</summary><pre>${escapeHtml(JSON.stringify(workedExample.follow_up, null, 2))}</pre></details>
     </details>` : ''}
+    ${isEscrowArbiter ? `<p>Have your own delivery evidence? Prepare the agreed hash and deadline, then review what was submitted.</p>
+      <a class="primary-action primary-action-main" href="#${consoleId}">Check my delivery evidence</a>` : ''}
   </section>
   <nav><a href="https://agendamcp.dpdns.org/">All profiles</a> · <a href="https://vizier.agendamcp.dpdns.org/">Vizier authorization</a> · <a href="${origin}/trust">Trust &amp; limitations</a> · <a href="${origin}/privacy">Privacy</a></nav>
   <section id="connect-mcp" class="card" aria-labelledby="connect-mcp-title">
@@ -578,6 +580,9 @@ function showWorkedExample() {
       headers:agendaTelemetryHeaders('/telemetry/worked-example', {'x-example-trace-id':window.agendaExampleTraceId})}).catch(function() {});
   }
 }
+${isEscrowArbiter ? `if (new URL(window.location.href).searchParams.get('source') === 'agenstry' && window.location.hash === '#worked-example') {
+  showWorkedExample();
+}` : ''}
 var agendaTrialTraceId = null;
 var agendaLastReview = null;
 var agendaLastRecommendedGate = null;

@@ -85,6 +85,7 @@ export function catalogDemoContent(profile, origin, trial, focused = false) {
   const followUp = reviewSummary(example.follow_up?.response);
   const next = {
     review_url: `${origin}/`,
+    ...(profile === 'm2m_escrow_arbiter' && focused ? {agenstry_example_url: `${origin}/?source=agenstry#worked-example`} : {}),
     ...(trial ? { trial_terms_url: `${origin}${trial.endpoint}` } : {}),
     instruction: trial ? 'Open the product page, replace the illustrative input with your own authorized evidence, and deliberately run a free check. Shared allowance limits apply.'
       : 'Open the product page and read its input and access requirements before submitting your own evidence.'
@@ -93,6 +94,7 @@ export function catalogDemoContent(profile, origin, trial, focused = false) {
     focused ? '# ' + CATALOG_CASES[profile][0] : '# Saved worked example',
     ...(caseDescription ? [caseDescription] : []),
     'Precomputed synthetic example. Your own material has not been evaluated. No payment or trial attempt was consumed.',
+    ...(next.agenstry_example_url ? [`[Open the Escrow walkthrough from Agenstry](${next.agenstry_example_url}) to continue to the delivery form.`] : []),
     '## Illustrative input',
     '```json\n' + JSON.stringify(example.request, null, 2) + '\n```',
     ...(summary ? [

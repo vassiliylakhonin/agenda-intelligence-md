@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Give Escrow's saved example a direct link to its delivery form and publish a tagged catalog entry link. Keep the existing demo trace on free-trial events so the archive can report follow-through.
+
 - Add service-specific catalog walkthroughs and a free hosted memo quality tool on Middle Corridor. Saved walkthroughs do not evaluate customer input or consume trials.
 
 - Make Strategic-Risk Memo Quality Gate callable on the hosted Agenda MCP and A2A endpoints. The free bounded review returns Agenda Memo schema errors, provenance gaps and follow-up findings. The agent card includes a runnable synthetic example.

@@ -528,6 +528,9 @@ async function logFunnelEvent(request, step, env = {}, feedback = null, mcp = nu
     timestamp: new Date().toISOString(),
     step,
     demo_trace_id: step === "worked_example" ? exampleTraceId(request) : null,
+    ...(step === 'worked_example' && url.pathname === '/telemetry/worked-example' &&
+      agentProfile(request, env) === 'm2m_escrow_arbiter' &&
+      request.headers.get('x-agenda-example-source') === 'agenstry' ? {example_source: 'agenstry_link'} : {}),
     request_kind: funnelRequestKind(step),
     method: request.method,
     path: url.pathname,

@@ -9,6 +9,10 @@ function agendaTelemetryHeaders(url, headers) {
     result['x-agenda-client-surface'] = 'web-console-v1';
     if (new URL(window.location.href).searchParams.get('owner_test') === '1') result['x-client-id'] = 'agenda-owner-manual';
     if (window.agendaExampleTraceId) result['x-example-trace-id'] = window.agendaExampleTraceId;
+    if (new URL(url, window.location.href).pathname === '/telemetry/worked-example' &&
+        new URL(window.location.href).searchParams.get('source') === 'agenstry') {
+      result['x-agenda-example-source'] = 'agenstry';
+    }
   }
   return result;
 }
