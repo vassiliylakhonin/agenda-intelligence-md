@@ -1,0 +1,354 @@
+[
+  {
+    "id": "V_good_mass_conversion",
+    "answer": "The Quince package weighs 2.5 kilograms. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Quince package weighs 2500 grams."
+      }
+    ],
+    "expected": "supported"
+  },
+  {
+    "id": "V_good_distance_conversion",
+    "answer": "The Agate cable extends 3 kilometers. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Agate cable extends 3000 meters."
+      }
+    ],
+    "expected": "supported"
+  },
+  {
+    "id": "V_good_time_conversion",
+    "answer": "The Onyx session lasts 3 hours. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Onyx session lasts 180 minutes."
+      }
+    ],
+    "expected": "supported"
+  },
+  {
+    "id": "V_good_milligram_conversion",
+    "answer": "The Jasper sample weighs 2 grams. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Jasper sample weighs 2000 milligrams."
+      }
+    ],
+    "expected": "supported"
+  },
+  {
+    "id": "V_good_ru_mass",
+    "answer": "Груз Обсидиан весит 4 килограмма. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "Груз Обсидиан весит 4000 граммов."
+      }
+    ],
+    "expected": "supported"
+  },
+  {
+    "id": "V_good_signed_negative",
+    "answer": "The Beryl balance is -81 dollars. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Beryl balance is negative 81 dollars."
+      }
+    ],
+    "expected": "supported"
+  },
+  {
+    "id": "V_good_same_entity",
+    "answer": "The Coral branch employs 39 staff. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Coral branch employs 39 staff. The Amber branch employs 84 staff."
+      }
+    ],
+    "expected": "supported"
+  },
+  {
+    "id": "V_good_same_sentence",
+    "answer": "The Garnet team employs 27 staff. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Garnet team employs 27 staff and the Jade team employs 54 staff."
+      }
+    ],
+    "expected": "supported"
+  },
+  {
+    "id": "V_good_unchanged_percent",
+    "answer": "The Pearl margin is 18 percent. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Pearl margin is 18 percent."
+      }
+    ],
+    "expected": "supported"
+  },
+  {
+    "id": "V_good_plain_count",
+    "answer": "The Turquoise warehouse stores 613 crates. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Turquoise warehouse stores 613 crates."
+      }
+    ],
+    "expected": "supported"
+  },
+  {
+    "id": "V_good_unit_symbol",
+    "answer": "The Opal package weighs 5000 g. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Opal package weighs 5 kg."
+      }
+    ],
+    "expected": "supported"
+  },
+  {
+    "id": "V_good_passive",
+    "answer": "73 boxes were shipped by the Aquamarine plant. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Aquamarine plant shipped 73 boxes."
+      }
+    ],
+    "expected": "supported"
+  },
+  {
+    "id": "V_good_currency_conversion_not_needed",
+    "answer": "The Quartz fee is USD 260. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Quartz fee is USD 260."
+      }
+    ],
+    "expected": "supported"
+  },
+  {
+    "id": "V_good_decimal_seconds",
+    "answer": "The Fluorite pause lasts 1.5 seconds. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Fluorite pause lasts 1500 milliseconds."
+      }
+    ],
+    "expected": "supported"
+  },
+  {
+    "id": "V_good_correct_paraphrase",
+    "answer": "The Moonstone team has 32 employees. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Moonstone team employs 32 staff."
+      }
+    ],
+    "expected": "supported"
+  },
+  {
+    "id": "V_good_percent_fraction",
+    "answer": "The Spinel failure rate is one half. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Spinel failure rate is 50 percent."
+      }
+    ],
+    "expected": "supported"
+  },
+  {
+    "id": "V_bad_wrong_mass",
+    "answer": "The Quince package weighs 2500 kilograms. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Quince package weighs 2500 grams."
+      }
+    ],
+    "expected": "unsupported"
+  },
+  {
+    "id": "V_bad_wrong_dimension",
+    "answer": "The Agate cable extends 3000 grams. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Agate cable extends 3000 meters."
+      }
+    ],
+    "expected": "unsupported"
+  },
+  {
+    "id": "V_bad_wrong_duration",
+    "answer": "The Onyx session lasts 180 hours. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Onyx session lasts 180 minutes."
+      }
+    ],
+    "expected": "unsupported"
+  },
+  {
+    "id": "V_bad_wrong_prefix",
+    "answer": "The Jasper sample weighs 2000 grams. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Jasper sample weighs 2000 milligrams."
+      }
+    ],
+    "expected": "unsupported"
+  },
+  {
+    "id": "V_bad_ru_wrong_mass",
+    "answer": "Груз Обсидиан весит 4000 килограммов. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "Груз Обсидиан весит 4000 граммов."
+      }
+    ],
+    "expected": "unsupported"
+  },
+  {
+    "id": "V_bad_wrong_sign",
+    "answer": "The Beryl balance is positive 81 dollars. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Beryl balance is negative 81 dollars."
+      }
+    ],
+    "expected": "unsupported"
+  },
+  {
+    "id": "V_bad_borrow_entity",
+    "answer": "The Coral branch employs 84 staff. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Coral branch employs 39 staff. The Amber branch employs 84 staff."
+      }
+    ],
+    "expected": "unsupported"
+  },
+  {
+    "id": "V_bad_borrow_clause",
+    "answer": "The Garnet team employs 54 staff. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Garnet team employs 27 staff and the Jade team employs 54 staff."
+      }
+    ],
+    "expected": "unsupported"
+  },
+  {
+    "id": "V_bad_percent_currency",
+    "answer": "The Pearl margin is 18 dollars. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Pearl margin is 18 percent."
+      }
+    ],
+    "expected": "unsupported"
+  },
+  {
+    "id": "V_bad_wrong_count",
+    "answer": "The Turquoise warehouse stores 631 crates. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Turquoise warehouse stores 613 crates."
+      }
+    ],
+    "expected": "unsupported"
+  },
+  {
+    "id": "V_bad_wrong_symbol",
+    "answer": "The Opal package weighs 5 g. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Opal package weighs 5 kg."
+      }
+    ],
+    "expected": "unsupported"
+  },
+  {
+    "id": "V_bad_different_entity",
+    "answer": "The Malachite plant shipped 73 boxes. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Aquamarine plant shipped 73 boxes."
+      }
+    ],
+    "expected": "unsupported"
+  },
+  {
+    "id": "V_bad_currency",
+    "answer": "The Quartz fee is 260 EUR. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Quartz fee is 260 USD."
+      }
+    ],
+    "expected": "unsupported"
+  },
+  {
+    "id": "V_bad_wrong_milliseconds",
+    "answer": "The Fluorite pause lasts 1500 seconds. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Fluorite pause lasts 1500 milliseconds."
+      }
+    ],
+    "expected": "unsupported"
+  },
+  {
+    "id": "V_bad_same_entity_wrong_attribute",
+    "answer": "The Moonstone team employs 64 staff. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Moonstone team employs 32 staff and uses 64 desks."
+      }
+    ],
+    "expected": "unsupported"
+  },
+  {
+    "id": "V_bad_modal_boundary",
+    "answer": "The Spinel route will reopen next month. [s1]",
+    "sources": [
+      {
+        "source_id": "s1",
+        "text": "The Spinel route may reopen next month."
+      }
+    ],
+    "expected": "unsupported"
+  }
+]

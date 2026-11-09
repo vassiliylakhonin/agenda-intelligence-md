@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Tighten Python numeric grounding to the nearest explicit entity/clause context and normalize bounded mass, length and time units. Preserve equivalent-unit positive controls and negative numeric values; retain human review, unassessed factuality and the separate hosted contracts. Add frozen synthetic before/after evaluation with misses and false holds reported separately.
+
 - Give Escrow's saved example a direct link to its delivery form and publish a tagged catalog entry link. Keep the existing demo trace on free-trial events so the archive can report follow-through.
 
 - Add a dedicated free Output Verification MCP route for the OpenAI directory. It exposes the existing evidence audit with a separate hourly limit and rejects payment material.

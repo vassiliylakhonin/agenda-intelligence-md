@@ -1,0 +1,3 @@
+32 new validation cases, frozen before implementation. Not used for iterative tuning.
+SHA256 21c86b96719769673e8f9acb8801d5a27feab4b008342239cd1080707f75571a
+Expected labels remain fixed. Old 56 cases are regression. New set is evaluator-authored after source inspection, not blind independent user evidence.
