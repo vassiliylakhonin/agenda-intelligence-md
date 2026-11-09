@@ -1,0 +1,3597 @@
+[
+  {
+    "id": "V_good_mass_conversion",
+    "expected": "supported",
+    "flagged": false,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "human_review",
+      "input_sha256": "f19e0528fc2fb2c3622ad209b6773cc0002af55a62aa39d756e1f962e803e4b9",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 45,
+          "text": "The Quince package weighs 2.5 kilograms. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Quince package weighs 2.5 kilograms.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Quince package weighs 2500 grams."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 1,
+          "source_review_required": 0,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "packet_complete",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "supported",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": []
+          }
+        ],
+        "owner_actions": [],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "29a0ce1f63b8fca25e21833fc26f62626cb718e20b53015c002a1f08796bbbb6"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "packet_complete"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_good_distance_conversion",
+    "expected": "supported",
+    "flagged": false,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "human_review",
+      "input_sha256": "a2d350396562102f329d6f894739af87a9744d8ec1604ee259b47c53a3f470ef",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 42,
+          "text": "The Agate cable extends 3 kilometers. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Agate cable extends 3 kilometers.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Agate cable extends 3000 meters."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 1,
+          "source_review_required": 0,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "packet_complete",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "supported",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": []
+          }
+        ],
+        "owner_actions": [],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "4395f6accef7d3a263d2449f6df81be1e24489c9bd120b36eedf0bf52546f8ea"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "packet_complete"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_good_time_conversion",
+    "expected": "supported",
+    "flagged": false,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "human_review",
+      "input_sha256": "de2d2a4eb1d6ca72947a77ff1bb46006b5b249781a5b1e3f3dc1f291ba81d293",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 36,
+          "text": "The Onyx session lasts 3 hours. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Onyx session lasts 3 hours.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Onyx session lasts 180 minutes."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 1,
+          "source_review_required": 0,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "packet_complete",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "supported",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": []
+          }
+        ],
+        "owner_actions": [],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "1703154551367070d13f4dc25038615c8dca0a5b489c4230913cee1a0295e7cd"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "packet_complete"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_good_milligram_conversion",
+    "expected": "supported",
+    "flagged": false,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "human_review",
+      "input_sha256": "cec00fc91a501b4d2db909deacdb77511a3067d9e36ff5a2601a40cadb4d3ff5",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 38,
+          "text": "The Jasper sample weighs 2 grams. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Jasper sample weighs 2 grams.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Jasper sample weighs 2000 milligrams."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 1,
+          "source_review_required": 0,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "packet_complete",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "supported",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": []
+          }
+        ],
+        "owner_actions": [],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "33783a5d59a7c80b90cd788ba22a8b6f400f136eb19dc1f1255035f593bfd47b"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "packet_complete"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_good_ru_mass",
+    "expected": "supported",
+    "flagged": false,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "human_review",
+      "input_sha256": "b704661d7fe9e3e6af12f020d1812c53cc3864def291280ee8aa12744c1f8315",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 38,
+          "text": "Груз Обсидиан весит 4 килограмма. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "Груз Обсидиан весит 4 килограмма.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "Груз Обсидиан весит 4000 граммов."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 1,
+          "source_review_required": 0,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "packet_complete",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "supported",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": []
+          }
+        ],
+        "owner_actions": [],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "55ee34fbbf59b490c59ec0f6874a93c756e2f85c44f1c04c6b641ac914974680"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "packet_complete"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_good_signed_negative",
+    "expected": "supported",
+    "flagged": false,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "human_review",
+      "input_sha256": "f1c52ef2220ea3008888ed60d036c3ab1526b2ab561d460770938c3aeb25b26a",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 38,
+          "text": "The Beryl balance is -81 dollars. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Beryl balance is -81 dollars.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Beryl balance is negative 81 dollars."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 1,
+          "source_review_required": 0,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "packet_complete",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "supported",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": []
+          }
+        ],
+        "owner_actions": [],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "0fcca3e1d44fe9e7014502c6ea7ab0a269076063bd88ce96eddd3a093194254a"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "packet_complete"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_good_same_entity",
+    "expected": "supported",
+    "flagged": false,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "human_review",
+      "input_sha256": "7f1be99eb148ad07407d8f8f3a36758a9af522a45558bb7c74ee88cd82adc6d0",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 39,
+          "text": "The Coral branch employs 39 staff. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Coral branch employs 39 staff.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Coral branch employs 39 staff. The Amber branch employs 84 staff."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 1,
+          "source_review_required": 0,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "packet_complete",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "supported",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": []
+          }
+        ],
+        "owner_actions": [],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "144b6b36c30aa5c3fd2c2d8597b00b37426551e3451e9efa21a0560bde6c09c4"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "packet_complete"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_good_same_sentence",
+    "expected": "supported",
+    "flagged": false,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "human_review",
+      "input_sha256": "935d2a775f070c5ca30c80c53c626fada83c82a12798bc128e20a3739bde52ff",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 38,
+          "text": "The Garnet team employs 27 staff. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Garnet team employs 27 staff.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Garnet team employs 27 staff and the Jade team employs 54 staff."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 1,
+          "source_review_required": 0,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "packet_complete",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "supported",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": []
+          }
+        ],
+        "owner_actions": [],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "cd852d021b7c3200b9811e918a4716533a3743f0e3304be1485fb77a3ac44348"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "packet_complete"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_good_unchanged_percent",
+    "expected": "supported",
+    "flagged": false,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "human_review",
+      "input_sha256": "365f7049bb243f0a927e5e47a851ab2eecdb9016042b8de80061b1d2e8957599",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 36,
+          "text": "The Pearl margin is 18 percent. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Pearl margin is 18 percent.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Pearl margin is 18 percent."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 1,
+          "source_review_required": 0,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "packet_complete",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "supported",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": []
+          }
+        ],
+        "owner_actions": [],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "299922cb57da27a6fd172602310f1cbc18fca3727ef73a40025676f50dec69cf"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "packet_complete"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_good_plain_count",
+    "expected": "supported",
+    "flagged": false,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "human_review",
+      "input_sha256": "a5e409a24fdab6b0becb41fae2cfff9b650f4b469ac13845dd4b0449440609dd",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 47,
+          "text": "The Turquoise warehouse stores 613 crates. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Turquoise warehouse stores 613 crates.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Turquoise warehouse stores 613 crates."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 1,
+          "source_review_required": 0,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "packet_complete",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "supported",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": []
+          }
+        ],
+        "owner_actions": [],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "41fb8df38c47408e81539dca7811157182c7905c5c5b00b41f7a1d9eb88f9f0c"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "packet_complete"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_good_unit_symbol",
+    "expected": "supported",
+    "flagged": false,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "human_review",
+      "input_sha256": "90d63399209c2bab001d048c09f49fd05c307771426a3f17265c21c1a12e4f9c",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 36,
+          "text": "The Opal package weighs 5000 g. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Opal package weighs 5000 g.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Opal package weighs 5 kg."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 1,
+          "source_review_required": 0,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "packet_complete",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "supported",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": []
+          }
+        ],
+        "owner_actions": [],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "c7d8dc5105784afd964139c7fa9a53ec4441e3295fc12fa3a7ce2af7f1a8c191"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "packet_complete"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_good_passive",
+    "expected": "supported",
+    "flagged": false,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "human_review",
+      "input_sha256": "f46bef5c7a16036c6fa42a236ade5e0644c57a2eae7842c2625f45fa6c916a43",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 51,
+          "text": "73 boxes were shipped by the Aquamarine plant. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "73 boxes were shipped by the Aquamarine plant.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Aquamarine plant shipped 73 boxes."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 1,
+          "source_review_required": 0,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "packet_complete",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "supported",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": []
+          }
+        ],
+        "owner_actions": [],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "0a0d7289031b8addc7451f47c349f524774b9877822ae6551f17870658d4ee60"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "packet_complete"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_good_currency_conversion_not_needed",
+    "expected": "supported",
+    "flagged": false,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "human_review",
+      "input_sha256": "7c107c0bf27faad771cb9aacbba5b4468edbdf306e8387e2a0e134ef69d85633",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 31,
+          "text": "The Quartz fee is USD 260. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Quartz fee is USD 260.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Quartz fee is USD 260."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 1,
+          "source_review_required": 0,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "packet_complete",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "supported",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": []
+          }
+        ],
+        "owner_actions": [],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "5ad277e3166d6c994b43ede877966bf1ba5bf5f12e942e522a05bf23f8fca35f"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "packet_complete"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_good_decimal_seconds",
+    "expected": "supported",
+    "flagged": false,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "human_review",
+      "input_sha256": "8e85beb571cc8d93e3a91962d2db07aaeb9f5b56d86390ec693bfe6beb9a8605",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 42,
+          "text": "The Fluorite pause lasts 1.5 seconds. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Fluorite pause lasts 1.5 seconds.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Fluorite pause lasts 1500 milliseconds."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 1,
+          "source_review_required": 0,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "packet_complete",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "supported",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": []
+          }
+        ],
+        "owner_actions": [],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "eb8b09e46d164bd08b5e0af09c5c1d13f3950a777280887c88f57d0ac3b9c594"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "packet_complete"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_good_correct_paraphrase",
+    "expected": "supported",
+    "flagged": false,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "human_review",
+      "input_sha256": "fff390c0fcf48c614d314e64e6921dd670f791f6478bab0193218774ba2dd319",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 41,
+          "text": "The Moonstone team has 32 employees. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Moonstone team has 32 employees.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Moonstone team employs 32 staff."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 1,
+          "source_review_required": 0,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "packet_complete",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "supported",
+              "coverage": 0.75,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": []
+          }
+        ],
+        "owner_actions": [],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "04ad13cfd4db537b08527cb35c3e071a853ce290bf8562ce44e65f66cd6fa8e8"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "packet_complete"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_good_percent_fraction",
+    "expected": "supported",
+    "flagged": true,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "revise",
+      "input_sha256": "47e9a8c93990b0c6cf635356549807307719dfe7a11d8346212e451ce5bdf0b2",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 41,
+          "text": "The Spinel failure rate is one half. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Spinel failure rate is one half.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Spinel failure rate is 50 percent."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "source_review_required",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 0,
+          "source_review_required": 1,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "source_review_required",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "weak",
+              "coverage": 0.6,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": [
+              "lexical_support_weak"
+            ]
+          }
+        ],
+        "owner_actions": [
+          "Review the claim-to-source mapping for claim line-0001; lexical support is weak."
+        ],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [
+        "Review the claim-to-source mapping for claim line-0001; lexical support is weak."
+      ],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "f2fd8b75404c39a3d67c195e6a4b57bd1b05c5bc51ceacc2b607eb67be9a6b43"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "source_review_required"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_bad_wrong_mass",
+    "expected": "unsupported",
+    "flagged": true,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "revise",
+      "input_sha256": "c5532fb0cba9973cff88639549ceda85c3972436296f49b126c398d29ae016e9",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 46,
+          "text": "The Quince package weighs 2500 kilograms. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Quince package weighs 2500 kilograms.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Quince package weighs 2500 grams."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "source_review_required",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 0,
+          "source_review_required": 1,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "source_review_required",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "weak",
+              "coverage": 0.75,
+              "best_source_id": "s1",
+              "unmatched_numbers": [
+                "2500 kilograms"
+              ]
+            },
+            "issues": [
+              "lexical_support_weak",
+              "unmatched_numbers"
+            ]
+          }
+        ],
+        "owner_actions": [
+          "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+          "Verify numeric value(s) in claim line-0001: 2500 kilograms not supported by a relevant number-bearing sentence in its referenced sources."
+        ],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [
+        "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+        "Verify numeric value(s) in claim line-0001: 2500 kilograms not supported by a relevant number-bearing sentence in its referenced sources."
+      ],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "29a0ce1f63b8fca25e21833fc26f62626cb718e20b53015c002a1f08796bbbb6"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "source_review_required"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_bad_wrong_dimension",
+    "expected": "unsupported",
+    "flagged": true,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "revise",
+      "input_sha256": "cefd44ad0909e98f885734785a5ee3de833b00793972bf6cd5106ddb9ac6881c",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 40,
+          "text": "The Agate cable extends 3000 grams. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Agate cable extends 3000 grams.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Agate cable extends 3000 meters."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "source_review_required",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 0,
+          "source_review_required": 1,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "source_review_required",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "weak",
+              "coverage": 0.75,
+              "best_source_id": "s1",
+              "unmatched_numbers": [
+                "3000 grams"
+              ]
+            },
+            "issues": [
+              "lexical_support_weak",
+              "unmatched_numbers"
+            ]
+          }
+        ],
+        "owner_actions": [
+          "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+          "Verify numeric value(s) in claim line-0001: 3000 grams not supported by a relevant number-bearing sentence in its referenced sources."
+        ],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [
+        "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+        "Verify numeric value(s) in claim line-0001: 3000 grams not supported by a relevant number-bearing sentence in its referenced sources."
+      ],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "4395f6accef7d3a263d2449f6df81be1e24489c9bd120b36eedf0bf52546f8ea"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "source_review_required"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_bad_wrong_duration",
+    "expected": "unsupported",
+    "flagged": true,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "revise",
+      "input_sha256": "7172838dd3db7d73fdb9d13c4bda61d4a3a8e08ba3147524e54ffa820cee3fa2",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 38,
+          "text": "The Onyx session lasts 180 hours. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Onyx session lasts 180 hours.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Onyx session lasts 180 minutes."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "source_review_required",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 0,
+          "source_review_required": 1,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "source_review_required",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "weak",
+              "coverage": 0.75,
+              "best_source_id": "s1",
+              "unmatched_numbers": [
+                "180 hours"
+              ]
+            },
+            "issues": [
+              "lexical_support_weak",
+              "unmatched_numbers"
+            ]
+          }
+        ],
+        "owner_actions": [
+          "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+          "Verify numeric value(s) in claim line-0001: 180 hours not supported by a relevant number-bearing sentence in its referenced sources."
+        ],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [
+        "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+        "Verify numeric value(s) in claim line-0001: 180 hours not supported by a relevant number-bearing sentence in its referenced sources."
+      ],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "1703154551367070d13f4dc25038615c8dca0a5b489c4230913cee1a0295e7cd"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "source_review_required"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_bad_wrong_prefix",
+    "expected": "unsupported",
+    "flagged": true,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "revise",
+      "input_sha256": "f98097891058df6816db2fe3eaed605f627f7b73954431d5a5518a07c6ad7629",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 41,
+          "text": "The Jasper sample weighs 2000 grams. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Jasper sample weighs 2000 grams.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Jasper sample weighs 2000 milligrams."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "source_review_required",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 0,
+          "source_review_required": 1,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "source_review_required",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "weak",
+              "coverage": 0.75,
+              "best_source_id": "s1",
+              "unmatched_numbers": [
+                "2000 grams"
+              ]
+            },
+            "issues": [
+              "lexical_support_weak",
+              "unmatched_numbers"
+            ]
+          }
+        ],
+        "owner_actions": [
+          "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+          "Verify numeric value(s) in claim line-0001: 2000 grams not supported by a relevant number-bearing sentence in its referenced sources."
+        ],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [
+        "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+        "Verify numeric value(s) in claim line-0001: 2000 grams not supported by a relevant number-bearing sentence in its referenced sources."
+      ],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "33783a5d59a7c80b90cd788ba22a8b6f400f136eb19dc1f1255035f593bfd47b"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "source_review_required"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_bad_ru_wrong_mass",
+    "expected": "unsupported",
+    "flagged": true,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "revise",
+      "input_sha256": "dfd2ca8eff136c0a00553aea04cb6dc5832f2c66a985756e5c151ba3b260faee",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 42,
+          "text": "Груз Обсидиан весит 4000 килограммов. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "Груз Обсидиан весит 4000 килограммов.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "Груз Обсидиан весит 4000 граммов."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "source_review_required",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 0,
+          "source_review_required": 1,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "source_review_required",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "weak",
+              "coverage": 0.75,
+              "best_source_id": "s1",
+              "unmatched_numbers": [
+                "4000 килограммов"
+              ]
+            },
+            "issues": [
+              "lexical_support_weak",
+              "unmatched_numbers"
+            ]
+          }
+        ],
+        "owner_actions": [
+          "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+          "Verify numeric value(s) in claim line-0001: 4000 килограммов not supported by a relevant number-bearing sentence in its referenced sources."
+        ],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [
+        "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+        "Verify numeric value(s) in claim line-0001: 4000 килограммов not supported by a relevant number-bearing sentence in its referenced sources."
+      ],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "55ee34fbbf59b490c59ec0f6874a93c756e2f85c44f1c04c6b641ac914974680"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "source_review_required"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_bad_wrong_sign",
+    "expected": "unsupported",
+    "flagged": true,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "revise",
+      "input_sha256": "e1ecd36c4af8bba67954b47287b43fd03590db6d774bffc0f3a777649c793a87",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 46,
+          "text": "The Beryl balance is positive 81 dollars. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Beryl balance is positive 81 dollars.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Beryl balance is negative 81 dollars."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "source_review_required",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 0,
+          "source_review_required": 1,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "source_review_required",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "weak",
+              "coverage": 0.5,
+              "best_source_id": "s1",
+              "unmatched_numbers": [
+                "81"
+              ]
+            },
+            "issues": [
+              "lexical_support_weak",
+              "unmatched_numbers"
+            ]
+          }
+        ],
+        "owner_actions": [
+          "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+          "Verify numeric value(s) in claim line-0001: 81 not supported by a relevant number-bearing sentence in its referenced sources."
+        ],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [
+        "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+        "Verify numeric value(s) in claim line-0001: 81 not supported by a relevant number-bearing sentence in its referenced sources."
+      ],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "0fcca3e1d44fe9e7014502c6ea7ab0a269076063bd88ce96eddd3a093194254a"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "source_review_required"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_bad_borrow_entity",
+    "expected": "unsupported",
+    "flagged": true,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "revise",
+      "input_sha256": "e088f180634cc3be2682d2dfc1e15986213a3879241b4a7a30e8ca0a2b304b7f",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 39,
+          "text": "The Coral branch employs 84 staff. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Coral branch employs 84 staff.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Coral branch employs 39 staff. The Amber branch employs 84 staff."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "source_review_required",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 0,
+          "source_review_required": 1,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "source_review_required",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "weak",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": [
+                "84"
+              ]
+            },
+            "issues": [
+              "lexical_support_weak",
+              "unmatched_numbers"
+            ]
+          }
+        ],
+        "owner_actions": [
+          "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+          "Verify numeric value(s) in claim line-0001: 84 not supported by a relevant number-bearing sentence in its referenced sources."
+        ],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [
+        "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+        "Verify numeric value(s) in claim line-0001: 84 not supported by a relevant number-bearing sentence in its referenced sources."
+      ],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "144b6b36c30aa5c3fd2c2d8597b00b37426551e3451e9efa21a0560bde6c09c4"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "source_review_required"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_bad_borrow_clause",
+    "expected": "unsupported",
+    "flagged": true,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "revise",
+      "input_sha256": "a98f5a52a8da54ed87776eae4012b96ce0b18cffb9075ae13edc5694bf5aca25",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 38,
+          "text": "The Garnet team employs 54 staff. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Garnet team employs 54 staff.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Garnet team employs 27 staff and the Jade team employs 54 staff."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "source_review_required",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 0,
+          "source_review_required": 1,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "source_review_required",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "weak",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": [
+                "54"
+              ]
+            },
+            "issues": [
+              "lexical_support_weak",
+              "unmatched_numbers"
+            ]
+          }
+        ],
+        "owner_actions": [
+          "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+          "Verify numeric value(s) in claim line-0001: 54 not supported by a relevant number-bearing sentence in its referenced sources."
+        ],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [
+        "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+        "Verify numeric value(s) in claim line-0001: 54 not supported by a relevant number-bearing sentence in its referenced sources."
+      ],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "cd852d021b7c3200b9811e918a4716533a3743f0e3304be1485fb77a3ac44348"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "source_review_required"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_bad_percent_currency",
+    "expected": "unsupported",
+    "flagged": true,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "revise",
+      "input_sha256": "4ec7fb43eb975cefbb5232bd9be826f1df53eeeed8815aa636bfc06c103fac61",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 36,
+          "text": "The Pearl margin is 18 dollars. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Pearl margin is 18 dollars.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Pearl margin is 18 percent."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "source_review_required",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 0,
+          "source_review_required": 1,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "source_review_required",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "weak",
+              "coverage": 0.667,
+              "best_source_id": "s1",
+              "unmatched_numbers": [
+                "18"
+              ]
+            },
+            "issues": [
+              "lexical_support_weak",
+              "unmatched_numbers"
+            ]
+          }
+        ],
+        "owner_actions": [
+          "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+          "Verify numeric value(s) in claim line-0001: 18 not supported by a relevant number-bearing sentence in its referenced sources."
+        ],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [
+        "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+        "Verify numeric value(s) in claim line-0001: 18 not supported by a relevant number-bearing sentence in its referenced sources."
+      ],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "299922cb57da27a6fd172602310f1cbc18fca3727ef73a40025676f50dec69cf"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "source_review_required"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_bad_wrong_count",
+    "expected": "unsupported",
+    "flagged": true,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "revise",
+      "input_sha256": "f6b6425ea64c3925964a79c240141189cc8fbfaf2de0c3cbb7711ae89671bfa5",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 47,
+          "text": "The Turquoise warehouse stores 631 crates. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Turquoise warehouse stores 631 crates.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Turquoise warehouse stores 613 crates."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "source_review_required",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 0,
+          "source_review_required": 1,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "source_review_required",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "weak",
+              "coverage": 0.8,
+              "best_source_id": "s1",
+              "unmatched_numbers": [
+                "631"
+              ]
+            },
+            "issues": [
+              "lexical_support_weak",
+              "unmatched_numbers"
+            ]
+          }
+        ],
+        "owner_actions": [
+          "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+          "Verify numeric value(s) in claim line-0001: 631 not supported by a relevant number-bearing sentence in its referenced sources."
+        ],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [
+        "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+        "Verify numeric value(s) in claim line-0001: 631 not supported by a relevant number-bearing sentence in its referenced sources."
+      ],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "41fb8df38c47408e81539dca7811157182c7905c5c5b00b41f7a1d9eb88f9f0c"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "source_review_required"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_bad_wrong_symbol",
+    "expected": "unsupported",
+    "flagged": true,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "revise",
+      "input_sha256": "7f00b3bc1ff7e0618550e7de0108b0c11cff8e614789e06e5d0266748b5c9ee5",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 33,
+          "text": "The Opal package weighs 5 g. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Opal package weighs 5 g.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Opal package weighs 5 kg."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "source_review_required",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 0,
+          "source_review_required": 1,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "source_review_required",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "weak",
+              "coverage": 0.75,
+              "best_source_id": "s1",
+              "unmatched_numbers": [
+                "5 g"
+              ]
+            },
+            "issues": [
+              "lexical_support_weak",
+              "unmatched_numbers"
+            ]
+          }
+        ],
+        "owner_actions": [
+          "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+          "Verify numeric value(s) in claim line-0001: 5 g not supported by a relevant number-bearing sentence in its referenced sources."
+        ],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [
+        "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+        "Verify numeric value(s) in claim line-0001: 5 g not supported by a relevant number-bearing sentence in its referenced sources."
+      ],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "c7d8dc5105784afd964139c7fa9a53ec4441e3295fc12fa3a7ce2af7f1a8c191"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "source_review_required"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_bad_different_entity",
+    "expected": "unsupported",
+    "flagged": true,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "revise",
+      "input_sha256": "420b824c7d0422321ac5d8da87da7204c42721a134e7afc5e9e35a387aca3dc7",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 42,
+          "text": "The Malachite plant shipped 73 boxes. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Malachite plant shipped 73 boxes.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Aquamarine plant shipped 73 boxes."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "source_review_required",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 0,
+          "source_review_required": 1,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "source_review_required",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "weak",
+              "coverage": 0.8,
+              "best_source_id": "s1",
+              "unmatched_numbers": [
+                "73"
+              ]
+            },
+            "issues": [
+              "lexical_support_weak",
+              "unmatched_numbers"
+            ]
+          }
+        ],
+        "owner_actions": [
+          "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+          "Verify numeric value(s) in claim line-0001: 73 not supported by a relevant number-bearing sentence in its referenced sources."
+        ],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [
+        "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+        "Verify numeric value(s) in claim line-0001: 73 not supported by a relevant number-bearing sentence in its referenced sources."
+      ],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "0a0d7289031b8addc7451f47c349f524774b9877822ae6551f17870658d4ee60"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "source_review_required"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_bad_currency",
+    "expected": "unsupported",
+    "flagged": true,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "revise",
+      "input_sha256": "baa2895c617d85eccfd87ee1d9a29271e36d23861bb317f16656c5af5093d561",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 31,
+          "text": "The Quartz fee is 260 EUR. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Quartz fee is 260 EUR.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Quartz fee is 260 USD."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "source_review_required",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 0,
+          "source_review_required": 1,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "source_review_required",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "weak",
+              "coverage": 0.667,
+              "best_source_id": "s1",
+              "unmatched_numbers": [
+                "260"
+              ]
+            },
+            "issues": [
+              "lexical_support_weak",
+              "unmatched_numbers"
+            ]
+          }
+        ],
+        "owner_actions": [
+          "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+          "Verify numeric value(s) in claim line-0001: 260 not supported by a relevant number-bearing sentence in its referenced sources."
+        ],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [
+        "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+        "Verify numeric value(s) in claim line-0001: 260 not supported by a relevant number-bearing sentence in its referenced sources."
+      ],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "05f8c681d1ddc7465bf52b833a822e35e59040827eb5cad9187075cc1728dad3"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "source_review_required"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_bad_wrong_milliseconds",
+    "expected": "unsupported",
+    "flagged": true,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "revise",
+      "input_sha256": "cb1fe7e8e930cba40f2b8d8bd49ba98dd5a4dbe506a1608e4384101ddb096d7b",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 43,
+          "text": "The Fluorite pause lasts 1500 seconds. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Fluorite pause lasts 1500 seconds.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Fluorite pause lasts 1500 milliseconds."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "source_review_required",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 0,
+          "source_review_required": 1,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "source_review_required",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "weak",
+              "coverage": 0.75,
+              "best_source_id": "s1",
+              "unmatched_numbers": [
+                "1500 seconds"
+              ]
+            },
+            "issues": [
+              "lexical_support_weak",
+              "unmatched_numbers"
+            ]
+          }
+        ],
+        "owner_actions": [
+          "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+          "Verify numeric value(s) in claim line-0001: 1500 seconds not supported by a relevant number-bearing sentence in its referenced sources."
+        ],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [
+        "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+        "Verify numeric value(s) in claim line-0001: 1500 seconds not supported by a relevant number-bearing sentence in its referenced sources."
+      ],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "eb8b09e46d164bd08b5e0af09c5c1d13f3950a777280887c88f57d0ac3b9c594"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "source_review_required"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_bad_same_entity_wrong_attribute",
+    "expected": "unsupported",
+    "flagged": true,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "revise",
+      "input_sha256": "8472cea93f0be8dbf0f87c8bf29b6a7a126f361d71d55c431d84fb8b16a77764",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 41,
+          "text": "The Moonstone team employs 64 staff. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Moonstone team employs 64 staff.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Moonstone team employs 32 staff and uses 64 desks."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "source_review_required",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 0,
+          "source_review_required": 1,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "source_review_required",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "weak",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": [
+                "64"
+              ]
+            },
+            "issues": [
+              "lexical_support_weak",
+              "unmatched_numbers"
+            ]
+          }
+        ],
+        "owner_actions": [
+          "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+          "Verify numeric value(s) in claim line-0001: 64 not supported by a relevant number-bearing sentence in its referenced sources."
+        ],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [
+        "Review the claim-to-source mapping for claim line-0001; lexical support is weak.",
+        "Verify numeric value(s) in claim line-0001: 64 not supported by a relevant number-bearing sentence in its referenced sources."
+      ],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "99f1502235d6cdab084793d49a72c9c5446d84d2761aa2eb4040db2c2b9a1299"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "source_review_required"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  },
+  {
+    "id": "V_bad_modal_boundary",
+    "expected": "unsupported",
+    "flagged": false,
+    "result": {
+      "contract_version": "rag-output-review.v1",
+      "route": "human_review",
+      "input_sha256": "880fee61742174a6eef9fab8e2b63a99051b0c7810ad4b207dd42954cce8374b",
+      "answer_units": [
+        {
+          "claim_id": "line-0001",
+          "line_number": 1,
+          "start": 0,
+          "end": 45,
+          "text": "The Spinel route will reopen next month. [s1]"
+        }
+      ],
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "text": "The Spinel route will reopen next month.",
+            "source_ids": [
+              "s1"
+            ],
+            "quotes": []
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s1",
+            "text": "The Spinel route may reopen next month."
+          }
+        ]
+      },
+      "verification": {
+        "packet_status": "packet_complete",
+        "factuality_status": "not_assessed",
+        "claim_count": 1,
+        "source_count": 1,
+        "counts": {
+          "packet_complete": 1,
+          "source_review_required": 0,
+          "packet_incomplete": 0
+        },
+        "claims": [
+          {
+            "claim_id": "line-0001",
+            "packet_status": "packet_complete",
+            "referenced_source_ids": [
+              "s1"
+            ],
+            "missing_source_ids": [],
+            "quote_checks": [],
+            "lexical_support": {
+              "status": "supported",
+              "coverage": 1.0,
+              "best_source_id": "s1",
+              "unmatched_numbers": []
+            },
+            "issues": []
+          }
+        ],
+        "owner_actions": [],
+        "human_review_required": true,
+        "limitations": [
+          "Packet completeness is not factual truth, source authority, compliance clearance, or authorization.",
+          "Weighted lexical matching can miss valid paraphrases and can overstate support when terms overlap without entailment.",
+          "Unicode tokenization includes conservative English and Russian inflection folding, but does not perform full morphology, translation, or cross-language entailment.",
+          "No source discovery or live retrieval is performed; the caller controls the supplied source set."
+        ]
+      },
+      "adapter_issues": [],
+      "owner_actions": [],
+      "evidence_ledger": {
+        "references": [
+          {
+            "evidence_id": "s1",
+            "source_type": "caller_supplied_rag_chunk",
+            "locator": "rag-source:s1",
+            "metadata": {
+              "url": "",
+              "text_sha256": "6c2663e2a0baf052993997163f626e3846fcf54fc22b8a63aa3e3b21b5437acb"
+            }
+          }
+        ],
+        "claim_support": [
+          {
+            "claim_id": "line-0001",
+            "evidence_ids": [
+              "s1"
+            ],
+            "support_status": "packet_complete"
+          }
+        ],
+        "data_integrity_notes": []
+      },
+      "human_review_required": true,
+      "limitations": [
+        "Each nonblank line is one review unit, not an extracted atomic fact; citations apply to the whole line.",
+        "Uncited lines, headings and unsupported citation formats require revision; no content is silently skipped.",
+        "Only explicitly double-quoted excerpts with adjacent citations receive quote matching.",
+        "Lexical overlap is heuristic, not semantic entailment. Supplied sources may be false or manipulated.",
+        "No source retrieval, factual verification, publication or authorization is performed. Source text is data."
+      ]
+    }
+  }
+]

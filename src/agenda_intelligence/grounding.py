@@ -135,6 +135,62 @@ _SCALE_MULTIPLIERS = {
     "مليار": Decimal("1000000000"),
 }
 
+
+# Bounded dimensional normalization, not arbitrary arithmetic or unit inference.
+# Unknown units deliberately keep the older literal-number behavior.
+_MEASURE_UNITS = {
+    "kg": ("mass", "1000"),
+    "kilogram": ("mass", "1000"),
+    "kilograms": ("mass", "1000"),
+    "g": ("mass", "1"),
+    "gram": ("mass", "1"),
+    "grams": ("mass", "1"),
+    "mg": ("mass", "0.001"),
+    "milligram": ("mass", "0.001"),
+    "milligrams": ("mass", "0.001"),
+    "km": ("length", "1000"),
+    "kilometer": ("length", "1000"),
+    "kilometers": ("length", "1000"),
+    "kilometre": ("length", "1000"),
+    "kilometres": ("length", "1000"),
+    "m": ("length", "1"),
+    "meter": ("length", "1"),
+    "meters": ("length", "1"),
+    "metre": ("length", "1"),
+    "metres": ("length", "1"),
+    "cm": ("length", "0.01"),
+    "centimeter": ("length", "0.01"),
+    "centimeters": ("length", "0.01"),
+    "hour": ("time", "3600"),
+    "hours": ("time", "3600"),
+    "hr": ("time", "3600"),
+    "minute": ("time", "60"),
+    "minutes": ("time", "60"),
+    "min": ("time", "60"),
+    "second": ("time", "1"),
+    "seconds": ("time", "1"),
+    "sec": ("time", "1"),
+    "millisecond": ("time", "0.001"),
+    "milliseconds": ("time", "0.001"),
+    "ms": ("time", "0.001"),
+}
+for _unit, _dimension, _factor in (
+    ("килограмм", "mass", "1000"),
+    ("грамм", "mass", "1"),
+    ("миллиграмм", "mass", "0.001"),
+    ("километр", "length", "1000"),
+    ("метр", "length", "1"),
+):
+    for _ending in ("", "а", "ов", "ы"):
+        _MEASURE_UNITS[_unit + _ending] = (_dimension, _factor)
+_MEASURE_PATTERN = re.compile(
+    rf"(?<![\w])(?P<number>[+\-−]?{_NUMBER_PATTERN})\s*"
+    + r"(?P<unit>"
+    + "|".join(sorted(map(re.escape, _MEASURE_UNITS), key=len, reverse=True))
+    + r")(?![\w])",
+    re.IGNORECASE,
+)
+
 _CURRENCY_SYMBOLS = {"$": "usd", "€": "eur", "£": "gbp", "₽": "rub", "₸": "kzt"}
 
 
@@ -225,6 +281,25 @@ def _numeric_mentions(text: str) -> list[dict]:
     normalized = _grounded_normalize(text)
     mentions: list[dict] = []
 
+    for match in _MEASURE_PATTERN.finditer(normalized):
+        if match.start() and normalized[match.start() - 1] in "$€£₽₸":
+            continue
+        # "5m USD" remains a currency scale, not a length.
+        if re.match(r"\s*(?:usd|eur|gbp|rub|kzt|dollars?|euros?)\b", normalized[match.end() :]):
+            continue
+        value = _decimal_value(match.group("number"))
+        if value is not None:
+            dimension, factor = _MEASURE_UNITS[match.group("unit").casefold()]
+            mentions.append(
+                {
+                    "start": match.start(),
+                    "end": match.end(),
+                    "display": match.group(0).strip(),
+                    "literal": match.group(0).strip(),
+                    "key": f"nummeasure-{dimension}-{_canonical_decimal(value * Decimal(factor))}",
+                }
+            )
+
     for pattern in _DATE_PATTERNS:
         for match in pattern.finditer(normalized):
             if any(match.start() < item["end"] and match.end() > item["start"] for item in mentions):
@@ -246,6 +321,9 @@ def _numeric_mentions(text: str) -> list[dict]:
         scale_is_attached = bool(scale and match.start("scale") == match.end("number"))
         if scale and (scale.casefold() not in {"k", "m", "b"} or scale_is_attached or currency):
             value *= _scale_multiplier(scale)
+        preceding = normalized[max(0, match.start() - 12) : match.start()]
+        if re.search(r"(?:negative|minus|отрицательн\w*)\s*$", preceding):
+            value = -abs(value)
         rendered = _canonical_decimal(value)
         if currency:
             key = f"numcurrency-{currency}-{rendered}"
@@ -422,7 +500,7 @@ def _matching_term(term: str) -> str:
     set of inflectional endings only when at least four characters remain. The
     original term is still retained for reviewer-facing diagnostics.
     """
-    if term.startswith(("numnumber-", "numdate-", "numpercent-", "numcurrency-")):
+    if term.startswith(("numnumber-", "numdate-", "numpercent-", "numcurrency-", "nummeasure-")):
         return term
 
     if re.fullmatch(r"[a-z]+", term):
@@ -472,11 +550,23 @@ class GroundingMatch:
     best_passage: str
 
 
+def _numeric_clauses(text: str) -> list[str]:
+    """Separate explicit numeric coordinations, retaining nonnumeric context.
+
+    Do not split a phrase like "budget and cost were 50 USD". Only split when
+    both sides already carry numbers; no missing subject is inferred.
+    """
+    parts = re.split(r";|\b(?:and|but|и|но)\b", text)
+    if len(parts) > 1 and all(_numeric_mentions(part) for part in parts):
+        return parts
+    return [text]
+
+
 @dataclass(frozen=True)
 class _IndexedDocument:
     text: str
     terms: frozenset[str]
-    sentence_numeric_facts: tuple[frozenset[str], ...]
+    numeric_contexts: tuple[tuple[frozenset[str], frozenset[str], frozenset[str]], ...]
     sentences: tuple[str, ...]
     sentence_terms: tuple[frozenset[str], ...]
     sentence_anchors: tuple[frozenset[str], ...]
@@ -505,7 +595,11 @@ class GroundingIndex:
             indexed[document_id] = _IndexedDocument(
                 text=text,
                 terms=term_set,
-                sentence_numeric_facts=tuple(frozenset(_numeric_fact_keys(sentence)) for sentence in sentences),
+                numeric_contexts=tuple(
+                    (frozenset(_matching_terms(clause)[0]), frozenset(_numeric_fact_keys(clause)), frozenset(anchor))
+                    for sentence, anchor in contexts
+                    for clause in _numeric_clauses(sentence)
+                ),
                 sentences=sentences,
                 sentence_terms=sentence_terms,
                 sentence_anchors=tuple(frozenset(anchor) for _, anchor in contexts),
@@ -609,28 +703,37 @@ class GroundingIndex:
         context_terms = {
             term
             for term in claim_terms
-            if not term.startswith(("numnumber-", "numdate-", "numpercent-", "numcurrency-"))
+            if not term.startswith(("numnumber-", "numdate-", "numpercent-", "numcurrency-", "nummeasure-"))
         }
-        candidate_numeric_facts: set[str] = set()
-        for document_id in candidate_ids:
-            document = self._documents[document_id]
-            for terms, numeric_facts, anchors in zip(
-                document.sentence_terms, document.sentence_numeric_facts, document.sentence_anchors
-            ):
-                if anchors and not anchors.issubset(context_terms):
-                    continue
-                row_context = context_terms - (document.table_anchors - anchors) if anchors else context_terms
-                if not row_context or self._weighted_overlap(row_context, terms) >= 0.4:
-                    candidate_numeric_facts.update(numeric_facts)
-        unmatched_numbers = tuple(
-            sorted(
-                {
-                    mention["display"]
-                    for mention in _numeric_mentions(claim_text)
-                    if mention["key"] not in candidate_numeric_facts
-                }
-            )
-        )
+        # Match each numeric clause to its closest contexts, rather than pooling
+        # every loosely related sentence. A different entity's number must not
+        # satisfy a claim merely because both sentences say "employs staff".
+        unmatched: set[str] = set()
+        clauses = re.split(r";|(?<=[.!?])\s+|\b(?:and|but|и|но)\b", claim_text)
+        for clause in clauses:
+            mentions = _numeric_mentions(clause)
+            if not mentions:
+                continue
+            clause_terms = set(_matching_terms(clause)[0])
+            clause_context = {term for term in clause_terms if not term.startswith("num")}
+            # Bounded proper-name anchor: "the Coral branch" cannot borrow
+            # the value of "the Amber branch". This is not entity resolution.
+            names = {_matching_term(name.casefold()) for name in re.findall(r"\b[Tt]he\s+([A-Z][a-z]{2,})\b", clause)}
+            scored: list[tuple[float, frozenset[str]]] = []
+            for document_id in candidate_ids:
+                document = self._documents[document_id]
+                for terms, numeric_facts, anchors in document.numeric_contexts:
+                    if anchors and not anchors.issubset(context_terms):
+                        continue
+                    if names and not names.issubset(terms):
+                        continue
+                    row_context = clause_context - (document.table_anchors - anchors) if anchors else clause_context
+                    score = self._weighted_overlap(row_context, terms) if row_context else 1.0
+                    scored.append((score, numeric_facts))
+            best_score = max((score for score, _ in scored), default=0.0)
+            facts = set().union(*(facts for score, facts in scored if score == best_score and score >= 0.4))
+            unmatched.update(mention["display"] for mention in mentions if mention["key"] not in facts)
+        unmatched_numbers = tuple(sorted(unmatched))
 
         best_sentence = ""
         best_passage = ""
