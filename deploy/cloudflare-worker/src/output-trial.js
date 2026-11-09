@@ -149,9 +149,10 @@ export async function handleOutputTrial(request, env, { validate, evaluate, emit
     const daily = admission.limit_reason === 'daily_capacity_exhausted';
     const retry = Math.max(1, Math.ceil((admission.reset_at - Date.now()) / 1000));
     log('preview_failed', 'trial_exhausted', 429, null, admission.limit_reason);
+    const freeNextSteps = ` Free next steps: check your input's format at ${terms.input_preflight.endpoint} (format check only; no evaluation, payment or trial attempt; existing production authentication applies) and inspect the saved worked example at ${terms.worked_example_url}.`;
     return reply({ code: 'trial_exhausted', error: daily
-      ? 'Today\'s free-trial capacity is full. Retry after the next UTC midnight. No trial attempt was consumed.'
-      : `This network address has used this product's ${terms.attempts_per_network} campaign attempts. Shared networks share the allowance; it does not reset daily.${terms.paid_endpoint ? ' You can choose a separate paid evaluation.' : ' No automatic retry or paid continuation.'}`,
+      ? 'Today\'s free-trial capacity is full. Retry after the next UTC midnight. No trial attempt was consumed.' + freeNextSteps
+      : `This network address has used this product's ${terms.attempts_per_network} campaign attempts. Shared networks share the allowance; it does not reset daily.${freeNextSteps}${terms.paid_endpoint ? ' You can choose a separate paid evaluation.' : ' No automatic retry or paid continuation.'}`,
       trial: { ...terms, limit_reason: admission.limit_reason, attempt_consumed: false,
         ...(daily ? { retry_after_seconds: retry } : {}) } }, 429, daily ? { 'retry-after': String(retry) } : {});
   }

@@ -26,6 +26,10 @@ test('network exhaustion has a precise campaign reason and is not an execution f
   assert.equal(result.trial.limit_reason,'network_allowance_exhausted');
   assert.equal(result.trial.attempt_consumed,false);
   assert.equal(response.headers.get('retry-after'),null);
+  assert.ok(result.error.includes('/v1/validate-input'));
+  assert.ok(result.error.includes('/?example=1#worked-example'));
+  assert.match(result.error,/format check only; no evaluation, payment or trial attempt/);
+  assert.match(result.error,/separate paid evaluation/);
   const failure=events.find(e=>e?.stage==='preview_failed');
   assert.equal(failure.failure_family,'trial_admission');
   assert.equal(failure.trial_limit_reason,'network_allowance_exhausted');
@@ -42,6 +46,8 @@ test('daily capacity returns a UTC reset hint without consuming the fresh networ
   assert.equal(response.status,429);
   assert.equal(result.trial.limit_reason,'daily_capacity_exhausted');
   assert.equal(result.trial.attempt_consumed,false);
+  assert.ok(result.error.includes('/v1/validate-input'));
+  assert.match(result.error,/Retry after the next UTC midnight/);
   assert.ok(Number(response.headers.get('retry-after'))>0);
   assert.equal(result.trial.retry_after_seconds,Number(response.headers.get('retry-after')));
   assert.equal(events.find(e=>e?.stage==='preview_failed').failure_family,'trial_admission');
