@@ -3,18 +3,18 @@ import { hostedAccess } from './hosted-access.js';
 // Task-first discovery is separate from the evaluator. These are selection
 // hints, never permissions to execute an action or attest source authenticity.
 export const PROFILE_TASKS = Object.freeze({
-  agenda: 'Check a drafted strategic-risk memo for missing sources and weak follow-up before human review, or turn a new question into an evidence plan and a matching specialist tool.',
-  kazakhstan: 'Send the route, cargo, counterparties and dated sources for a Kazakhstan / Middle Corridor deal. Get missing documents and review steps before signature, shipment or committee review.',
-  cis_secondary_sanctions: 'Review a CIS counterparty evidence pack for secondary-sanctions exposure questions and missing due-diligence records.',
-  agentic_interaction_trust: 'Find missing identity, authorization and scope evidence before accepting an agent-mediated action.',
-  agent_output_verification: 'Check an AI answer and supplied sources for missing references and quote mismatches before human review. The audit also flags caller-declared unsupported claims.',
-  gulf_maritime_exposure: 'Review voyage evidence for Gulf / Red Sea chokepoint exposure and missing vessel, ownership or insurance documents.',
-  market_entry_readiness: 'Find missing evidence and owner tasks in a Kazakhstan market-entry file before a launch or partner commitment.',
-  critical_minerals_due_diligence: 'Find missing evidence before a mineral offtake or other named decision, prepare supplier/counsel document requests and blank source templates, then recheck an updated dossier with optional previous_submission for coverage comparison.',
-  dual_use_technology_export: 'Review a technology shipment file for export-control evidence gaps, declared HS/ECCN context and diversion questions.',
-  agent_financial_guard: 'Review a proposed wallet transaction for declared spending limits, approval patterns and local denylist findings before human signing review.',
-  m2m_escrow_arbiter: 'Compare escrow delivery evidence with agreed hashes, supported schemas, deadlines and SLO records for dispute review.',
-  corridor_sanctions_assistant: 'Turn a free-text corridor or sanctions question into a matching specialist contract and evidence checklist.'
+  agenda: 'For analysts and risk teams drafting strategic-risk memos: check a draft for missing sources and weak follow-up actions before human review, or turn a new question into an evidence plan and a pointer to the matching specialist gate.',
+  kazakhstan: 'For exporters, freight forwarders and trade-finance teams working a Kazakhstan / Middle Corridor deal: send the route, cargo, counterparties and dated sources, and get the missing documents and review steps to close before signature, shipment or committee review.',
+  cis_secondary_sanctions: 'For exporters, importers, traders, freight forwarders and finance leads screening CIS, Caucasus or Central Asia counterparties: review the counterparty evidence pack and get a reviewable list of secondary-sanctions exposure questions and missing due-diligence records before the file goes to compliance.',
+  agentic_interaction_trust: 'For teams accepting actions from a third-party AI agent: check the requesting agent identity, authorization and scope evidence, and get the missing pieces listed before the action is accepted.',
+  agent_output_verification: 'For teams relaying an AI-generated answer to a customer or partner: check the answer against the supplied sources and get missing citations, quote mismatches and caller-declared unsupported claims flagged before human review.',
+  gulf_maritime_exposure: 'For shipowners, charterers and marine insurers transiting the Strait of Hormuz, Gulf of Oman, Bab-el-Mandeb or the Red Sea: review the voyage evidence and get chokepoint-exposure findings plus the missing vessel, ownership and insurance documents.',
+  market_entry_readiness: 'For companies preparing a Kazakhstan market entry (distribution, import, EPC, renewables or partner entry): check the market-entry file and get the missing evidence and owner tasks to close before a launch or partner commitment.',
+  critical_minerals_due_diligence: 'For buyers and investors preparing a mineral offtake or procurement decision: check the dossier and get the stage-specific missing documents plus ready-to-send supplier and counsel evidence requests, then recheck the updated dossier against the previous submission.',
+  dual_use_technology_export: 'For exporters of microelectronics, servers and chips: review the shipment file and get the export-control evidence gaps, declared HS/ECCN context check and diversion questions to answer before human compliance review.',
+  agent_financial_guard: 'For teams running wallet-bearing AI agents: review each proposed transaction against declared spending limits, approval patterns and the local denylist, and get the findings before a human signing review.',
+  m2m_escrow_arbiter: 'For parties in an agent-to-agent escrow dispute: compare the delivery evidence against agreed hashes, supported schemas, deadlines and SLO records, and get a structured comparison for dispute review.',
+  corridor_sanctions_assistant: 'For anyone with a corridor or sanctions question about Central Asia or the Caucasus: describe the deal or counterparty in free text and get a plain-language read on what evidence a bank, insurer or compliance desk will ask for, plus a pointer to the matching specialist gate.'
 });
 
 export function profileWorkflow(profile) {
