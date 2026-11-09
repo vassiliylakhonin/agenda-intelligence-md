@@ -70,5 +70,14 @@
       "type": "streamable-http",
       "url": "https://m2m-escrow-arbiter.agendamcp.dpdns.org/mcp/agent"
     }
+  ],
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/vassiliylakhonin/agenda-intelligence-md/main/assets/icon.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "512x512"
+      ]
+    }
   ]
 }
