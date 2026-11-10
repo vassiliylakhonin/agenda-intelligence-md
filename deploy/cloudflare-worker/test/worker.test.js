@@ -8296,6 +8296,11 @@ const MOCK_PAYER = "0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a"; // eth-account 
 const MOCK_PAYER_SIGNATURE_TX2222 =
   "0xea86d8b03a08b53ca440e3e1ec6c2d4cbcef1a6c69163f4b0d022ba8fd5a560c72eda0d8e70543904522dab2320911ae1531ad9f35526f78e6c4f91fa697e6cd1b";
 
+// Head far above the mock receipt block: satisfies the confirmation-depth rule.
+function rpcHeadOr(init, receipt) {
+  try { if (JSON.parse(init?.body || "{}").method === "eth_blockNumber") return "0x12400"; } catch (_e) {}
+  return receipt;
+}
 function mockUsdcTransferReceipt(amountUsdc, recipient = BASE_USDC_WALLET, status = "0x1", payer = MOCK_PAYER) {
   const rawValue = BigInt(Math.round(amountUsdc * 1e6));
   const hexValue = "0x" + rawValue.toString(16).padStart(64, "0");
@@ -8338,8 +8343,8 @@ test("parseTransferLog correctly extracts USDC transfers on Base", () => {
 test("verifyBaseTransactionReceipt validates confirmed Base RPC receipts and enforces replay protection", async () => {
   const txHash = "0x1111111111111111111111111111111111111111111111111111111111111111";
   const mockReceipt = mockUsdcTransferReceipt(490);
-  const fakeFetch = async () =>
-    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockReceipt }), {
+  const fakeFetch = async (_u, init) =>
+    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: rpcHeadOr(init, mockReceipt) }), {
       status: 200,
       headers: { "content-type": "application/json" }
     });
@@ -8377,8 +8382,8 @@ test("POST /v1/settle requires the payer signature before any credential exists"
   const txHash = "0x2222222222222222222222222222222222222222222222222222222222222222";
   const mockReceipt = mockUsdcTransferReceipt(490);
   const origFetch = globalThis.fetch;
-  globalThis.fetch = async () =>
-    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockReceipt }), {
+  globalThis.fetch = async (_u, init) =>
+    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: rpcHeadOr(init, mockReceipt) }), {
       status: 200,
       headers: { "content-type": "application/json" }
     });
@@ -8416,8 +8421,8 @@ test("POST /v1/settle provisions a 30-day Pro Bearer key for 490 USDC payment", 
   const txHash = "0x2222222222222222222222222222222222222222222222222222222222222222";
   const mockReceipt = mockUsdcTransferReceipt(490);
   const origFetch = globalThis.fetch;
-  globalThis.fetch = async () =>
-    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockReceipt }), {
+  globalThis.fetch = async (_u, init) =>
+    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: rpcHeadOr(init, mockReceipt) }), {
       status: 200,
       headers: { "content-type": "application/json" }
     });
@@ -8474,7 +8479,7 @@ test("POST /v1/settle provisions a 30-day Pro Bearer key for 490 USDC payment", 
 test("header-settled Pro payment upgrades only with payer signature; completed claims never replay", async () => {
   const txHash = "0x2222222222222222222222222222222222222222222222222222222222222222";
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () => new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockUsdcTransferReceipt(490) }), { status: 200 });
+  globalThis.fetch = async (_u, init) => new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: rpcHeadOr(init, mockUsdcTransferReceipt(490)) }), { status: 200 });
   const env = { AGENDA_USAGE: fakeRateKv(), PAYMENT_LEDGER: memoryD1(), RATE_LIMIT_PER_HOUR: "1" };
   const url = "https://agenda-intelligence-a2a.example.workers.dev/v1/settle";
   const settle = (tier, signature) => handleRequest(new Request(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tx_hash: txHash, tier, ...(signature ? { payer_signature: signature } : {}) }) }), env);
@@ -8502,7 +8507,7 @@ test("header-settled Pro payment upgrades only with payer signature; completed c
 test("header claim refuses mismatched payer, tier or already-provisioned marker", async () => {
   const txHash = "0x2222222222222222222222222222222222222222222222222222222222222222";
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () => new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockUsdcTransferReceipt(490) }), { status: 200 });
+  globalThis.fetch = async (_u, init) => new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: rpcHeadOr(init, mockUsdcTransferReceipt(490)) }), { status: 200 });
   const env = { AGENDA_USAGE: fakeRateKv(), PAYMENT_LEDGER: memoryD1() };
   const key = `settled_tx:${txHash}`;
   const req = new Request("https://agenda-intelligence-a2a.example.workers.dev/v1/settle", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tx_hash: txHash, tier: "tier_2_pro", payer_signature: MOCK_PAYER_SIGNATURE_TX2222 }) });
@@ -8536,7 +8541,7 @@ test("Pro landing payment and signed settlement display the issued bearer token"
   const env = { AGENDA_USAGE: fakeRateKv(), PAYMENT_LEDGER: memoryD1() };
   const fetch = async (url, options) => {
     if (String(url).includes("/v1/settle")) return handleRequest(new Request(url, options), env);
-    return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockUsdcTransferReceipt(490) }), { status: 200 });
+    return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: rpcHeadOr(options, mockUsdcTransferReceipt(490)) }), { status: 200 });
   };
   globalThis.fetch = fetch;
   try {
@@ -8577,8 +8582,8 @@ test("checkRateLimit refuses unsigned public X-Payment-Tx hashes", async () => {
   const txHash = "0x3333333333333333333333333333333333333333333333333333333333333333";
   const mockReceipt = mockUsdcTransferReceipt(49);
   const origFetch = globalThis.fetch;
-  globalThis.fetch = async () =>
-    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockReceipt }), {
+  globalThis.fetch = async (_u, init) =>
+    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: rpcHeadOr(init, mockReceipt) }), {
       status: 200,
       headers: { "content-type": "application/json" }
     });
@@ -9080,8 +9085,8 @@ test("POST /v1/settle activates signed tier_micro_check without consuming execut
   const txHash = "0x4444444444444444444444444444444444444444444444444444444444444444";
   const mockReceipt = mockUsdcTransferReceipt(0.05);
   const origFetch = globalThis.fetch;
-  globalThis.fetch = async () =>
-    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockReceipt }), {
+  globalThis.fetch = async (_u, init) =>
+    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: rpcHeadOr(init, mockReceipt) }), {
       status: 200,
       headers: { "content-type": "application/json" }
     });
@@ -9156,8 +9161,8 @@ test("POST /v1/corridor-bankability/screen with valid x-payment-tx returns unloc
   const txHash = "0x5555555555555555555555555555555555555555555555555555555555555555";
   const mockReceipt = mockUsdcTransferReceipt(25);
   const origFetch = globalThis.fetch;
-  globalThis.fetch = async () =>
-    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: mockReceipt }), {
+  globalThis.fetch = async (_u, init) =>
+    new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: rpcHeadOr(init, mockReceipt) }), {
       status: 200,
       headers: { "content-type": "application/json" }
     });

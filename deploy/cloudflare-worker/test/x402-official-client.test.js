@@ -63,6 +63,7 @@ const paymentClient = () =>
 function mockNetwork() {
   let authorization,
     settles = 0;
+  let heads = 0;
   const fetch = async (url, init) => {
     const body = JSON.parse(init.body);
     if (String(url) === X402_FACILITATOR + "/verify") {
@@ -85,7 +86,7 @@ function mockNetwork() {
     }
     let result;
     if (body.method === "eth_chainId") result = "0x2105";
-    else if (body.method === "eth_blockNumber") result = "0x100";
+    else if (body.method === "eth_blockNumber") result = "0x" + (0x100 + (heads++ ? 0x20 : 0)).toString(16);
     else if (body.method === "eth_getTransactionReceipt")
       result = {
         status: "0x1",

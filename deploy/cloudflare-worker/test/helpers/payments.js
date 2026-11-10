@@ -28,5 +28,6 @@ export function rpcReceipt(amount = 0.05) {
 export function mockRpc(amount = 0.05) {
   return async (_url, options) => Response.json({ jsonrpc: '2.0', id: 1,
     result: JSON.parse(options.body).method === 'eth_getBlockByNumber'
-      ? { timestamp: '0x' + Math.floor(Date.now() / 1000).toString(16) } : rpcReceipt(amount) });
+      ? { timestamp: '0x' + Math.floor(Date.now() / 1000).toString(16) }
+      : JSON.parse(options.body).method === 'eth_blockNumber' ? '0x200' : rpcReceipt(amount) });
 }

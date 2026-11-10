@@ -27,6 +27,19 @@ import {
 const NETWORK = "eip155:8453",
   TTL = 86400000,
   LEASE = 120000;
+// Reorg safety (arXiv 2605.11781 Corollary 10): wait for k blocks above the
+// settlement block before releasing a paid result. Base blocks are ~2 s.
+export const CONFIRMATION_DEPTH_SMALL = 3n,
+  CONFIRMATION_DEPTH_LARGE = 12n,
+  LARGE_VALUE_ATOMIC = 10000000n; // 10 USDC, 6 decimals
+export const confirmationDepth = (value) =>
+  BigInt(value) >= LARGE_VALUE_ATOMIC
+    ? CONFIRMATION_DEPTH_LARGE
+    : CONFIRMATION_DEPTH_SMALL;
+// One USDC transfer authorization is identified by (tx, payer, nonce), so two
+// authorizations settled inside one transaction each keep their own claim.
+export const settlementClaimKey = (tx, a) =>
+  tx.toLowerCase() + ":" + a.from.toLowerCase() + ":" + a.nonce.toLowerCase();
 export const X402_FACILITATOR = "https://facilitator.payai.network";
 export const x402Enabled = (env) => env?.X402_STANDARD === "1";
 const hex = (bytes) =>
@@ -255,6 +268,9 @@ async function confirmed(env, tx, a, fromBlock) {
     BigInt(receipt.blockNumber) < BigInt(fromBlock)
   )
     return false;
+  const head = BigInt(await rpc(env, "eth_blockNumber", []));
+  if (head < BigInt(receipt.blockNumber) + confirmationDepth(a.value))
+    return false;
   const logs = (receipt.logs || []).filter(
     (log) =>
       !log.removed &&
@@ -383,6 +399,11 @@ export async function executeX402(
         BigInt(a.validBefore) > now + 150n
       )
         return fail(400, "payment_window_invalid");
+      // Anchor the scan window BEFORE the facilitator call: anyone who sees the
+      // signature header can settle it first, and that block must stay in range.
+      if (BigInt(await rpc(env, "eth_chainId", [])) !== 8453n)
+        return fail(503, "chain_unavailable");
+      const fromBlock = await rpc(env, "eth_blockNumber", []);
       const verify = await facilitator("/verify", payload, required);
       if (
         !verify.ok ||
@@ -391,9 +412,6 @@ export async function executeX402(
           verify.value.payer.toLowerCase() !== a.from.toLowerCase())
       )
         return fail(402, "payment_not_verified");
-      if (BigInt(await rpc(env, "eth_chainId", [])) !== 8453n)
-        return fail(503, "chain_unavailable");
-      const fromBlock = await rpc(env, "eth_blockNumber", []);
       details = {
         settled_via: "x402_v2",
         phase: "verified",
@@ -506,7 +524,9 @@ export async function executeX402(
         await phase("evaluated");
       }
     }
+    let settleCalled = false;
     if (details.phase === "evaluated") {
+      settleCalled = true;
       // Commit ambiguity BEFORE sending any state-changing facilitator request.
       await phase("settling");
       try {
@@ -523,6 +543,26 @@ export async function executeX402(
     if (details.phase === "settling") await phase("pending");
     let tx = details.transaction;
     if (!tx) tx = await findSettlement(env, a, details.from_block);
+    // An earlier /settle may have failed before broadcasting. The nonce is
+    // single-use on chain, so re-asking while the authorization is still valid
+    // cannot pay twice; the confirmation below is still independent.
+    if (!tx && !settleCalled && details.phase === "pending") {
+      const now = BigInt(Math.floor(Date.now() / 1000));
+      if (now + 5n < BigInt(a.validBefore)) {
+        try {
+          const retry = await facilitator("/settle", payload, offered);
+          if (txOK(retry.value.transaction)) {
+            tx = retry.value.transaction.toLowerCase();
+            await phase("pending", { transaction: tx });
+          }
+        } catch {}
+        if (!tx) tx = await findSettlement(env, a, details.from_block);
+      } else if (now > BigInt(a.validBefore) + 60n)
+        return fail(503, "x402_authorization_expired_unsettled", {
+          instruction:
+            "The signed authorization expired and no settlement was found on chain, so no funds moved. Request a new challenge for the same request and sign again.",
+        });
+    }
     if (!tx || !(await confirmed(env, tx, a, details.from_block)))
       return fail(503, "x402_settlement_pending", {
         instruction:
@@ -536,8 +576,12 @@ export async function executeX402(
       amount_usdc: details.amount_usdc,
       request_hash: requestHash,
     };
-    await claimPayment(env, tx, txClaim);
-    const claimed = await readPayment(env, tx);
+    // A raw transaction-hash claim belongs to the legacy settlement path (or an
+    // earlier x402 release); never double-spend a transfer already claimed there.
+    if (await readPayment(env, tx)) return fail(409, "payment_already_claimed");
+    const claimKey = settlementClaimKey(tx, a);
+    await claimPayment(env, claimKey, txClaim);
+    const claimed = await readPayment(env, claimKey);
     if (claimed?.reservation !== key)
       return fail(409, "payment_already_claimed");
     await phase("completed", { transaction: tx });

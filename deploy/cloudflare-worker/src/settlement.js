@@ -1,5 +1,5 @@
 import { readBoundedJson } from "./request-body.js";
-import { paymentLedger, claimPayment, readPayment, tokenHash } from "./payment-ledger.js";
+import { paymentLedger, claimPayment, readPayment, hasTransactionClaim, tokenHash } from "./payment-ledger.js";
 import {
   BASE_FALLBACK_RPC_URLS,
   BASE_RPC_URL,
@@ -146,6 +146,8 @@ export async function verifyBaseTransactionReceipt(
   if (env.PAYMENT_LEDGER) {
     try {
       const existing = await readPayment(env, cleanTxHash);
+      if (!existing && await hasTransactionClaim(env, cleanTxHash))
+        return { valid: false, code: "already_claimed", error: "Transaction already claimed" };
       if (existing && !(options.allowHeaderClaim && isHeaderProClaim(JSON.stringify(existing))) &&
           !((options.allowCallClaim || options.allowActivation) && existing.settled_via === "signed_activation")) {
         return { valid: false, code: "already_claimed", error: "Transaction already claimed" };
@@ -234,6 +236,23 @@ export async function verifyBaseTransactionReceipt(
 
   if (Number.isFinite(options.expectedAmountUsdc) && matchingTransfer.amount_usdc < options.expectedAmountUsdc) {
     return { valid: false, code: "insufficient_payment", error: "Payment amount is below the required minimum" };
+  }
+  // Reorg safety (arXiv 2605.11781 Cor. 10): require k blocks above the
+  // payment block, k=3 for ordinary amounts and k=12 from 10 USDC (Pro $490).
+  {
+    const depth = matchingTransfer.amount_usdc >= 10 ? 12n : 3n;
+    try {
+      const headResponse = await fetchFn(env.BASE_RPC_URL || BASE_RPC_URL, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 3, method: "eth_blockNumber", params: [] }),
+        signal: AbortSignal.timeout(10000)
+      });
+      const head = BigInt((await headResponse.json())?.result);
+      if (!headResponse.ok || head < BigInt(receipt.blockNumber) + depth)
+        return { valid: false, code: "confirmations_pending", error: `Payment needs ${depth} block confirmations; retry shortly with the same transaction.` };
+    } catch (_error) {
+      return { valid: false, code: "confirmations_unavailable", error: "Unable to verify payment confirmations" };
+    }
   }
   // Legacy KV markers expire after 90 days. Accepting only recent on-chain
   // payments prevents expired legacy markers from reopening old payments.

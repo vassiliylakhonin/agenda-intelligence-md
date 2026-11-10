@@ -30,3 +30,19 @@ High-stakes legal, compliance, financial, sanctions and security decisions requi
 Severity depends on the added capability and actual impact, including required credentials, deployment mode and reachable assets. Existing authorized host/operator access is not an assumed anonymous-attacker capability. No new finding classes or accepted risks are excluded by this policy.
 
 See [.oss-scanner/threat_model.md](.oss-scanner/threat_model.md) for the source-backed architecture and review questions. Scanner enrollment, signed cards and passing tests are not a security certification.
+
+## x402 payment path: audit status and accepted residual risks
+
+The Worker's x402 v2 path (exact scheme, EIP-3009, Base USDC) was code-audited on 2026-11-10 against the five attacks in arXiv 2605.11781 ("Five Attacks on x402 Agentic Payment Protocol"). This was a code review. No real-money payment has been run end to end, so the behaviors below are covered by offline tests with mocked facilitator and RPC, not by live validation.
+
+Design points: the facilitator's `/settle` reply never releases a result by itself; the Worker confirms the transfer on chain (receipt status, `AuthorizationUsed` and `Transfer` logs, exact value to the fleet wallet) before delivery. Claims are written before execution, bound to the request hash, and the sealed result is replayed to the same authorization.
+
+Changes made after the audit: the log scan window is anchored before the facilitator call; a `/settle` that failed before broadcasting is retried while the authorization is valid; claims are keyed by (transaction, payer, nonce) so several authorizations in one transaction do not collide, with legacy raw transaction claims still blocking reuse; results are released only after 3 blocks (12 blocks from 10 USDC, including the legacy Pro settlement path).
+
+Accepted residual risks:
+
+- Anyone who sees the `PAYMENT-SIGNATURE` header can submit the authorization on chain first. Funds still go only to the fleet wallet for the signed amount, and the Worker finds that transaction by its on-chain log. If it is mined before the Worker's first RPC call, facilitator `/verify` fails and the caller gets a 402 even though the transfer happened. Callers should not retry with a new signature without checking their balance.
+- Confirmation depth reduces but does not remove reorg risk. A deeper reorg than 3 (or 12) blocks could undo a paid transfer after delivery.
+- Settlement is not bound to one facilitator, and the facilitator is trusted only for `/verify` and for broadcasting, not for finality.
+- The log scan reads at most 5000 blocks from the anchor, far more than the 150 second authorization window.
+- A claim keyed by the legacy path and an x402 claim for the same transaction are checked in sequence, not in one atomic write.

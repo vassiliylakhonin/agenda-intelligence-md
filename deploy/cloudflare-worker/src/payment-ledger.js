@@ -32,3 +32,12 @@ export async function consumeProQuota(token, env) {
   ).bind(await tokenHash(token), Date.now()).first();
   return row ? { ...JSON.parse(row.details), used: row.used, quota: row.quota } : null;
 }
+
+// x402 claims are keyed "<tx>:<payer>:<nonce>" so several authorizations can
+// share one transaction. This reports whether any of them already holds `tx`.
+export async function hasTransactionClaim(env, txHash) {
+  const row = await paymentLedger(env).prepare(
+    "SELECT 1 AS found FROM payment_claims WHERE tx_hash = ?1 OR tx_hash LIKE ?2 LIMIT 1"
+  ).bind(txHash.toLowerCase(), txHash.toLowerCase() + ":%").first();
+  return Boolean(row);
+}

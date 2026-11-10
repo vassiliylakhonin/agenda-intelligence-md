@@ -9,6 +9,8 @@ import {
   decodeX402,
   x402AuthorizationSigner,
   X402_FACILITATOR,
+  settlementClaimKey,
+  confirmationDepth,
 } from "../src/x402-v2.js";
 import {
   BASE_USDC_CONTRACT,
@@ -66,12 +68,15 @@ const environment = () => ({
   PAYMENT_LEDGER: memoryD1(),
 });
 function network(options = {}) {
-  const counts = { verify: 0, settle: 0 },
+  const order = [],
+    counts = { verify: 0, settle: 0 },
     state = { confirmed: !options.pending };
+  let heads = 0;
   const fetch = async (url, init) => {
     const body = JSON.parse(init.body);
     if (String(url) === X402_FACILITATOR + "/verify") {
       counts.verify++;
+      order.push("verify");
       return Response.json({
         isValid: !options.invalid,
         payer: vector.authorization.from,
@@ -89,7 +94,10 @@ function network(options = {}) {
     }
     let result;
     if (body.method === "eth_chainId") result = "0x2105";
-    else if (body.method === "eth_blockNumber") result = "0x100";
+    else if (body.method === "eth_blockNumber") {
+      order.push("head");
+      result = "0x" + (0x100 + (heads++ ? (options.shallow ? 2 : 0x20) : 0)).toString(16);
+    }
     else if (body.method === "eth_getLogs")
       result = state.confirmed ? [{ transactionHash: tx }] : [];
     else if (body.method === "eth_getTransactionReceipt")
@@ -125,7 +133,7 @@ function network(options = {}) {
     else throw new Error("Unexpected RPC " + body.method);
     return Response.json({ jsonrpc: "2.0", id: 1, result });
   };
-  return { fetch, counts, state };
+  return { fetch, counts, state, order };
 }
 test.beforeEach((t) => {
   t.mock.timers.enable({
@@ -203,7 +211,7 @@ test('an admitted old-price claim settles with its original terms after a price 
     assert.equal(seenAmount,'50000');
     assert.equal(mock.counts.verify,1);
     assert.equal(mock.counts.settle,1);
-    const claim=await env.PAYMENT_LEDGER.prepare('SELECT details FROM payment_claims WHERE tx_hash = ?1').bind(tx).first();
+    const claim=await env.PAYMENT_LEDGER.prepare('SELECT details FROM payment_claims WHERE tx_hash = ?1').bind(settlementClaimKey(tx,proof.payload.authorization)).first();
     assert.equal(JSON.parse(claim.details).amount_usdc,0.05);
   } finally {globalThis.fetch=previous;}
 });
@@ -264,7 +272,7 @@ test("successful standard payment returns a recoverable result exactly once", as
     globalThis.fetch = original;
   }
 });
-test("pending settlement hides the evaluated output and reconciles without a second settle", async () => {
+test("pending settlement hides the evaluated output and retries settle only without a recorded tx and never evaluates twice", async () => {
   const env = environment(),
     mock = network({ pending: true }),
     original = globalThis.fetch;
@@ -280,11 +288,13 @@ test("pending settlement hides the evaluated output and reconciles without a sec
     assert.equal(first.status, 503);
     assert.ok(!(await first.text()).includes("private"));
     assert.equal((await run()).status, 503);
-    assert.equal(mock.counts.settle, 1);
+    // The first /settle failed before any tx was recorded, so the retry asks
+    // again while the authorization is valid. One more call, never a second payment.
+    assert.equal(mock.counts.settle, 2);
     assert.equal(evaluated, 1);
     mock.state.confirmed = true;
     assert.equal((await run()).status, 200);
-    assert.equal(mock.counts.settle, 1);
+    assert.equal(mock.counts.settle, 2);
     assert.equal(evaluated, 1);
   } finally {
     globalThis.fetch = original;
@@ -580,4 +590,86 @@ test("expired cached results are erased without reopening the authorization", as
 test('legacy MCP endpoint preserves HTTP payment admission while advertising standard HTTP headers',async()=>{
  const response=await handleRequest(new Request('https://example.test/mcp',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:'legacy',method:'tools/call',params:{name:'agent_output_verification',arguments:input}})}),environment());
  assert.equal(response.status,402);assert.equal(decodeX402(response.headers.get('payment-required')).x402Version,2);
+});
+
+test("the scan window is anchored before the facilitator call so a front-run settlement stays in range", async () => {
+  const env = environment(), mock = network(), original = globalThis.fetch;
+  globalThis.fetch = mock.fetch;
+  try {
+    const res = await executeX402(request(), input, env, 0.05, payload(request()), async () => Response.json({ ok: true }));
+    assert.equal(res.status, 200);
+    assert.ok(mock.order.indexOf("head") < mock.order.indexOf("verify"));
+    const claim = await env.PAYMENT_LEDGER.prepare("SELECT details FROM payment_claims WHERE tx_hash LIKE 'x402:%'").first();
+    assert.equal(JSON.parse(claim.details).from_block, "0x100");
+  } finally { globalThis.fetch = original; }
+});
+test("a settlement only 2 blocks deep is not final: no result until k=3 blocks", async () => {
+  const env = environment(), mock = network({ shallow: true }), original = globalThis.fetch;
+  globalThis.fetch = mock.fetch;
+  try {
+    const res = await executeX402(request(), input, env, 0.05, payload(request()), async () => Response.json({ secret: "no" }));
+    assert.equal(res.status, 503);
+    assert.ok(!(await res.text()).includes("secret"));
+  } finally { globalThis.fetch = original; }
+});
+test("confirmation depth is 3 blocks for small tariffs and 12 from 10 USDC", () => {
+  assert.equal(confirmationDepth("500000"), 3n);
+  assert.equal(confirmationDepth("9999999"), 3n);
+  assert.equal(confirmationDepth("10000000"), 12n);
+  assert.equal(confirmationDepth("490000000"), 12n);
+});
+test("a lost /settle is retried on the next request while the authorization is valid, then reconciled", async () => {
+  const env = environment(), mock = network(), original = globalThis.fetch;
+  let failFirst = true;
+  globalThis.fetch = async (u, init) => {
+    if (String(u) === X402_FACILITATOR + "/settle" && failFirst) {
+      failFirst = false; mock.counts.settle++;
+      throw new Error("facilitator down before broadcast");
+    }
+    return mock.fetch(u, init);
+  };
+  try {
+    mock.state.confirmed = false;
+    let evaluated = 0;
+    const run = () => executeX402(request(), input, env, 0.05, payload(request()), async () => { evaluated++; return Response.json({ ok: true }); });
+    assert.equal((await run()).status, 503);
+    assert.equal((await run()).status, 503);
+    assert.equal(mock.counts.settle, 2);
+    mock.state.confirmed = true;
+    assert.equal((await run()).status, 200);
+    assert.equal(mock.counts.settle, 2);
+    assert.equal(evaluated, 1);
+  } finally { globalThis.fetch = original; }
+});
+test("an unsettled authorization that has expired says so and stays unpaid", async (t) => {
+  const env = environment(), mock = network({ pending: true }), original = globalThis.fetch;
+  globalThis.fetch = mock.fetch;
+  try {
+    const run = () => executeX402(request(), input, env, 0.05, payload(request()), async () => Response.json({ ok: true }));
+    assert.equal((await run()).status, 503);
+    t.mock.timers.setTime(1704067320000 + 61000);
+    const late = await run();
+    assert.equal(late.status, 503);
+    assert.equal((await late.json()).code, "x402_authorization_expired_unsettled");
+  } finally { globalThis.fetch = original; }
+});
+test("two authorizations in one transaction keep separate claims, but a legacy raw claim still blocks", async () => {
+  const a = vector.authorization;
+  assert.notEqual(settlementClaimKey(tx, a), settlementClaimKey(tx, { ...a, nonce: "0x" + "34".repeat(32) }));
+  assert.equal(settlementClaimKey(tx, a), tx + ":" + a.from.toLowerCase() + ":" + a.nonce.toLowerCase());
+  const env = environment(), mock = network(), original = globalThis.fetch;
+  globalThis.fetch = mock.fetch;
+  try {
+    // A sibling authorization in the same multicall transaction already holds its own claim.
+    await env.PAYMENT_LEDGER.prepare("INSERT INTO payment_claims(tx_hash, details, claimed_at) VALUES (?1, '{}', 'x')")
+      .bind(settlementClaimKey(tx, { ...a, nonce: "0x" + "34".repeat(32) })).run();
+    const ok = await executeX402(request(), input, env, 0.05, payload(request()), async () => Response.json({ ok: true }));
+    assert.equal(ok.status, 200);
+    // Another environment where the legacy path claimed the raw tx hash first.
+    const env2 = environment();
+    globalThis.fetch = network().fetch;
+    await env2.PAYMENT_LEDGER.prepare("INSERT INTO payment_claims(tx_hash, details, claimed_at) VALUES (?1, '{}', 'x')").bind(tx).run();
+    const blocked = await executeX402(request(), input, env2, 0.05, payload(request()), async () => Response.json({ ok: true }));
+    assert.equal(blocked.status, 409);
+  } finally { globalThis.fetch = original; }
 });

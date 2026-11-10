@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Harden the x402 payment path after an audit against arXiv 2605.11781: anchor the settlement log scan before the facilitator call so a front-run settlement is still found; retry `/settle` on a later request when it failed before any transaction was recorded, and report an expired unsettled authorization; claim settlements by (transaction, payer, nonce) so several authorizations in one transaction do not return a false 409 while legacy transaction claims still block reuse; require 3 block confirmations (12 from 10 USDC, including the legacy Pro settlement path) before releasing a paid result. SECURITY.md records the audit scope and accepted residual risks. Verified with offline tests only; no live payment has been run.
+
 - Advertise the deployment's free trial inside the corridor bankability free teaser (HTTP 200 preview with the x402 dossier unlock challenge), derived from the live trial configuration. The block states the trial covers only the deployment's configured trial tool and never the full dossier; deployments without an enabled trial keep the old body.
 
 - Return structured repair hints on paid-admission schema rejections: the field-level remediation report and a free validate_input recheck pointer, without echoing caller input values. Protocol-level refusals keep the existing request hint only.
