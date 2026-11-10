@@ -15548,7 +15548,8 @@ function paidOperation(request, body, profile) {
     const input=body.params?.arguments||{};
     const legacy=mcpUsesLegacyRequestWrapper(profile,input,body.params.name);
     const invalid=mcpUnknownFields(profile,body.params.name,input);
-    if(invalid.length)return {errors:invalid.map(i=>i.field+': '+i.message),validationCategory:'schema_validation_failed'};
+    if(invalid.length)return {errors:invalid.map(i=>i.field+': '+i.message),validationCategory:'schema_validation_failed',
+      remediation:inputRemediation(invalid,'.well-known/schemas/tools/'+body.params.name+'/input.schema.json',{profile})};
     params = mcpArgumentsToParams(profile, body.params?.arguments || {}, body.params.name);
     name = body.params.name;
   } else if (path === "/message/send" || path === "/") {
@@ -15595,7 +15596,7 @@ function paidOperation(request, body, profile) {
   if (path.startsWith('/v1/evidence-packet/')) route = DIRECT_V1_ROUTES['/v1/agent-output/verification'];
   if (route) {
     const invalid=rawContractCheck(route.guideProfile,params.packet||params,route.schema,true,protocolCall);
-    if(invalid)return {errors:invalid.issues.map(i=>i.field+': '+i.problem),validationCategory:'schema_validation_failed'};
+    if(invalid)return {errors:invalid.issues.map(i=>i.field+': '+i.problem),validationCategory:'schema_validation_failed',remediation:invalid};
     const value = route.extract(params.packet || params);
     return { minimum: evaluationAmount(route.guideProfile,name),
       profile: route.guideProfile, errors: value ? route.errorsFor(value) : [route.missing],
@@ -16007,6 +16008,14 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
       emit('payment_rejected', 'invalid_paid_request', 400);
       return reply(jsonResponse({ code: 'invalid_paid_request', errors: operation.errors,
         validation: { category: operation.validationCategory, error_count: operation.errors.length },
+        // Field-level repair guidance the validator already computed; never
+        // echoes caller input values, only published field names and fixes.
+        ...(operation.remediation ? { remediation: operation.remediation } : {}),
+        ...(['schema_validation_failed', 'missing_structured_request', 'missing_input', 'invalid_request_object'].includes(operation.validationCategory)
+          ? { free_recheck: { mcp_tool: INPUT_VALIDATION_TOOL, endpoint: INPUT_VALIDATION_PATH,
+              evaluation_performed: false, attempt_consumed: false, payment_required: false,
+              instruction: 'Repair the input using remediation and request_hint, then re-check it free with the validate_input MCP tool or POST ' + INPUT_VALIDATION_PATH + ' before any payment; no evaluation, payment or trial attempt is consumed.' } }
+          : {}),
         request_hint: paidRequestHint(request, body, profile, env) }, 400));
     }
     return execute();

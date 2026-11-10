@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Return structured repair hints on paid-admission schema rejections: the field-level remediation report and a free validate_input recheck pointer, without echoing caller input values. Protocol-level refusals keep the existing request hint only.
+
+- Advertise the deployment's free trial inside 402 payment-required responses, including the legacy x402 body and the standard x402 MCP admission. Trial terms are derived from the live trial configuration; deployments without an enabled trial state that explicitly instead of a hardcoded claim.
+
 - Tighten Python numeric grounding to the nearest explicit entity/clause context and normalize bounded mass, length and time units. Preserve equivalent-unit positive controls and negative numeric values; retain human review, unassessed factuality and the separate hosted contracts. Add frozen synthetic before/after evaluation with misses and false holds reported separately.
 
 - Give Escrow's saved example a direct link to its delivery form and publish a tagged catalog entry link. Keep the existing demo trace on free-trial events so the archive can report follow-through.
