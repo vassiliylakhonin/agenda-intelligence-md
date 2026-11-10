@@ -6429,7 +6429,9 @@ async function a2aResultForCorridorBankability(params, request, env = {}) {
   const errors = validateBankabilityRequest(reqObj);
   if (errors.length) return invalidRequestResult("corridor_bankability", "/v1/corridor-bankability/screen", "schemas/v1/corridor-bankability-request.schema.json", errors);
   const isPaid = await isBankabilityDossierPaid(request, env);
-  const data = generateBankabilityScreen(reqObj, isPaid, new URL(request.url).origin, agentProfile(request, env) === "agenda" ? new URL(request.url).origin : "https://agendamcp.dpdns.org");
+  const bankabilityProfile = agentProfile(request, env);
+  const bankabilityTrial = outputTrialEnabled(bankabilityProfile, env) ? outputTrialTerms(bankabilityProfile) : null;
+  const data = generateBankabilityScreen(reqObj, isPaid, new URL(request.url).origin, bankabilityProfile === "agenda" ? new URL(request.url).origin : "https://agendamcp.dpdns.org", bankabilityTrial);
   return {
     id: crypto.randomUUID(),
     status: { state: "TASK_STATE_COMPLETED", timestamp: new Date().toISOString() },
@@ -16641,7 +16643,9 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
       const validationErrors = validateBankabilityRequest(structured);
       if (validationErrors.length) return jsonResponse({ error: "Validation failed", errors: validationErrors }, 400);
       const isPaid = await isBankabilityDossierPaid(request, env);
-      const data = generateBankabilityScreen(structured, isPaid, url.origin, agentProfile(request, env) === "agenda" ? url.origin : "https://agendamcp.dpdns.org");
+      const bankabilityProfile = agentProfile(request, env);
+      const bankabilityTrial = outputTrialEnabled(bankabilityProfile, env) ? outputTrialTerms(bankabilityProfile) : null;
+      const data = generateBankabilityScreen(structured, isPaid, url.origin, bankabilityProfile === "agenda" ? url.origin : "https://agendamcp.dpdns.org", bankabilityTrial);
       return jsonResponse(data, 200, {
         "x-payment-protocol": "x402",
         "cache-control": "no-store"

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Advertise the deployment's free trial inside the corridor bankability free teaser (HTTP 200 preview with the x402 dossier unlock challenge), derived from the live trial configuration. The block states the trial covers only the deployment's configured trial tool and never the full dossier; deployments without an enabled trial keep the old body.
+
 - Return structured repair hints on paid-admission schema rejections: the field-level remediation report and a free validate_input recheck pointer, without echoing caller input values. Protocol-level refusals keep the existing request hint only.
 
 - Advertise the deployment's free trial inside 402 payment-required responses, including the legacy x402 body and the standard x402 MCP admission. Trial terms are derived from the live trial configuration; deployments without an enabled trial state that explicitly instead of a hardcoded claim.

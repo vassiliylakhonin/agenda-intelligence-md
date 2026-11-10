@@ -83,7 +83,7 @@ export function validateBankabilityRequest(request) {
   return errors;
 }
 
-export function generateBankabilityScreen(request = {}, isPaid = false, origin = "https://agendamcp.dpdns.org", mcpOrigin = origin) {
+export function generateBankabilityScreen(request = {}, isPaid = false, origin = "https://agendamcp.dpdns.org", mcpOrigin = origin, trial = null) {
   const errors = validateBankabilityRequest(request);
   if (errors.length) throw new TypeError(errors.join("; "));
   const projectName = request.project_name.trim();
@@ -190,6 +190,29 @@ export function generateBankabilityScreen(request = {}, isPaid = false, origin =
       how_to_unlock:
         "Only after explicit wallet-owner approval, settle the stated USDC amount on Base. Retry the exact request with X-Payment-Tx to receive a funding-wallet signing challenge; sign that challenge and retry with both X-Payment-Tx and X-Payment-Signature. Preserve the exact URL, serialized body and proof for identical retries within 24 hours; do not transfer again for a retry."
     };
+    // Trial availability is derived from the live trial configuration passed by
+    // the caller; nothing here asserts a trial exists when the deployment has
+    // not enabled one. The trial never covers this dossier: it evaluates only
+    // the deployment's configured trial tool, so say so explicitly.
+    if (trial) {
+      baseResponse.free_trial = {
+        available: true,
+        payment_required: false,
+        covers_full_dossier: false,
+        tool: trial.tool,
+        attempts_per_network: trial.attempts_per_network,
+        terms_request: { url: origin + trial.endpoint, method: "GET" },
+        availability_request: { url: origin + trial.availability_endpoint, method: "GET" },
+        mcp_status_tool: trial.mcp_status_tool,
+        mcp_tool: trial.mcp_tool,
+        a2a_extension: trial.a2a,
+        input_preflight: trial.input_preflight,
+        worked_example_url: origin + trial.worked_example_url,
+        scope: trial.scope,
+        instruction:
+          "The full dossier has no free evaluation: it unlocks only with the x402 payment above. Before paying, you can separately evaluate " + trial.tool + " free: GET the terms for the input schema and an example, then POST your own supplied input, or call the MCP tools. HTTP, MCP and A2A share one campaign allowance per network; the trial covers " + trial.tool + " only - corridor_bankability_screen and other tools are not included. The result requires human review and grants no authorization."
+      };
+    }
     baseResponse.continuation = {
       status: "free_preview_completed",
       payment_required_for_preview: false,
