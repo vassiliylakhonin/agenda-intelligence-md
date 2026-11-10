@@ -542,7 +542,7 @@ export async function handleSettleRequest(request, env = {}, ctx = {}) {
   }
 }
 
-export function generateX402PaymentResponse(profile, request, env, reason = "quota_exceeded") {
+export function generateX402PaymentResponse(profile, request, env, reason = "quota_exceeded", trial = null) {
   const isFinancialCheck = profile === "agent_financial_guard";
   const isEscrowDispute = profile === "m2m_escrow_arbiter";
   const requiredUsdc = isFinancialCheck
@@ -554,13 +554,38 @@ export function generateX402PaymentResponse(profile, request, env, reason = "quo
 
   const authHeader = `X402 token="USDC", network="base", chain_id=8453, recipient="${BASE_USDC_WALLET}", amount="${requiredUsdc}", asset="USDC", contract="${BASE_USDC_CONTRACT}"`;
 
+  const origin = new URL(request.url).origin;
+  // The free trial is derived from the caller-supplied terms object (built from
+  // the live trial configuration by the dispatcher); nothing here asserts a
+  // trial exists when the deployment has not enabled one.
+  const freeTrial = trial
+    ? {
+        available: true,
+        payment_required: false,
+        tool: trial.tool,
+        attempts_per_network: trial.attempts_per_network,
+        terms_request: { url: origin + trial.endpoint, method: "GET" },
+        availability_request: { url: origin + trial.availability_endpoint, method: "GET" },
+        mcp_status_tool: trial.mcp_status_tool,
+        mcp_tool: trial.mcp_tool,
+        a2a_extension: trial.a2a,
+        input_preflight: trial.input_preflight,
+        worked_example_url: origin + trial.worked_example_url,
+        scope: trial.scope,
+        instruction:
+          "Before paying, you can evaluate " + trial.tool + " free: GET the terms for the input schema and an example, then POST your own supplied input, or call the MCP tools. HTTP, MCP and A2A share one campaign allowance per network; other tools are not included. The result requires human review and grants no authorization."
+      }
+    : null;
+
   const body = {
     error: "payment_required",
     status: 402,
     message:
-      reason === "quota_exceeded"
+      (reason === "quota_exceeded"
         ? "Free Community Sandbox hourly quota reached. Direct M2M settlement required for autonomous machine execution."
-        : "Autonomous M2M settlement required for direct execution.",
+        : "Autonomous M2M settlement required for direct execution.") +
+      (freeTrial ? " A free trial evaluation is available before any payment; see free_trial." : ""),
+    ...(freeTrial ? { free_trial: freeTrial } : {}),
     x402: {
       version: "1.0",
       protocol: "x402",

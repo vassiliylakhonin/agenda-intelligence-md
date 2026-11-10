@@ -15485,7 +15485,8 @@ async function handleDirectV1(endpoint, route, request, env) {
       billingProfile,
       request,
       env,
-      "quota_exceeded"
+      "quota_exceeded",
+      outputTrialEnabled(billingProfile, env) ? outputTrialTerms(billingProfile) : null
     );
   }
 
@@ -16015,19 +16016,21 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
   if (wantsPayment && bearerTokenFromRequest(request).startsWith('agy_pro_')) { emit('payment_rejected', 'choose_one_payment_method', 400); return reply(jsonResponse({ code: 'choose_one_payment_method' }, 400)); }
   if (wantsPayment) return reply(executePaidRequest(request, body, env, operation.minimum, execute, emit));
   if (env.BILLING_MODE === 'pay_per_call' && !bearerTokenFromRequest(request).startsWith('agy_pro_')) {
+    const trialTerms = outputTrialEnabled(operation.profile, env) ? outputTrialTerms(operation.profile) : null;
     if (operation.minimum === 25) {
       const response = await handleRequestInner(request, { ...env, BILLING_MODE: 'freemium' }, ctx);
       if (response.status === 402) emit('payment_required', 'payment_required', 402);
       else emit(response.ok ? 'preview_completed' : 'preview_failed', response.ok ? 'free_preview' : 'preview_refused', response.status);
-      return response.status === 402 && x402Enabled(env) ? paymentTraceResponse(x402RequiredResponse(request,body,operation.minimum,response),payment_trace_id,attempt_id) : reply(response);
+      return response.status === 402 && x402Enabled(env) ? paymentTraceResponse(x402RequiredResponse(request,body,operation.minimum,response,trialTerms),payment_trace_id,attempt_id) : reply(response);
     }
     emit('payment_required', 'payment_required', 402);
-    const legacy = generateX402PaymentResponse(operation.profile, request, env, 'payment_required');
-    return x402Enabled(env) ? paymentTraceResponse(x402RequiredResponse(request,body,operation.minimum,legacy),payment_trace_id,attempt_id) : reply(legacy);
+    const legacy = generateX402PaymentResponse(operation.profile, request, env, 'payment_required', trialTerms);
+    return x402Enabled(env) ? paymentTraceResponse(x402RequiredResponse(request,body,operation.minimum,legacy,trialTerms),payment_trace_id,attempt_id) : reply(legacy);
   }
   if (path.startsWith('/v1/evidence-packet/') && bearerTokenFromRequest(request).startsWith('agy_pro_')) {
     const rate = await checkRateLimit(request, env, profile);
-    if (rate.limited) return reply(generateX402PaymentResponse(operation.profile, request, env, 'payment_required'));
+    if (rate.limited) return reply(generateX402PaymentResponse(operation.profile, request, env, 'payment_required',
+      outputTrialEnabled(operation.profile, env) ? outputTrialTerms(operation.profile) : null));
   }
   return reply(execute());
 }
