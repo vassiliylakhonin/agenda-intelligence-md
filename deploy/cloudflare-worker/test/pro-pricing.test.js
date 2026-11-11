@@ -32,8 +32,10 @@ test('Pro costs 49 for 10000 checks and all twelve public profiles quote the sam
     const html=await(await handleRequest(new Request(origin+'/',{headers:{accept:'text/html'}}),env)).text();
     assert.doesNotMatch(html,/\$490\b|490 USDC|490USD|payWithBaseWallet\(490\)/);
     if(profile==='agent_financial_guard') {
-      assert.match(html,/payWithBaseWallet\(49\)/);
-      assert.match(html,/Pay \$49 Pro/);
+      assert.match(await (await handleRequest(new Request(origin+'/landing-client.js'),env)).text(),/payWithBaseWallet/);
+    const terms = await (await handleRequest(new Request(origin+'/terms'),env)).text();
+    assert.match(terms,/49 USDC/);
+      assert.match(html,/\/terms#access/);
     }
   }
 }));

@@ -1,9 +1,11 @@
+import {withLandingScripts} from './helpers/landing-browser.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {build} from 'esbuild';
 import {evaluateM2MEscrowArbitration} from '../src/m2m_escrow_arbiter.js';
-import {handleMcpJsonRpc,handleRequest} from '../src/index.js';
+import {handleMcpJsonRpc,handleRequest as rawHandleRequest} from '../src/index.js';
+const handleRequest = withLandingScripts(rawHandleRequest);
 import {mcpToolsForProfile} from '../src/mcp.js';
 import {validatePublishedInput} from '../src/input-validation.js';
 import {WORKED_EXAMPLES} from '../src/worked-examples.js';
@@ -27,7 +29,7 @@ test('MCP accepts flat and legacy inputs without bypassing validation',async()=>
  const call=args=>handleMcpJsonRpc({jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'m2m_escrow_arbitration_ruling',arguments:args}},new Request('https://example.test/mcp'),env);const old=console.log;console.log=()=>{};try{const flat=await call(sample),wrapped=await call({request:sample});assert.equal(flat.result.isError,false);assert.equal(wrapped.result.isError,false);assert.equal(flat.result.structuredContent.arbitration_ruling.delivery_review.escrow_action,'HOLD');assert.equal(wrapped.result.structuredContent.metadata.response.arbitration_ruling.delivery_review.escrow_action,'HOLD');const bad=structuredClone(sample);bad.delivery_submission.extra='x';assert.equal((await call(bad)).result.isError,true);assert.equal((await call({request:bad})).result.isError,true);}finally{console.log=old;}
 });
 test('bundled page runs the review renderer',async()=>{
- const built=await build({entryPoints:[new URL('../src/index.js',import.meta.url).pathname],bundle:true,keepNames:true,platform:'neutral',format:'esm',write:false});const bundled=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));const old=console.log;console.log=()=>{};try{const html=await(await bundled.handleRequest(new Request('https://example.test/',{headers:{accept:'text/html'}}),{...env,WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'})).text();assert.ok(html.includes('id="escrow-review-view"'));const box={value:'{}'},ctx={URL,TextEncoder,window:{location:{href:'https://example.test/',origin:'https://example.test'},crypto:globalThis.crypto},crypto:globalThis.crypto,document:{getElementById:id=>id==='profile-request'?box:null,createElement:()=>({set textContent(x){this.innerHTML=String(x);}})}};vm.runInNewContext([...html.matchAll(/<script>([\s\S]*?)<\/script>/g)][0][1],ctx);assert.match(ctx.escrowReviewHtml(await evaluateM2MEscrowArbitration(sample),String),/Recommended action: HOLD/);}finally{console.log=old;}
+ const built=await build({entryPoints:[new URL('../src/index.js',import.meta.url).pathname],bundle:true,keepNames:true,platform:'neutral',format:'esm',write:false});const bundled=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));const old=console.log;console.log=()=>{};try{const html=await(await withLandingScripts(bundled.handleRequest)(new Request('https://example.test/',{headers:{accept:'text/html'}}),{...env,WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'})).text();assert.ok(html.includes('id="escrow-review-view"'));const box={value:'{}'},ctx={URL,TextEncoder,window:{location:{href:'https://example.test/',origin:'https://example.test'},crypto:globalThis.crypto},crypto:globalThis.crypto,document:{getElementById:id=>id==='profile-request'?box:null,createElement:()=>({set textContent(x){this.innerHTML=String(x);}})}};vm.runInNewContext([...html.matchAll(/<script>([\s\S]*?)<\/script>/g)][0][1],ctx);assert.match(ctx.escrowReviewHtml(await evaluateM2MEscrowArbitration(sample),String),/Recommended action: HOLD/);}finally{console.log=old;}
 });
 
 

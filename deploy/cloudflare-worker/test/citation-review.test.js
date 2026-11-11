@@ -1,3 +1,4 @@
+import {withLandingScripts} from './helpers/landing-browser.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -8,7 +9,8 @@ import { createTelemetry } from '../src/telemetry.js';
 
 const bundle = await build({entryPoints:[new URL('../src/index.js',import.meta.url).pathname],
   bundle:true,keepNames:true,platform:'neutral',format:'esm',write:false});
-const {handleRequest}=await import('data:text/javascript;base64,'+Buffer.from(bundle.outputFiles[0].text).toString('base64'));
+const {handleRequest:rawHandleRequest}=await import('data:text/javascript;base64,'+Buffer.from(bundle.outputFiles[0].text).toString('base64'));
+const handleRequest=withLandingScripts(rawHandleRequest);
 const origin='https://example.test';
 const envFor=()=>({AGENT_PROFILE:'agent_output_verification',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call',
   VIZIER_DISABLED:'1',OPENSANCTIONS_DISABLED:'1',PAYMENT_LEDGER:memoryD1()});

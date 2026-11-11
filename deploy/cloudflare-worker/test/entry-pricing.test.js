@@ -1,7 +1,9 @@
+import {withLandingScripts} from './helpers/landing-browser.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import {handleRequest,agentCard} from '../src/index.js';
+import {handleRequest as rawHandleRequest,agentCard} from '../src/index.js';
+const handleRequest = withLandingScripts(rawHandleRequest);
 import {WORKED_EXAMPLES} from '../src/worked-examples.js';
 import {memoryD1} from './helpers/d1.js';
 import {executePaidRequest,paidRequestChallenge,paidRequestHash} from '../src/paid-execution.js';

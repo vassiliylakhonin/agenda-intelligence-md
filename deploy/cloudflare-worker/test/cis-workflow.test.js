@@ -1,3 +1,4 @@
+import {withLandingScripts} from './helpers/landing-browser.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -5,7 +6,8 @@ import {readFileSync} from 'node:fs';
 import {build} from 'esbuild';
 import {CIS_WIZARD_SCRIPT,cisWizardHtml} from '../src/cis-wizard.js';
 import {cisReviewView,cisReviewViewHtml} from '../src/cis-review-view.js';
-import {handleRequest} from '../src/index.js';
+import {handleRequest as rawHandleRequest} from '../src/index.js';
+const handleRequest = withLandingScripts(rawHandleRequest);
 import {WORKED_EXAMPLES} from '../src/worked-examples.js';
 import {parseCounterpartyCsv,prepareBatch,summarizeBatch} from '../../../examples/cis-secondary-sanctions/batch-helper.mjs';
 
@@ -124,7 +126,7 @@ test('trial page exposes wizard, five source categories and batch admission boun
 test('bundled Worker exposes CIS view functions without missing browser helpers',async()=>quiet(async()=>{
   const built=await build({entryPoints:[new URL('../src/index.js',import.meta.url).pathname],bundle:true,keepNames:true,platform:'neutral',format:'esm',write:false});
   const bundled=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));
-  const html=await(await bundled.handleRequest(new Request('https://example.test/',{headers:{accept:'text/html'}}),{...environment,WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'})).text();
+  const html=await(await withLandingScripts(bundled.handleRequest)(new Request('https://example.test/',{headers:{accept:'text/html'}}),{...environment,WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'})).text();
   const box={value:'{}'};const context={URL,TextEncoder,window:{location:{href:'https://example.test/',origin:'https://example.test'},crypto:globalThis.crypto},crypto:globalThis.crypto,
     document:{getElementById:id=>id==='profile-request'?box:null,createElement:()=>({set textContent(x){this.innerHTML=String(x);}})}};
   vm.runInNewContext([...html.matchAll(/<script>([\s\S]*?)<\/script>/g)][0][1],context);

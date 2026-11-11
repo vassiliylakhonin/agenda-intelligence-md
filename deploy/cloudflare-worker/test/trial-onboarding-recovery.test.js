@@ -1,7 +1,9 @@
+import {withLandingScripts} from './helpers/landing-browser.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { handleRequest } from '../src/index.js';
+import { handleRequest as rawHandleRequest } from '../src/index.js';
+const handleRequest = withLandingScripts(rawHandleRequest);
 import { memoryD1 } from './helpers/d1.js';
 
 const origin = 'https://example.test';

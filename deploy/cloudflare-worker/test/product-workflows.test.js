@@ -1,8 +1,10 @@
+import {withLandingScripts} from './helpers/landing-browser.js';
 import {routingToolForProfile} from '../src/pricing-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { handleRequest, GATE_REQUEST_GUIDES } from '../src/index.js';
+import { handleRequest as rawHandleRequest, GATE_REQUEST_GUIDES } from '../src/index.js';
+const handleRequest = withLandingScripts(rawHandleRequest);
 import { PRODUCT_WORKFLOWS, reviewSummary, reviewSummaryHtml } from '../src/product-workflows.js';
 import { WORKED_EXAMPLES } from '../src/worked-examples.js';
 import { PAYMENT_CLIENT_SCRIPT } from '../src/payment-client.js';
