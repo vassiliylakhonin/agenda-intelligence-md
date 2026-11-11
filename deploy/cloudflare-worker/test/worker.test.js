@@ -1324,8 +1324,7 @@ test("kazakhstan profile exposes focused corridor-risk agent card", () => {
       "middle-corridor-deal-desk-triage",
       "middle-corridor-source-coverage-auditor",
       "sanctions-adjacency-evidence-gate",
-      "risk-memo-quality-gate",
-      "a2a-evidence-pack-linter"
+      "middle-corridor-shipment-memo-check"
     ]
   );
   assert.equal(card.skills[0].name, "Kazakhstan / Middle Corridor deal-risk gate");

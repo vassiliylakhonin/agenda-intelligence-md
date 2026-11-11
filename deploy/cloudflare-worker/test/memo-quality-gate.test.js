@@ -70,7 +70,7 @@ test('Middle Corridor exposes its own free memo example and keeps dossier admiss
   const card = await get('/.well-known/agent-card.json', corridor);
   const sample = await get('/.well-known/examples/tools/' + tool + '.json', corridor);
   assert.match(sample.arguments.memo_json.risk_summary.short,/Aktau to Baku/);
-  const declared = card.skills.find(s => s.id === 'risk-memo-quality-gate').examples.find(x => x.startsWith('{'));
+  const declared = card.skills.find(s => s.id === 'middle-corridor-shipment-memo-check').examples.find(x => x.startsWith('{'));
   assert.deepEqual(JSON.parse(declared), {tool,...sample.arguments});
   const reply = await handleRequest(mcp(sample.arguments),corridor);
   const expected = (await reply.json()).result.structuredContent;

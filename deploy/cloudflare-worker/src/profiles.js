@@ -179,18 +179,18 @@ const middleCorridorProfile = Object.freeze({
     "pre-signature logistics deal review",
     "pre-shipment evidence completeness check",
     "trade-finance or compliance-adjacent file readiness",
-    "insurance-adjacent source-pack handoff",
+    "marine cargo insurer handoff",
     "management or client risk-memo quality gate",
-    "counterparty dossier-completeness check before presenting evidence to a bank, insurer, or counterparty"
+    "counterparty dossier-completeness check before presenting evidence to a bank or counterparty"
   ]),
   commercial_positioning:
-    "Pre-screening evidence triage: identifies which due-diligence documents are still missing before a deal's counterparties are committed to a sanctions-screening or network-intelligence tool. It complements those tools rather than replacing them, and performs no screening, name-matching, or data retrieval itself. Route + cargo + counterparties + dated sources -> auditable corridor-risk triage, evidence gaps, source coverage, watch-next indicators, and human-review escalation. The same evidence-gap picture is also returned outward as counterparty_readiness: a dossier-completeness view (status + supplied-vs-required counts + outstanding documents) for the party that must present enhanced-due-diligence evidence to a bank, insurer, or counterparty. Completeness only, not clearance or a sanctions determination.",
+    "Pre-screening evidence triage: identifies which due-diligence documents are still missing before a deal's counterparties are committed to a sanctions-screening or network-intelligence tool. It complements those tools rather than replacing them, and performs no screening, name-matching, or data retrieval itself. Route + cargo + counterparties + dated sources -> auditable corridor-risk triage, evidence gaps, source coverage, watch-next indicators, and human-review escalation. The same evidence-gap picture is also returned outward as counterparty_readiness: a dossier-completeness view (status + supplied-vs-required counts + outstanding documents) for the party that must present enhanced-due-diligence evidence to a bank or counterparty. Completeness only, not clearance or a sanctions determination.",
   focus: frozenArray([
     "Kazakhstan and Middle Corridor deal-risk triage",
     "sanctions-adjacent evidence gates",
     "source coverage for dated evidence packs",
     "risk memo quality gates",
-    "human-review escalation before signature, committee review, insurer handoff, or client delivery"
+    "human-review escalation before signature, committee review or client delivery"
   ]),
   product_contract: productContract({
     request_schema: MIDDLE_CORRIDOR_REQUEST_SCHEMA_URL,
@@ -276,7 +276,7 @@ const cisSecondarySanctionsProfile = Object.freeze({
   supported_contracts: frozenArray(["cis_secondary_sanctions_exposure_contract"]),
   buyer_use_cases: frozenArray([
     "exporter or importer preparing a returned trade file for resubmission",
-    "trader or freight forwarder responding to bank, counsel, insurer, or compliance questions",
+    "trader or freight forwarder responding to bank, counsel or compliance questions",
     "finance lead documenting missing evidence before the next human review",
     "pre-shipment file preparation scoped separately from a returned file"
   ]),
@@ -380,7 +380,7 @@ const corridorSanctionsAssistantProfile = Object.freeze({
     "A2A/JSON-RPC discovery front for corridor and sanctions deal-risk evidence readiness: orientation, routing to the structured gates, and a human pre-deal screening handoff. No triage, scoring, screening, or retrieval of its own.",
   supported_contracts: frozenArray(["orientation_and_routing"]),
   buyer_use_cases: frozenArray([
-    "first stop for a Kazakhstan / Middle Corridor deal — what evidence a bank, insurer, or compliance desk will ask for",
+    "first stop for a Kazakhstan / Middle Corridor deal — what evidence a bank or compliance desk will ask for",
     "first stop for CIS / Caucasus / Central Asia secondary-sanctions exposure on a counterparty",
     "scope person-led review of a current deal or counterparty before work starts",
     "find which structured gate fits a specific deal, counterparty, vessel, or market-entry file"
@@ -391,7 +391,7 @@ const corridorSanctionsAssistantProfile = Object.freeze({
     "orientation for corridor and sanctions deal-risk questions",
     "routing to the Middle Corridor, CIS secondary-sanctions, Gulf maritime, and market-entry gates",
     "person-led review scoped and quoted before work starts",
-    "human-review escalation before signature, committee, insurer, or client delivery"
+    "human-review escalation before signature, committee or client delivery"
   ]),
   routes_to: frozenArray([
     "middle_corridor_deal_risk",
