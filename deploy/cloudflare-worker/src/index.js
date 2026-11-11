@@ -2968,6 +2968,7 @@ function applyAgentOutputVerificationProfile(card, request) {
   card.documentationUrl = discovery.documentation_url;
   card.description =
     "Before relaying another agent's answer, use an external evidence-review boundary to check the claims against supplied source text. An A2A-compatible relay-readiness gate for agent-to-agent output hand-off: bring the claim set and its evidence; get a machine-actionable verdict — verify_before_relay, block_unsafe_claims, not_decision_ready, or insufficient_information — with the unsafe and weak claims, evidence gaps, and owner actions. Caller-declared evidence is never externally verified here, so allow_relay is never issued: the strongest verdict is verify_before_relay with mandatory human review, and a quote counts as grounded only when its text appears in the cited evidence content. Schema-level and structural only — not factual-truth verification, source retrieval, or an approval.";
+  card.description += " For labeled-number conflicts and upside recomputation, use the separate opt-in Vizier numeric consistency preflight; it is not run by this worker and is not a fact check.";
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
@@ -3033,6 +3034,7 @@ function applyAgentOutputVerificationProfile(card, request) {
   card.x_agenda_intelligence.jsonrpc_endpoint = `${origin}/message/send`;
   card.x_agenda_intelligence.documentation = discovery.documentation_url;
   card.x_agenda_intelligence.product_contract = discovery.product_contract;
+  card.x_agenda_intelligence.numeric_preflight = discovery.numeric_preflight;
   card.x_agenda_intelligence.pre_action_check_contract = discovery.pre_action_check_contract;
   card.x_agenda_intelligence.supported_contracts = discovery.supported_contracts;
   card.x_agenda_intelligence.buyer_use_cases = discovery.buyer_use_cases;

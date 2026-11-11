@@ -452,6 +452,11 @@ function landingHtml(request, env, externalClient = false) {
   ${freeTrial && profile === 'market_entry_readiness' ? marketEntryWizardHtml(inputSchemaForProfile(profile), card.x_agenda_intelligence.required_before_signature) : ''}
   ${freeTrial && profile === 'agent_output_verification' ? citationReviewHtml(trialTerms.attempts_per_network, allowancePanel) : ''}
   ${freeTrial && profile === 'agent_output_verification' ? reviewPanel : ''}
+  ${profile === 'agent_output_verification' ? `<section class="card" id="numeric-consistency"><h2>Do the numbers agree?</h2>
+    <p>For conflicting labeled values in a header, table or text, or an upside percentage that does not match the prices, use the separate opt-in <a href="https://vizier.agendamcp.dpdns.org/">Vizier numeric consistency preflight</a>. This page's citation and relay checks do not run it.</p>
+    <p><code>POST https://vizier.agendamcp.dpdns.org/v1/numeric-consistency/scan</code> with <code>text</code> and/or <code>parameters</code>. For Vizier action verification, set <code>authority.constraints.numeric_consistency: true</code> in <code>/v1/verify</code>.</p>
+    <p>A heuristic, not a fact check: it cannot decide which number is correct. Findings add <code>REVIEW / NUMERIC_INCONSISTENCY</code>, never <code>BLOCK</code> from this rule; other authorization rules can still block. Human review required. The existing <code>numeric_smoke_check</code> only flags claim numbers absent from supplied sources.</p>
+  </section>` : ''}
   <h2>${freeTrial ? 'Check your own evidence free' : 'Live paid evaluation'}</h2>
   <div class="card">
     <p>${escapeHtml(workflow.bring)} Human review required. Use redacted inputs only. <a href="/terms#access">Trial and payment limits</a>.</p>

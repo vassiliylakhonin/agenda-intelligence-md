@@ -1,5 +1,7 @@
 # Card discovery targeting (2026-11-11)
 
+- Output Verification card and landing: point to the separate opt-in Vizier numeric consistency scan and verify constraint. State heuristic/REVIEW-only limits, no factuality claim, no implied integration, and distinguish the existing absent-from-sources numeric smoke check. Evaluation, MCP, forms, signed-card machinery and trial counters are unchanged.
+
 ## 2026-11-11 - Compact worker product pages
 
 - Derive the first-screen trial and Base USDC price line from serving configuration; distinguish free routing from bounded trials.

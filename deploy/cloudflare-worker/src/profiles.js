@@ -349,6 +349,16 @@ const agentOutputVerificationProfile = Object.freeze({
     "unsupported and orphaned claim detection",
     "risk-based human approval routing"
   ]),
+  numeric_preflight: Object.freeze({
+    provider: "Vizier",
+    endpoint: "https://vizier.agendamcp.dpdns.org/v1/numeric-consistency/scan",
+    method: "POST",
+    input: "text and/or parameters",
+    verify_opt_in: "authority.constraints.numeric_consistency: true in /v1/verify",
+    scope: "Separate opt-in heuristic for conflicting labeled values and upside recomputation; not run by this worker's citation or relay checks.",
+    review: "Findings add REVIEW / NUMERIC_INCONSISTENCY in Vizier verify, never BLOCK from this rule. Other authorization rules can still block.",
+    limit: "Not a fact check; cannot decide which number is correct. Existing numeric_smoke_check only flags claim numbers absent from supplied sources."
+  }),
   pre_action_check_contract: Object.freeze({
     request_schema: PRE_ACTION_CHECK_REQUEST_SCHEMA_URL,
     response_schema: PRE_ACTION_CHECK_RESPONSE_SCHEMA_URL,
