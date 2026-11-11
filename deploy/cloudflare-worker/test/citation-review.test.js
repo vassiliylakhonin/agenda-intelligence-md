@@ -129,7 +129,7 @@ test('web raw answer, synthetic demo and correction use the real trial without f
   ui.elements['raw-source'].value='Capacity is 120.';
   ui.elements['raw-numeric'].checked=true;
   await submit();assert.match(ui.elements['raw-result'].textContent,/number_absent_from_cited_sources/);
-  assert.equal(JSON.parse(ui.requests[2].init.body).params.arguments.numeric_smoke_check,true);
+  assert.equal(JSON.parse(ui.requests[2].init.body).params.arguments.numeric_context_check,true);
   const previous=ui.elements['raw-result'].textContent;
   ui.elements['raw-answer'].value='Edited again [s1]';
   ui.context.fetch=async()=>{throw Error('network');};

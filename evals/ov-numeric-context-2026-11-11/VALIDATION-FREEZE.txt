@@ -1,0 +1,3 @@
+32 new validation cases, frozen before the hosted-worker numeric-context port was written. Not used for iterative tuning.
+SHA256 dc79fdfd4e0a5c3c4d13160ad611d9ab6a4a3eb56fd3e207e0428890635595de
+Expected labels remain fixed. The 2026-11-09 sets (56 old + 32 frozen) are regression. New set is evaluator-authored after source inspection, not blind independent user evidence.

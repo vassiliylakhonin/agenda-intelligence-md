@@ -5995,7 +5995,7 @@ test("Output Verification plugin MCP URL exposes only review and input validatio
   });
   const listed = await mcpCall({ jsonrpc: "2.0", id: 1, method: "tools/list" }, request);
   assert.deepEqual(listed.result.tools.map((tool) => tool.name), ["agent_output_verification", "validate_input"]);
-  assert.equal(listed.result.tools[0].annotations.readOnlyHint, false);
+  assert.equal(listed.result.tools[0].annotations.readOnlyHint, true);
   assert.deepEqual(listed.result.tools[0].inputSchema.required, ["claims", "evidence"]);
   const reviewed = await mcpCall({
     jsonrpc: "2.0", id: 4, method: "tools/call",
@@ -6052,16 +6052,18 @@ test("mcp tools/list is cacheable and profile-scoped", async () => {
   assert.ok(result.tools[0].outputSchema.required.includes("verdict"));
   assert.ok(result.tools[1].inputSchema.required.includes("run_id"));
   assert.ok(result.tools[1].outputSchema.required.includes("decision"));
+  // The pure check tools only read caller-supplied input; their admission
+  // counters are internal state, so they are marked read-only.
   for (const tool of result.tools.filter((tool) => !["decision_check","validate_input"].includes(tool.name))) {
     assert.deepEqual(tool.annotations, {
-      readOnlyHint: false,
+      readOnlyHint: ["agent_output_verification","pre_action_check"].includes(tool.name),
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false
     });
   }
   assert.deepEqual(result.tools.find((tool) => tool.name === "decision_check").annotations, {
-    readOnlyHint: false,
+    readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: false,
     openWorldHint: false

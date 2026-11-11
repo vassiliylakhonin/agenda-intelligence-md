@@ -1,0 +1,194 @@
+[
+  {
+    "id": "W_good_mass_thousands_separator",
+    "answer": "The Cedar pallet weighs 12 kilograms. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Cedar pallet weighs 12,000 grams."}],
+    "expected": "supported"
+  },
+  {
+    "id": "W_good_distance_decimal_km",
+    "answer": "The Falcon pipeline runs 0.75 kilometers. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Falcon pipeline runs 750 meters."}],
+    "expected": "supported"
+  },
+  {
+    "id": "W_good_minutes_to_seconds",
+    "answer": "The Lumen render took 5 minutes. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Lumen render took 300 seconds."}],
+    "expected": "supported"
+  },
+  {
+    "id": "W_good_hours_to_minutes",
+    "answer": "The Aurora flight lasts 2.5 hours. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Aurora flight lasts 150 minutes."}],
+    "expected": "supported"
+  },
+  {
+    "id": "W_good_minus_wording",
+    "answer": "The Orchid account shows minus 40 dollars. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Orchid account shows -40 dollars."}],
+    "expected": "supported"
+  },
+  {
+    "id": "W_good_percent_word",
+    "answer": "The Harbor fee is 12 percent. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Harbor fee is 12%."}],
+    "expected": "supported"
+  },
+  {
+    "id": "W_good_scale_word_currency",
+    "answer": "The Summit fund holds 3 million dollars. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Summit fund holds $3,000,000."}],
+    "expected": "supported"
+  },
+  {
+    "id": "W_good_date_dotted",
+    "answer": "The Willow audit closed on 2026-03-05. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Willow audit closed on 05.03.2026."}],
+    "expected": "supported"
+  },
+  {
+    "id": "W_good_ru_fractional_mass",
+    "answer": "Партия Тополь весит 750 граммов. [s1]",
+    "sources": [{"source_id": "s1", "text": "Партия Тополь весит 0.75 килограмма."}],
+    "expected": "supported"
+  },
+  {
+    "id": "W_good_seconds_to_milliseconds",
+    "answer": "The Pico latency is 0.5 seconds. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Pico latency is 500 milliseconds."}],
+    "expected": "supported"
+  },
+  {
+    "id": "W_good_plain_count",
+    "answer": "The Maple lab tested 88 samples. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Maple lab tested 88 samples."}],
+    "expected": "supported"
+  },
+  {
+    "id": "W_good_two_cited_lines",
+    "answer": "The Birch kiln holds 640 bricks. [s1]\nThe Birch kiln heats to 900 degrees in 45 minutes. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Birch kiln holds 640 bricks. The kiln heats to 900 degrees in 45 minutes."}],
+    "expected": "supported"
+  },
+  {
+    "id": "W_good_named_entity_anchor",
+    "answer": "The Granite branch employs 45 people. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Amber branch employs 60 people. The Granite branch employs 45 people."}],
+    "expected": "supported"
+  },
+  {
+    "id": "W_good_currency_symbol",
+    "answer": "The Opal ticket costs €250. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Opal ticket costs 250 euros."}],
+    "expected": "supported"
+  },
+  {
+    "id": "W_good_per_cent_spelling",
+    "answer": "The Cinder rate rose 4 per cent. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Cinder rate rose 4%."}],
+    "expected": "supported"
+  },
+  {
+    "id": "W_good_space_thousands",
+    "answer": "The Quartz conveyor moves 1 200 boxes daily. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Quartz conveyor moves 1200 boxes daily."}],
+    "expected": "supported"
+  },
+  {
+    "id": "W_bad_wrong_mass",
+    "answer": "The Cedar pallet weighs 12 kilograms. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Cedar pallet weighs 1,200 grams."}],
+    "expected": "unsupported"
+  },
+  {
+    "id": "W_bad_wrong_dimension",
+    "answer": "The Falcon pipeline runs 750 kilograms. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Falcon pipeline runs 750 meters."}],
+    "expected": "unsupported"
+  },
+  {
+    "id": "W_bad_wrong_duration",
+    "answer": "The Lumen render took 5 minutes. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Lumen render took 300 milliseconds."}],
+    "expected": "unsupported"
+  },
+  {
+    "id": "W_bad_sign_added",
+    "answer": "The Orchid account shows minus 40 dollars. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Orchid account shows 40 dollars."}],
+    "expected": "unsupported"
+  },
+  {
+    "id": "W_bad_sign_dropped",
+    "answer": "The Orchid account shows 40 dollars. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Orchid account shows -40 dollars."}],
+    "expected": "unsupported"
+  },
+  {
+    "id": "W_bad_currency_swap",
+    "answer": "The Opal ticket costs €250. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Opal ticket costs 250 dollars."}],
+    "expected": "unsupported"
+  },
+  {
+    "id": "W_bad_percent_vs_currency",
+    "answer": "The Harbor fee is 12 percent. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Harbor fee is 12 dollars."}],
+    "expected": "unsupported"
+  },
+  {
+    "id": "W_bad_wrong_count",
+    "answer": "The Maple lab tested 88 samples. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Maple lab tested 89 samples."}],
+    "expected": "unsupported"
+  },
+  {
+    "id": "W_bad_distractor_sentence",
+    "answer": "The Maple lab tested 99 samples. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Maple lab tested 88 samples. The storage holds 99 boxes."}],
+    "expected": "unsupported"
+  },
+  {
+    "id": "W_bad_other_entity_value",
+    "answer": "The Amber branch employs 45 people. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Amber branch employs 60 people. The Granite branch employs 45 people."}],
+    "expected": "unsupported"
+  },
+  {
+    "id": "W_bad_second_clause_number",
+    "answer": "Revenue rose 12% and profit rose 5%. [s1]",
+    "sources": [{"source_id": "s1", "text": "Revenue rose 12%. Profit rose 3%."}],
+    "expected": "unsupported"
+  },
+  {
+    "id": "W_bad_wrong_date",
+    "answer": "The Willow audit closed on 2026-03-05. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Willow audit closed on 2026-05-03."}],
+    "expected": "unsupported"
+  },
+  {
+    "id": "W_bad_unrelated_literal_match",
+    "answer": "Capacity is 900. [s1]",
+    "sources": [{"source_id": "s1", "text": "The unrelated building is 900 meters tall."}],
+    "expected": "unsupported"
+  },
+  {
+    "id": "W_bad_percentage_points",
+    "answer": "The rate rose to 8 percent. [s1]",
+    "sources": [{"source_id": "s1", "text": "The rate rose by 8 percentage points."}],
+    "expected": "unsupported"
+  },
+  {
+    "id": "W_bad_scale_mismatch",
+    "answer": "The Summit fund holds 3 million dollars. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Summit fund holds $3,000."}],
+    "expected": "unsupported"
+  },
+  {
+    "id": "W_bad_wrong_milliseconds",
+    "answer": "The Pico latency is 5 milliseconds. [s1]",
+    "sources": [{"source_id": "s1", "text": "The Pico latency is 0.5 seconds."}],
+    "expected": "unsupported"
+  }
+]

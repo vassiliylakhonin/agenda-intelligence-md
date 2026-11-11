@@ -42,9 +42,13 @@
         }
       }
     },
+    "numeric_context_check": {
+      "type": "boolean",
+      "description": "Optional heuristic numeric context check: canonicalizes bounded mass/length/time units, scales, currencies, dates and signs, then flags claim numbers that no closest number-bearing sentence in the cited excerpts supports. Not a semantic, entity-resolution, arithmetic or truth check; adds per-line citation_status, source_status and support_status."
+    },
     "numeric_smoke_check": {
       "type": "boolean",
-      "description": "Optional literal comparison of number tokens in each line with its resolved cited excerpts; not a semantic, unit, context or truth check."
+      "description": "Deprecated alias for numeric_context_check with identical behavior; it no longer performs a literal token comparison."
     }
   },
   "x-schema-version": "1"

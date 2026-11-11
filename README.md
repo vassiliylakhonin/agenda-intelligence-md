@@ -31,7 +31,7 @@ These are synthetic examples. Both results keep `factuality_status=not_assessed`
 Requires **Python 3.9+**. Install the published package:
 
 ```bash
-python -m pip install "agenda-intelligence-md==1.24.0"
+python -m pip install "agenda-intelligence-md==1.25.0"
 agenda-intelligence --version
 ```
 

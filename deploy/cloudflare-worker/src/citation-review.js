@@ -11,7 +11,7 @@ var rawRecoveryController = null;
 function rawReviewInput() {
   var answer=document.getElementById('raw-answer').value, source=document.getElementById('raw-source').value;
   var input={answer:answer,sources:source.trim() ? [{source_id:'s1',text:source}] : []};
-  if (document.getElementById('raw-numeric').checked) input.numeric_smoke_check=true;
+  if (document.getElementById('raw-numeric').checked) input.numeric_context_check=true;
   return input;
 }
 async function validateOutputRecoveryInput() {
@@ -143,7 +143,7 @@ export function citationReviewHtml(attempts, allowancePanel) {
     <p><small>For a quoted excerpt, put the citation directly after its closing quote: <code>&quot;exact source words&quot; [s1]</code>. Paste the matching source text below.</small></p>
     <form onsubmit="runRawReview(event)"><label for="raw-answer">AI answer</label><textarea id="raw-answer" rows="5" maxlength="20000" required style="width:100%;font:inherit;padding:8px"></textarea>
       <label for="raw-source">Source text for [s1] (optional)</label><textarea id="raw-source" rows="4" maxlength="20000" style="width:100%;font:inherit;padding:8px"></textarea>
-      <p><label><input id="raw-numeric" type="checkbox"> Flag number tokens missing from cited excerpts (optional)</label><br><small>Literal comparison only; formatting may differ. A match does not confirm meaning, units or truth. Unresolved citations are not checked for numbers.</small></p>
+      <p><label><input id="raw-numeric" type="checkbox"> Flag claim numbers the cited excerpt does not support (optional)</label><br><small>Canonical units, scales, dates and signs are compared against the closest number-bearing sentence; heuristic, not a meaning or truth check. Unresolved citations are not checked for numbers.</small></p>
       <button id="raw-run" type="submit" class="primary-action primary-action-main">Review answer · uses 1 attempt</button>
       <p id="raw-status" role="status"></p><pre id="raw-result" hidden style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
       <button id="raw-save" type="button" hidden onclick="saveOutputReview('answer_citations')">Save last completed answer review locally</button>

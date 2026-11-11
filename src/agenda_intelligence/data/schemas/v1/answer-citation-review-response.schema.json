@@ -31,7 +31,8 @@
     "validation_scope": {
       "enum": [
         "citation_and_quote_structure_only",
-        "citation_quote_and_numeric_smoke"
+        "citation_quote_and_numeric_smoke",
+        "citation_quote_and_numeric_context"
       ]
     },
     "factuality": {
@@ -89,7 +90,10 @@
         "required": [
           "line",
           "citation_ids",
-          "quotes_checked"
+          "quotes_checked",
+          "citation_status",
+          "source_status",
+          "support_status"
         ],
         "properties": {
           "line": {
@@ -106,6 +110,36 @@
           "quotes_checked": {
             "type": "integer",
             "minimum": 0
+          },
+          "citation_status": {
+            "enum": [
+              "found",
+              "missing"
+            ],
+            "description": "found: at least one citation on the line resolves to a supplied source; missing: none does."
+          },
+          "source_status": {
+            "enum": [
+              "present",
+              "missing",
+              "none_cited"
+            ],
+            "description": "present: every cited source_id was supplied; missing: at least one was not; none_cited: the line has no citations."
+          },
+          "support_status": {
+            "enum": [
+              "supported",
+              "contradicted",
+              "unknown"
+            ],
+            "description": "Numeric-fact level only, assessed when the numeric context check is enabled and citations resolve: supported means every number in the line matched a relevant number-bearing sentence in the cited sources, contradicted means at least one did not, unknown (the default) means not assessed. Never claim-level semantic support or truth."
+          },
+          "unmatched_numbers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Claim numbers no relevant cited sentence supports; present only when the numeric context check ran."
           }
         }
       }

@@ -14,22 +14,40 @@ const post=(env,method,params={},extra={})=>handleRequest(new Request('https://e
 const tool=(env,name,args={},extra={})=>post(env,'tools/call',{name,arguments:args},extra);
 const count=async env=>(await env.PAYMENT_LEDGER.prepare('SELECT COUNT(*) AS count FROM output_verification_trials').first()).count;
 
-test('optional numeric smoke check flags absent tokens without claiming semantic verification',()=>{
+test('optional numeric context check flags unsupported numbers without claiming semantic verification',()=>{
   const base={answer:'Capacity is 900 [s1]',sources:[{source_id:'s1',text:'Capacity is 120.'}]};
   assert.equal(reviewAnswer(base).route,'human_review');
-  const flagged=reviewAnswer({...base,numeric_smoke_check:true});
-  assert.equal(flagged.route,'revise');
-  assert.equal(flagged.validation_scope,'citation_quote_and_numeric_smoke');
-  assert.deepEqual(flagged.findings.map(f=>f.code),['number_absent_from_cited_sources']);
-  assert.equal(flagged.semantic_support,'not_assessed');assert.equal(flagged.authorization_granted,false);
-  const schema=JSON.parse(readFileSync(new URL('../../../schemas/v1/answer-citation-review-response.schema.json',import.meta.url),'utf8'));
-  const validate=new Ajv2020({strict:false}).compile(schema);
-  assert.ok(validate(flagged),JSON.stringify(validate.errors));
-  const unrelated=reviewAnswer({...base,numeric_smoke_check:true,sources:[{source_id:'s1',text:'The unrelated building is 900 meters tall.'}]});
-  assert.equal(unrelated.route,'human_review');assert.equal(unrelated.factuality,'not_assessed');
-  const unresolved=reviewAnswer({answer:'Capacity is 900 [missing]',sources:[],numeric_smoke_check:true});
+  for (const flag of ['numeric_context_check','numeric_smoke_check']) {
+    const flagged=reviewAnswer({...base,[flag]:true});
+    assert.equal(flagged.route,'revise',flag);
+    assert.equal(flagged.validation_scope,'citation_quote_and_numeric_context');
+    assert.deepEqual(flagged.findings.map(f=>f.code),['number_absent_from_cited_sources']);
+    assert.equal(flagged.semantic_support,'not_assessed');assert.equal(flagged.authorization_granted,false);
+    assert.equal(flagged.units[0].support_status,'contradicted');
+    assert.deepEqual(flagged.units[0].unmatched_numbers,['900']);
+    assert.equal(flagged.units[0].citation_status,'found');assert.equal(flagged.units[0].source_status,'present');
+    const schema=JSON.parse(readFileSync(new URL('../../../schemas/v1/answer-citation-review-response.schema.json',import.meta.url),'utf8'));
+    const validate=new Ajv2020({strict:false}).compile(schema);
+    assert.ok(validate(flagged),JSON.stringify(validate.errors));
+  }
+  // Canonical units: a correct conversion passes, a literal token match on an
+  // unrelated sentence no longer does.
+  const conversion=reviewAnswer({answer:'The pack weighs 2.5 kilograms [s1]',sources:[{source_id:'s1',text:'The pack weighs 2500 grams.'}],numeric_context_check:true});
+  assert.equal(conversion.route,'human_review');assert.equal(conversion.units[0].support_status,'supported');
+  const unrelated=reviewAnswer({...base,numeric_context_check:true,sources:[{source_id:'s1',text:'The unrelated building is 900 meters tall.'}]});
+  assert.equal(unrelated.route,'revise');assert.equal(unrelated.factuality,'not_assessed');
+  const wrongUnit=reviewAnswer({answer:'The pack weighs 2500 kilograms [s1]',sources:[{source_id:'s1',text:'The pack weighs 2500 grams.'}],numeric_context_check:true});
+  assert.equal(wrongUnit.route,'revise');assert.equal(wrongUnit.units[0].support_status,'contradicted');
+  const noNumbers=reviewAnswer({answer:'The pack is heavy [s1]',sources:[{source_id:'s1',text:'The pack weighs 2500 grams.'}],numeric_context_check:true});
+  assert.equal(noNumbers.units[0].support_status,'unknown');
+  const off=reviewAnswer(base);
+  assert.equal(off.units[0].support_status,'unknown');assert.ok(!Object.hasOwn(off.units[0],'unmatched_numbers'));
+  const unresolved=reviewAnswer({answer:'Capacity is 900 [missing]',sources:[],numeric_context_check:true});
   assert.deepEqual(unresolved.findings.map(f=>f.code),['unknown_source']);
+  assert.equal(unresolved.units[0].citation_status,'missing');assert.equal(unresolved.units[0].source_status,'missing');
+  assert.equal(unresolved.units[0].support_status,'unknown');
   assert.ok(answerReviewErrors({...base,numeric_smoke_check:'yes'}).length);
+  assert.ok(answerReviewErrors({...base,numeric_context_check:'yes'}).length);
 });
 
 test('raw text without sources reports missing and unresolved citations, never clearance',async()=>{

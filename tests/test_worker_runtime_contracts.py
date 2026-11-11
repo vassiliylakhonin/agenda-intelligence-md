@@ -106,7 +106,8 @@ def test_openai_catalog_output_audit_is_free_and_scoped():
     result = json.loads(run.stdout)
     [spec] = result["listed"]["body"]["result"]["tools"]
     assert spec["name"] == "agent_output_verification"
-    assert spec["annotations"]["readOnlyHint"] is False
+    # The check only reads caller-supplied input; admission counters are internal.
+    assert spec["annotations"]["readOnlyHint"] is True
     for key, code in {
         "blocked": "unknown_tool",
         "invalid": "invalid_input",

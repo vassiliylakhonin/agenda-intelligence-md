@@ -187,7 +187,7 @@ Additive change under the `docs/vertical-workers.md` "`< 3` vertical workers in 
 
 ## Expansion & Capabilities (Current Phase)
 
-Status: `Demand-first consolidation`. The runtime, contract surface, and public workers are shipped (through v1.24.0). What gates new work in this phase is demonstrated demand, not technical feasibility: fleet telemetry to date records zero paying customers and zero named pilots ([`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md)), and per-profile live retrieval stays deferred for exactly that reason ([ADR 0014](docs/adr/0014-per-profile-live-retrieval.md)). The scaling-first framing this section previously carried ("AI Fleet Scaling", "actively encouraging additive features") is retired.
+Status: `Demand-first consolidation`. The runtime, contract surface, and public workers are shipped (through v1.25.0). What gates new work in this phase is demonstrated demand, not technical feasibility: fleet telemetry to date records zero paying customers and zero named pilots ([`docs/agenstry/demo-pack.md`](docs/agenstry/demo-pack.md)), and per-profile live retrieval stays deferred for exactly that reason ([ADR 0014](docs/adr/0014-per-profile-live-retrieval.md)). The scaling-first framing this section previously carried ("AI Fleet Scaling", "actively encouraging additive features") is retired.
 
 **Operating rules for this phase:**
 1. **No new surface without a paying process.** New vertical workers for adjacent domains (ESG compliance, supply chain auditing, real estate due diligence) are parked. A new worker ships only when a concrete buyer or paying process names it; the re-open triggers in [ADR 0016](docs/adr/0016-keep-vertical-workers-in-one-repo.md) are the test.

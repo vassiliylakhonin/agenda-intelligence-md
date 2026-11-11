@@ -455,7 +455,7 @@ function landingHtml(request, env, externalClient = false) {
   ${profile === 'agent_output_verification' ? `<section class="card" id="numeric-consistency"><h2>Do the numbers agree?</h2>
     <p>For conflicting labeled values in a header, table or text, or an upside percentage that does not match the prices, use the separate opt-in <a href="https://vizier.agendamcp.dpdns.org/">Vizier numeric consistency preflight</a>. This page's citation and relay checks do not run it.</p>
     <p><code>POST https://vizier.agendamcp.dpdns.org/v1/numeric-consistency/scan</code> with <code>text</code> and/or <code>parameters</code>. For Vizier action verification, set <code>authority.constraints.numeric_consistency: true</code> in <code>/v1/verify</code>.</p>
-    <p>A heuristic, not a fact check: it cannot decide which number is correct. Findings add <code>REVIEW / NUMERIC_INCONSISTENCY</code>, never <code>BLOCK</code> from this rule; other authorization rules can still block. Human review required. The existing <code>numeric_smoke_check</code> only flags claim numbers absent from supplied sources.</p>
+    <p>A heuristic, not a fact check: it cannot decide which number is correct. Findings add <code>REVIEW / NUMERIC_INCONSISTENCY</code>, never <code>BLOCK</code> from this rule; other authorization rules can still block. Human review required. The <code>review_answer</code> numeric context check only flags claim numbers that no closest number-bearing sentence in the supplied sources supports.</p>
   </section>` : ''}
   <h2>${freeTrial ? 'Check your own evidence free' : 'Live paid evaluation'}</h2>
   <div class="card">

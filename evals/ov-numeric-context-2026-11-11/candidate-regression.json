@@ -1,0 +1,846 @@
+{
+ "old56": [
+  {
+   "id": "P_exact_count",
+   "group": "supported",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "P_exact_date",
+   "group": "supported",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "P_exact_negation",
+   "group": "supported",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "P_exact_qualifier",
+   "group": "supported",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "P_exact_comparison",
+   "group": "supported",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "P_exact_ru",
+   "group": "supported",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "P_exact_unicode",
+   "group": "supported",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "P_quote_space",
+   "group": "supported",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "P_paraphrase_passive",
+   "group": "supported",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "P_paraphrase_synonym",
+   "group": "supported",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "P_paraphrase_number",
+   "group": "supported",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "P_paraphrase_logic",
+   "group": "supported",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "P_paraphrase_ru",
+   "group": "supported",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "P_paraphrase_percent",
+   "group": "supported",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "P_paraphrase_date",
+   "group": "supported",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "P_paraphrase_equivalent",
+   "group": "supported",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "T_missing_reference",
+   "group": "structural_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "missing_citation",
+     "next_action": "Add a [source-id] reference to the supplied source text, or remove the unsupported line."
+    }
+   ]
+  },
+  {
+   "id": "T_unknown_reference",
+   "group": "structural_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "unknown_source",
+     "source_id": "s9",
+     "next_action": "Supply the actual source text under this ID, or correct the reference. Do not invent evidence."
+    }
+   ]
+  },
+  {
+   "id": "T_changed_quote",
+   "group": "structural_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "quote_not_found",
+     "source_id": "s1",
+     "next_action": "Correct or remove the quote, or supply the actual source excerpt containing it."
+    }
+   ]
+  },
+  {
+   "id": "T_invented_quote",
+   "group": "structural_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "quote_not_found",
+     "source_id": "s1",
+     "next_action": "Correct or remove the quote, or supply the actual source excerpt containing it."
+    }
+   ]
+  },
+  {
+   "id": "T_missing_quote_attribution",
+   "group": "structural_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "unattributed_quote",
+     "next_action": "Place a [source-id] immediately after the closing double quote."
+    }
+   ]
+  },
+  {
+   "id": "T_unclosed_quote",
+   "group": "structural_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "unbalanced_quote",
+     "next_action": "Close the double quote on the same line and place its [source-id] immediately after it."
+    }
+   ]
+  },
+  {
+   "id": "T_case_quote",
+   "group": "structural_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "quote_not_found",
+     "source_id": "s1",
+     "next_action": "Correct or remove the quote, or supply the actual source excerpt containing it."
+    }
+   ]
+  },
+  {
+   "id": "T_wrong_source",
+   "group": "structural_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "quote_not_found",
+     "source_id": "s2",
+     "next_action": "Correct or remove the quote, or supply the actual source excerpt containing it."
+    }
+   ]
+  },
+  {
+   "id": "T_mixed_valid_bad_quote",
+   "group": "structural_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "quote_not_found",
+     "source_id": "s1",
+     "next_action": "Correct or remove the quote, or supply the actual source excerpt containing it."
+    }
+   ]
+  },
+  {
+   "id": "T_extra_unknown",
+   "group": "structural_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "unknown_source",
+     "source_id": "s8",
+     "next_action": "Supply the actual source text under this ID, or correct the reference. Do not invent evidence."
+    }
+   ]
+  },
+  {
+   "id": "T_empty_quote",
+   "group": "structural_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "quote_not_found",
+     "source_id": "s1",
+     "next_action": "Correct or remove the quote, or supply the actual source excerpt containing it."
+    }
+   ]
+  },
+  {
+   "id": "T_second_line_uncited",
+   "group": "structural_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 2,
+     "code": "missing_citation",
+     "next_action": "Add a [source-id] reference to the supplied source text, or remove the unsupported line."
+    }
+   ]
+  },
+  {
+   "id": "S_number",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "S_date",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "S_negation",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "S_added_negation",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "S_entity",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "S_unit",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "S_direction",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "S_modal",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "S_universal",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "S_cause",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "S_comparison",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "S_time",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "S_role",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "S_scope",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "S_exception",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "S_numeric_distractor",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "S_other_entity_number",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "S_multi_claim",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "S_ru_negation",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "S_ru_number",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "S_quote_does_not_support",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "S_uncited_link_illusion",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "S_percentage_points",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "S_sign",
+   "group": "semantic_error",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "B_invented_origin",
+   "group": "source_boundary",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "B_stale",
+   "group": "source_boundary",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "B_untrusted_author",
+   "group": "source_boundary",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "B_omitted_context",
+   "group": "source_boundary",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  }
+ ],
+ "frozen32": [
+  {
+   "id": "V_good_mass_conversion",
+   "group": "frozen_validation",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "V_good_distance_conversion",
+   "group": "frozen_validation",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "V_good_time_conversion",
+   "group": "frozen_validation",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "V_good_milligram_conversion",
+   "group": "frozen_validation",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "V_good_ru_mass",
+   "group": "frozen_validation",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "V_good_signed_negative",
+   "group": "frozen_validation",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "V_good_same_entity",
+   "group": "frozen_validation",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "V_good_same_sentence",
+   "group": "frozen_validation",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "V_good_unchanged_percent",
+   "group": "frozen_validation",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "V_good_plain_count",
+   "group": "frozen_validation",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "V_good_unit_symbol",
+   "group": "frozen_validation",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "V_good_passive",
+   "group": "frozen_validation",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "V_good_currency_conversion_not_needed",
+   "group": "frozen_validation",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "V_good_decimal_seconds",
+   "group": "frozen_validation",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "V_good_correct_paraphrase",
+   "group": "frozen_validation",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "V_good_percent_fraction",
+   "group": "frozen_validation",
+   "expected": "supported",
+   "flagged": false,
+   "findings": []
+  },
+  {
+   "id": "V_bad_wrong_mass",
+   "group": "frozen_validation",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "V_bad_wrong_dimension",
+   "group": "frozen_validation",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "V_bad_wrong_duration",
+   "group": "frozen_validation",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "V_bad_wrong_prefix",
+   "group": "frozen_validation",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "V_bad_ru_wrong_mass",
+   "group": "frozen_validation",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "V_bad_wrong_sign",
+   "group": "frozen_validation",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "V_bad_borrow_entity",
+   "group": "frozen_validation",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "V_bad_borrow_clause",
+   "group": "frozen_validation",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "V_bad_percent_currency",
+   "group": "frozen_validation",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "V_bad_wrong_count",
+   "group": "frozen_validation",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "V_bad_wrong_symbol",
+   "group": "frozen_validation",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "V_bad_different_entity",
+   "group": "frozen_validation",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "V_bad_currency",
+   "group": "frozen_validation",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "V_bad_wrong_milliseconds",
+   "group": "frozen_validation",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "V_bad_same_entity_wrong_attribute",
+   "group": "frozen_validation",
+   "expected": "unsupported",
+   "flagged": true,
+   "findings": [
+    {
+     "line": 1,
+     "code": "number_absent_from_cited_sources",
+     "next_action": "Check the number against the closest number-bearing sentence in the cited excerpts, including units, scales, dates and signs; correct the claim or supply the relevant excerpt."
+    }
+   ]
+  },
+  {
+   "id": "V_bad_modal_boundary",
+   "group": "frozen_validation",
+   "expected": "unsupported",
+   "flagged": false,
+   "findings": []
+  }
+ ]
+}

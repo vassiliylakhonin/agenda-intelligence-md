@@ -73,7 +73,7 @@ export function mountAnswerReview(app, document) {
   app.ontoolinput=value=>{
     const input=value.arguments;
     if (answerReviewErrors(input).length) return;
-    answer.value=input.answer;rows.replaceChildren();input.sources.forEach(addSource);byId('numeric-smoke').checked=input.numeric_smoke_check===true;
+    answer.value=input.answer;rows.replaceChildren();input.sources.forEach(addSource);byId('numeric-smoke').checked=input.numeric_context_check===true||input.numeric_smoke_check===true;
   };
   byId('add-source').onclick=()=>{if(rows.children.length<20)addSource();};
   const demoBefore={answer:'The report says "five warehouses" [s1]\nAnother claim [s2]',sources:[{source_id:'s1',text:'The report lists three warehouses.'}]};
@@ -103,7 +103,7 @@ export function mountAnswerReview(app, document) {
   review.onclick=async event=>{
     event.preventDefault();if(busy||!connected||quotaBlocked)return;
     const input={answer:answer.value,sources:[...rows.children].map(row=>({source_id:row.querySelector('input').value,text:row.querySelector('textarea').value}))};
-    if (byId('numeric-smoke').checked) input.numeric_smoke_check=true;
+    if (byId('numeric-smoke').checked) input.numeric_context_check=true;
     const errors=answerReviewErrors(input);
     if(errors.length){status.textContent=errors.join(' ');return;}
     if(lastCompleted && JSON.stringify(input)===JSON.stringify(lastCompleted.input)) {

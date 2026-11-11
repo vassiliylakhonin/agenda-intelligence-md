@@ -454,9 +454,10 @@ export function mcpToolsForProfile(profile, options = {}) {
         }
       },
       annotations: {
-        // Calls for this profile update usage and quota state; decision_check
-        // can also issue a receipt. This is a conservative write annotation.
-        readOnlyHint: profile !== "agent_output_verification",
+        // These checks only read caller-supplied input; the usage/quota
+        // counters they update are internal admission state, not caller data.
+        readOnlyHint: profile !== "agent_output_verification"
+          || ["agent_output_verification", "pre_action_check", "decision_check"].includes(spec.name),
         destructiveHint: false,
         idempotentHint: spec.idempotent !== false,
         openWorldHint: profile === "cis_secondary_sanctions"
