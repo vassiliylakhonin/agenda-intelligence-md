@@ -232,6 +232,13 @@ function normalizeModules(modulesUsed) {
     .filter((name) => typeof name === "string" && name.length > 0);
 }
 
+// The tool a tools/call addressed, exactly as the server resolved it. The
+// caller controls params.name, so anything outside the fleet's tool-name
+// alphabet is dropped rather than persisted: logs stay free of caller text.
+function normalizeToolName(name) {
+  return typeof name === "string" && /^[a-z0-9_:-]{1,64}$/i.test(name) ? name : null;
+}
+
 // Billable upstreams (per ADR 0014). OpenSanctions hosted API is the only
 // paid live-retrieval upstream (€0.10/call); Watchman self-host and the
 // deterministic triage path cost €0. Used for per-task cost accounting in
@@ -340,6 +347,9 @@ function buildUsageEvent(request, details = {}) {
 
   return {
     event: "agenda_intelligence_a2a_usage",
+    // 11: adds tool_name, the server-normalized name of the MCP tool a
+    // tools/call addressed, so a wave of calls is attributable to the tool
+    // actually used instead of only to jsonrpc_method: tools/call.
     // 8: adds trace_id, caller_hash and the x402 payment-header signal.
     // 7: adds bounded input-required diagnostics to outcome. Version 6 added
     // the bounded probe_reason behind likely_probe. Version 5 added
@@ -349,7 +359,7 @@ function buildUsageEvent(request, details = {}) {
     // the latter. Rows at version 3 and below measured a plain-text request to
     // a gate as zero, and their likely_probe follows from that number.
     // 10: bounded usage category and server-validated deployment access.
-    event_version: 10,
+    event_version: 11,
     classification_version: 5,
     origin_verification: "unverified",
     authentication_status: details.authentication_status || 'unverified',
@@ -382,6 +392,7 @@ function buildUsageEvent(request, details = {}) {
       as_org: cf.asOrganization || null
     },
     outcome: details.outcome || { decision: null, status: null, score: null },
+    tool_name: normalizeToolName(details.tool_name),
     likely_probe: likelyProbe,
     probe_reason: details.probe_reason || null,
     trace_id: details.trace_id || null,
@@ -825,6 +836,7 @@ async function recordUsageStats(env, event) {
       colo: event.cf?.colo || "unknown",
       as_org: event.cf?.as_org || "unknown",
       outcome: event.outcome?.decision || "unknown",
+      tool_name: typeof event.tool_name === "string" && /^[a-z0-9_:-]{1,64}$/i.test(event.tool_name) ? event.tool_name : null,
       execution_status: event.outcome?.status || null,
       outcome_score: Number.isInteger(event.outcome?.score) ? event.outcome.score : null,
       trace_id: event.trace_id || null,
@@ -934,6 +946,7 @@ async function usageStats(env, date) {
   const requestKinds = new Map();
   const callerZones = new Map();
   const outcomes = new Map();
+  const tools = new Map();
   const liveRetrievalStatuses = new Map();
   const liveRetrievalReasonCodes = new Map();
   const probeReasons = new Map();
@@ -988,6 +1001,9 @@ async function usageStats(env, date) {
     // would bury the handful of rows this map exists to show.
     if (event.caller_zone && event.caller_zone !== "none") incrementMap(callerZones, event.caller_zone);
     incrementMap(outcomes, event.outcome);
+    // Absent on rows from before event_version 11 and on non-tool traffic;
+    // only rows that name a tool enter this map, so it never reads as zero use.
+    if (event.tool_name) incrementMap(tools, event.tool_name);
     if (event.outcome === "input_required") {
       incrementMap(inputRequiredReasons, event.input_required_reason || "legacy_or_unknown");
       if (eventIsExternalNonProbe) {
@@ -1084,6 +1100,7 @@ async function usageStats(env, date) {
     // most days by design — see callerZone() for what this is for.
     caller_zones: sortedMap(callerZones),
     outcomes: sortedMap(outcomes),
+    tools: sortedMap(tools),
     input_required_reasons: sortedMap(inputRequiredReasons),
     external_input_required_reasons: sortedMap(externalInputRequiredReasons),
     external_input_required_fields: sortedMap(externalInputRequiredFields),

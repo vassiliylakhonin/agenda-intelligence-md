@@ -101,6 +101,17 @@ test('catalog usage is separated without asserting success or trusting origin he
   assert.equal(telemetry.buildUsageEvent(request, {}).origin_verification, 'unverified');
 });
 
+test('the addressed tool is logged server-normalized, never as caller text', () => {
+  const telemetry = createTelemetry({agentProfile:()=> 'agenda', jsonResponse:Response.json,
+    AGENSTRY_VERIFICATION_PATHS:[], directRoutes:()=>({})});
+  const request = new Request(origin+'/mcp');
+  assert.equal(telemetry.buildUsageEvent(request, {tool_name:'strategic_risk_triage'}).tool_name, 'strategic_risk_triage');
+  assert.equal(telemetry.buildUsageEvent(request, {}).tool_name, null);
+  for (const garbage of ['private caller text', `a${'b'.repeat(64)}`, 42, ['free_trial'], 'drop\'";--']) {
+    assert.equal(telemetry.buildUsageEvent(request, {tool_name:garbage}).tool_name, null);
+  }
+});
+
 test('only a configured and matched deployment key establishes authentication', async () => {
   const configured = {...env, AGENT_PROFILE:'agentic_interaction_trust', AGENTIC_INTERACTION_TRUST_API_KEY:'private-test-key'};
   const body = JSON.stringify(GATE_REQUEST_GUIDES.agentic_interaction_trust.example);

@@ -2353,7 +2353,7 @@ test("usage analytics event keeps only privacy-safe request metadata", () => {
   });
 
   assert.equal(event.event, "agenda_intelligence_a2a_usage");
-  assert.equal(event.event_version, 10);
+  assert.equal(event.event_version, 11);
   assert.equal(event.path, "/message/send");
   assert.equal(event.jsonrpc_method, "message/send");
   assert.equal(event.request_kind, "a2a_action");
@@ -2452,7 +2452,7 @@ test("a prose question to a gate is measured by what arrived, not by what parsed
   assert.equal(event.prompt_chars, question.length, "prompt_chars is the size of what the caller sent");
   assert.equal(event.structured_chars, 0, "structured_chars still reports what the gate could parse");
   assert.equal(event.likely_probe, false, "a request this size is not a probe because a schema rejected it");
-  assert.equal(event.event_version, 10);
+  assert.equal(event.event_version, 11);
   assert.equal(event.outcome.reason_code, "missing_structured_request");
   assert.ok(event.outcome.required_fields.includes("counterparty"));
   assert.ok(event.outcome.required_fields.includes("risk_question"));
@@ -3336,6 +3336,39 @@ test("usage stats reports caller kinds and calling Worker zones", async () => {
     { name: "app-builder.example", count: 1 },
     { name: "shadetreerocketsurgeon84.workers.dev", count: 1 }
   ]);
+});
+
+test("usage stats attributes calls to the addressed tool, not only to tools/call", async () => {
+  const kv = new MemoryKv();
+  const env = { AGENDA_USAGE: kv };
+  const base = {
+    event: "agenda_intelligence_a2a_usage",
+    agent_profile: "agenda",
+    host: "agenda-intelligence-a2a.example.workers.dev",
+    jsonrpc_method: "tools/call",
+    caller_kind: "unsigned_external",
+    prompt_chars: 40,
+    outcome: { decision: "completed", status: "completed" }
+  };
+
+  await recordUsageStats(env, { ...base, timestamp: "2026-11-10T10:00:00.000Z", tool_name: "strategic_risk_triage" });
+  await recordUsageStats(env, { ...base, timestamp: "2026-11-10T10:01:00.000Z", tool_name: "strategic_risk_triage" });
+  await recordUsageStats(env, { ...base, timestamp: "2026-11-10T10:02:00.000Z", tool_name: "free_trial" });
+  // Rows from before event_version 11 carry no tool_name and must not read as
+  // a zero-tool day; caller-shaped garbage never reaches the stored row.
+  await recordUsageStats(env, { ...base, timestamp: "2026-11-10T10:03:00.000Z" });
+  await recordUsageStats(env, { ...base, timestamp: "2026-11-10T10:04:00.000Z", tool_name: "private caller text with spaces" });
+
+  const stats = await usageStats(env, "2026-11-10");
+
+  assert.equal(stats.counters.total, 5);
+  assert.deepEqual(stats.tools, [
+    { name: "strategic_risk_triage", count: 2 },
+    { name: "free_trial", count: 1 }
+  ]);
+  const storedGarbage = JSON.parse(await kv.get([...kv.store.keys()].find((key) => key.includes("10:04"))));
+  assert.equal(storedGarbage.tool_name, null);
+  assert.ok(!JSON.stringify(stats).includes("private caller text"));
 });
 
 test("usage stats repairs historical scout and test-loop rows from the stored user agent", async () => {

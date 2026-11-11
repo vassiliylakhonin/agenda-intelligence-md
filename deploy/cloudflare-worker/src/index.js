@@ -13459,6 +13459,7 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
       jsonrpc_method: "tools/call",
       jsonrpc_id_present: payload.id !== undefined,
       agent_profile: result.metadata.product_profile,
+      tool_name: name,
       prompt_chars: promptChars,
       structured_chars: structuredChars,
       modules_used: modulesUsed,
