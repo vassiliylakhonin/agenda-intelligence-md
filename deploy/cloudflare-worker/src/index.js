@@ -42,11 +42,11 @@ import { consumeProQuota } from "./payment-ledger.js";
 import { OUTPUT_TRIAL_PATH, handleOutputTrial, outputTrialEnabled, outputTrialTerms, outputTrialAvailability } from './output-trial.js';
 import { trialCompletionStats, trialOriginGroup } from './trial-receipts.js';
 import { WORKER_TRIAL_PATH, trialProfile, trialPath, isMcpTrialTool, MCP_TRIAL_STATUS_TOOL, MCP_TRIAL_FEEDBACK_TOOL } from './trial-profiles.js';
-import { WORKED_EXAMPLES } from './worked-examples.js';
+import { WORKED_EXAMPLES, FOCUSED_WORKED_EXAMPLES } from './worked-examples.js';
 import { readBoundedJson, MAX_JSON_BODY_BYTES, jsonInputDiagnostics } from "./request-body.js";
 import { PUBLIC_SCHEMAS } from "./public-schemas.js";
 import { trustPage } from "./trust-pages.js";
-import { createLandingRenderer } from "./landing-ui.js";
+import { createLandingRenderer, landingClientSource } from "./landing-ui.js";
 import { createTelemetry } from "./telemetry.js";
 import { TELEMETRY_CLIENT_SCRIPT } from "./payment-client.js";
 import {
@@ -16108,8 +16108,18 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
     return url.pathname === '/supplier-desk' ? htmlResponse(SUPPLIER_DESK_HTML,200,headers)
       : textResponse(url.pathname==='/supplier-desk.js'?SUPPLIER_DESK_CLIENT:SUPPLIER_DOCUMENT_WORKER,200,{...headers,'content-type':'text/javascript; charset=utf-8'});
   }
+  if (request.method === "GET" && url.pathname === "/landing-examples.json") {
+    const profile = agentProfile(request, env);
+    return jsonResponse({kind: 'saved_synthetic_examples', evaluation_performed: false,
+      attempt_consumed: false, example: WORKED_EXAMPLES[profile], focused: FOCUSED_WORKED_EXAMPLES[profile] || null});
+  }
+  if (request.method === "GET" && url.pathname === "/landing-client.js") {
+    return textResponse(landingClientSource(landingHtml(request, env)), 200, {
+      "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store"
+    });
+  }
   if (request.method === "GET" && ["/trust", "/privacy", "/terms"].includes(url.pathname)) {
-    return htmlResponse(trustPage(url.pathname), 200);
+    return htmlResponse(trustPage(url.pathname, agentProfile(request, env), env, publicSiteOrigin(request, env)), 200);
   }
 
 
@@ -16392,7 +16402,7 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
 
   if (request.method === "GET" && url.pathname === "/") {
     if (acceptsHtml(request)) {
-      return htmlResponse(landingHtml(request, env), 200, aiCatalogHeaders(request));
+      return htmlResponse(landingHtml(request, env, true), 200, aiCatalogHeaders(request));
     }
     return jsonResponse(healthInfo(request, env), 200, aiCatalogHeaders(request));
   }
@@ -16752,7 +16762,7 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
 
   if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/message/send") {
     if (acceptsHtml(request)) {
-      return htmlResponse(landingHtml(request, env), 200, {
+      return htmlResponse(landingHtml(request, env, true), 200, {
         allow: "GET, POST, OPTIONS",
         ...aiCatalogHeaders(request)
       });

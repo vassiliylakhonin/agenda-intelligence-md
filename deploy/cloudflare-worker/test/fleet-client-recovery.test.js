@@ -1,8 +1,10 @@
+import {withLandingScripts} from './helpers/landing-browser.js';
 import {evaluationAmount} from '../src/pricing-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHostedMcpCall} from '../../../examples/hosted-mcp/client.mjs';
-import {handleRequest} from '../src/index.js';
+import {handleRequest as rawHandleRequest} from '../src/index.js';
+const handleRequest = withLandingScripts(rawHandleRequest);
 import {WORKED_EXAMPLES} from '../src/worked-examples.js';
 import {memoryD1} from './helpers/d1.js';
 import {signedRequest,mockRpc} from './helpers/payments.js';

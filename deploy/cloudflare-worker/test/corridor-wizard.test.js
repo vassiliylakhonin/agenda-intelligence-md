@@ -1,10 +1,12 @@
+import {withLandingScripts} from './helpers/landing-browser.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {build} from 'esbuild';
 import {CORRIDOR_WIZARD_SCRIPT,corridorWizardHtml} from '../src/corridor-wizard.js';
-import {handleRequest} from '../src/index.js';
+import {handleRequest as rawHandleRequest} from '../src/index.js';
+const handleRequest = withLandingScripts(rawHandleRequest);
 import {WORKED_EXAMPLES} from '../src/worked-examples.js';
 import {corridorOwnerActions,corridorOwnerActionsHtml} from '../src/corridor-owner-actions.js';
 
@@ -105,7 +107,7 @@ test('bundled Worker renders suggested actions in the browser without keepNames 
   const built=await build({entryPoints:[new URL('../src/index.js',import.meta.url).pathname],bundle:true,keepNames:true,platform:'neutral',format:'esm',write:false});
   const bundled=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));
   const request=new Request('https://example.test/',{headers:{accept:'text/html','x-client-id':'agenda-owner-corridor-browser-test'}});
-  const html=await(await bundled.handleRequest(request,{AGENT_PROFILE:'kazakhstan',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'})).text();
+  const html=await(await withLandingScripts(bundled.handleRequest)(request,{AGENT_PROFILE:'kazakhstan',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'})).text();
   const box={value:JSON.stringify(WORKED_EXAMPLES.kazakhstan.request)};
   const context={URL,window:{location:{href:'https://example.test/',origin:'https://example.test'},crypto:globalThis.crypto},crypto:globalThis.crypto,
     document:{getElementById:id=>id==='profile-request'?box:null,createElement:()=>({set textContent(value){this.innerHTML=String(value);}})}};

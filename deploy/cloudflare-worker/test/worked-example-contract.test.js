@@ -28,7 +28,9 @@ test('saved Minerals and Market Entry behavior matches the actual evaluator and 
       }
       const html = await (await handleRequest(new Request('https://example.test', {headers:{Accept:'text/html'}}),env)).text();
       assert.ok(html.includes('Saved example result'));
-      assert.ok(html.includes('insufficient'));
+      assert.ok(html.includes('/landing-examples.json'));
+      const saved = await (await handleRequest(new Request('https://example.test/landing-examples.json'), env)).json();
+      assert.ok(JSON.stringify(saved).includes('insufficient'));
     }
   } finally {console.log = log;}
 });

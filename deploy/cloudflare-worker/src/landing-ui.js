@@ -4,7 +4,8 @@ import { WORKED_EXAMPLES, FOCUSED_WORKED_EXAMPLES } from "./worked-examples.js";
 import { CATALOG_CASES } from "./catalog-cases.js";
 import { MEMO_QUALITY_TOOL } from "./memo-quality-gate.js";
 import { PAYMENT_CLIENT_SCRIPT } from "./payment-client.js";
-import { pricingHtml } from "./commercial-catalog.js";
+import { hostedAccess, rateLimitPerHour } from "./hosted-access.js";
+import { evaluationAmount } from "./pricing-policy.js";
 import { outputTrialEnabled, outputTrialTerms } from './output-trial.js';
 import { trialFeedbackMailto } from './trial-feedback.js';
 import {routingToolForProfile} from './pricing-policy.js';
@@ -27,7 +28,7 @@ import { projectHandoffValue, prepareHandoff, handoffHtml, HANDOFF_CLIENT_SCRIPT
 import { BASE_USDC_WALLET, DOCS_URL, PACKAGE_URL, REPOSITORY_URL, SUPPORT_CONTACT_EMAIL, SUPPORT_HOURS_LOCAL, VERSION, MIDDLE_CORRIDOR_DOCS_URL, TIER_MICRO_CHECK_USDC_AMOUNT, TIER_MICRO_DISPUTE_USDC_AMOUNT, TIER_PRO_USDC_AMOUNT } from "./profiles.js";
 
 export function createLandingRenderer({ originFromRequest, publicSiteOrigin, agentProfile, agentCard, escapeHtml, agentCardProtocolVersion, PROVIDER_SITE_URL, GATE_REQUEST_GUIDES, fleetDirectoryResponse, inputSchemaForProfile }) {
-function landingHtml(request, env) {
+function landingHtml(request, env, externalClient = false) {
   const origin = originFromRequest(request);
   const canonicalOrigin = publicSiteOrigin(request, env);
   const profile = agentProfile(request, env);
@@ -46,7 +47,25 @@ function landingHtml(request, env) {
   const freeTrial = !routingTool && outputTrialEnabled(profile, env);
   const trialTerms = freeTrial ? outputTrialTerms(profile) : null;
 
-  const title = escapeHtml(card.name);
+  const access = hostedAccess(profile, env, canonicalOrigin);
+  const amount = evaluationAmount(profile, workedTool(profile));
+  const priceLine = routingTool
+    ? 'Question routing is free, without a trial attempt. Specialist checks are priced separately.'
+    : access.billing_mode === 'pay_per_call'
+      ? `${freeTrial ? `${trialTerms.attempts_per_network} free checks per network for this campaign, then` : 'No free live trial enabled here;'} ${amount} USDC per paid check on Base.`
+      : `Base calls are free${rateLimitPerHour(env) && env.AGENDA_USAGE ? `, up to ${rateLimitPerHour(env)} per hour (best effort)` : ''}; optional paid tools have separate prices.`;
+  const structuredData = {
+    '@context': 'https://schema.org', '@type': ['SoftwareApplication', 'WebAPI'],
+    name: card.name, url: canonicalOrigin + '/', description: PRODUCT_WORKFLOWS[profile]?.get || card.name,
+    applicationCategory: 'BusinessApplication', operatingSystem: 'Web',
+    documentation: canonicalOrigin + '/api/openapi.json',
+    termsOfService: canonicalOrigin + '/terms',
+    featureList: 'Reviews supplied evidence for human review; does not authorize actions or certify facts.'
+  };
+  const savedJson = (value, label) => externalClient
+    ? `<p><a href="/landing-examples.json" target="_blank" rel="noopener">Open full saved JSON: ${escapeHtml(label)}</a> (synthetic; no evaluation or trial attempt).</p>`
+    : `<pre>${escapeHtml(JSON.stringify(value, null, 2))}</pre>`;
+
   const presentation = {
     agenda: ["AI and Trade Evidence Review Tools | Agenda Intelligence", "Choose a review for an AI report, an agent action or a trade dossier. See the required documents and the tools that can review them.", null],
     kazakhstan: ["Middle Corridor Shipment Document Review", "Find missing documents in a Kazakhstan and Middle Corridor shipment file before signature, dispatch or bank review.", "kazakhstan"],
@@ -143,7 +162,7 @@ function landingHtml(request, env) {
   const flagshipBlock = `<p>${escapeHtml(presentation[1])}</p><p><a href="#${consoleId}">${routingTool ? 'Route my question free' : freeTrial ? 'Check my evidence free' : 'Open live paid evaluation'}</a> · <a href="${origin}/trust">Scope and integration requirements</a></p>` +
     (isAgentic ? `<p><strong>Need to block an agent action?</strong> This page reviews supplied evidence; it does not enforce execution restrictions. <a href="${REPOSITORY_URL}/blob/main/docs/integrations/action-bound-execution.md">Install a request-bound executor</a>, or use the <a href="https://github.com/vassiliylakhonin/vizier/blob/main/docs/WORKER_DEPLOY_PILOT.md">Vizier adapter for one Worker deployment</a>. Your integration must enforce scope and obtain the required human approval.</p>` : '');
 
-  return `<!doctype html>
+  const html = `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -155,6 +174,7 @@ function landingHtml(request, env) {
 <meta property="og:url" content="${escapeHtml(canonicalOrigin)}/">
 <meta property="og:title" content="${escapeHtml(presentation[0])}">
 <meta property="og:description" content="${escapeHtml(tagline)}">
+<script type="application/ld+json">${JSON.stringify(structuredData).replace(/</g, '\\u003c')}</script>
 <link rel="ai-catalog" href="${origin}/.well-known/ai-catalog.json">
 <style>
   :root {
@@ -179,6 +199,8 @@ function landingHtml(request, env) {
   .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-family: var(--mono); border: 1px solid var(--line); background: var(--card); }
   .badge-live { color: var(--good); }
   .badge-live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--good); display: inline-block; }
+  .access-summary { font-size: 14px; color: var(--muted); margin: -12px 0 20px; }
+  details > summary { cursor: pointer; font-weight: 600; padding: 10px 0; }
   .primary-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 16px 0 24px; }
   .primary-action { display: inline-flex; padding: 9px 14px; border-radius: 6px; border: 1px solid var(--accent); font-weight: 650; background: #fff; font: inherit; cursor: pointer; }
   .primary-action-main { color: #fff; background: var(--accent); }
@@ -207,7 +229,7 @@ function landingHtml(request, env) {
   <h1>${escapeHtml(presentation[0].split(' | ', 1)[0])}</h1>
   <p class="tagline">${escapeHtml(tagline)}</p>
 
-  <div class="status-row"><span class="badge">Live evaluation · v${escapeHtml(VERSION)}</span><span class="badge">Human review required</span><span class="badge">Profile: ${escapeHtml(profile)}</span></div>
+  <div class="status-row"><span class="badge">Human review required</span></div>
   ${profile === 'agenda' ? taskChooserHtml(fleetDirectoryResponse(), escapeHtml) : ''}
   <section aria-label="Your review workflow">
     <h2>${escapeHtml(workflow.task)}</h2>
@@ -216,10 +238,11 @@ function landingHtml(request, env) {
     <p><strong>Next step:</strong> ${escapeHtml(workflow.next)}</p>
   </section>
   <div class="primary-actions">
-    <a class="primary-action primary-action-main" href="#${consoleId}">${routingTool ? 'Route my question free' : freeTrial ? 'Check my evidence free' : env.BILLING_MODE === "pay_per_call" ? "Evaluate with a signed payment" : "Try free (50 requests/hour)"}</a>
+    <a class="primary-action primary-action-main" href="#${consoleId}">${routingTool ? 'Route my question free' : freeTrial ? 'Check my evidence free' : env.BILLING_MODE === "pay_per_call" ? "Evaluate with a signed payment" : "Open free base call"}</a>
     <button type="button" class="primary-action" onclick="${exampleAction}" style="cursor:pointer">${featuredCase ? escapeHtml(featuredCase[0]) : 'Run a worked example'}</button>
-    <a class="primary-action" href="#connect-mcp">Connect MCP</a>
+    <a class="primary-action" href="#connect-mcp" onclick="document.getElementById('agent-integration').open = true">Connect MCP</a>
   </div>
+  <p class="access-summary" id="access-summary">${escapeHtml(priceLine)} <a href="/terms#access">Limits and payment terms</a> · <a href="/.well-known/x402">All operation prices</a></p>
   <div class="card" aria-label="Example result"><strong>Example, synthetic input:</strong> ${escapeHtml(featuredCase?.[1] || heroExample)}<br>
     ${fixtureVerdict
       ? `<strong>Example output:</strong> ${escapeHtml(sampleOutput.result.metadata.verdict_standard.reason_code)} · ${escapeHtml(sampleOutput.result.metadata.verdict_standard.next_permitted_action)} · Gap: ${escapeHtml(sampleOutput.result.metadata.verdict_standard.evidence_gaps[0])}`
@@ -228,22 +251,23 @@ function landingHtml(request, env) {
     <h2>Free worked example</h2><p><strong>Precomputed synthetic fixture.</strong> No wallet, payment or trial attempt required. You can reopen it after your live allowance is exhausted. This saved example is not a live evaluation of your edited input or current sources.</p>
     ${featuredFixture ? `<h3>${escapeHtml(featuredCase[0])}</h3>
       ${reviewSummaryHtml(featuredFixture.response, escapeHtml)}
-      <details><summary>Focused synthetic request and result</summary><pre>${escapeHtml(JSON.stringify(featuredFixture, null, 2))}</pre></details>
+      <details><summary>Focused synthetic request and result</summary>${savedJson(featuredFixture, 'focused case')}</details>
       <h3>Full product walkthrough</h3>` : ''}
     ${reviewSummaryHtml(workedExample?.response, escapeHtml)}
     <details open><summary>Example request</summary><pre>${escapeHtml(JSON.stringify(workedExample?.request || {}, null, 2))}</pre></details>
-    <details open><summary>Saved example result</summary><pre>${escapeHtml(JSON.stringify(workedExample?.response || {}, null, 2))}</pre></details>
+    <details open><summary>Saved example result</summary>${savedJson(workedExample?.response || {}, 'result')}</details>
     ${profile === 'agent_financial_guard' && Array.isArray(workedExample?.scenarios) ? `<details><summary>Compare three synthetic pre-sign cases</summary><p>Saved fixtures only: no signing, payment or live checks. Review is always required.</p><ul>${workedExample.scenarios.map(item=>`<li>${escapeHtml(item.label)} — ${escapeHtml(item.verdict)}; ${escapeHtml(item.blocking_reasons.join(', '))}</li>`).join('')}</ul></details>` : ''}
     ${workedExample?.follow_up ? `<details><summary>${escapeHtml(workedExample.follow_up.label || 'After removing the unsupported illustrative claim')}</summary>
       <p>${profile === 'agentic_interaction_trust' || profile === 'cis_secondary_sanctions' || profile === 'dual_use_technology_export' || isKazakhstan ? 'The added records are explicitly synthetic, so they are rejected for evidence coverage. An apparently complete set of placeholder titles is not evidence. Human review remains required.' : profile === 'agent_output_verification' ? 'The fictional customer-count claim was removed. The remaining claim still requires human review; no factual verification or publication permission is granted.' : 'This is a synthetic follow-up. Human review is still required; no action is authorized.'}</p>
       ${reviewDeltaHtml(workedExample.response, workedExample.follow_up.response, escapeHtml)}
       ${reviewSummaryHtml(workedExample.follow_up.response, escapeHtml)}
-      <details><summary>Corrected request and full result</summary><pre>${escapeHtml(JSON.stringify(workedExample.follow_up, null, 2))}</pre></details>
+      <details><summary>Corrected request and full result</summary>${savedJson(workedExample.follow_up, 'follow-up request and result')}</details>
     </details>` : ''}
     ${isEscrowArbiter ? `<p>Have your own delivery evidence? Prepare the agreed hash and deadline, then review what was submitted.</p>
       <a class="primary-action primary-action-main" href="#${consoleId}">Check my delivery evidence</a>` : ''}
   </section>
   <nav><a href="https://agendamcp.dpdns.org/">All profiles</a> · <a href="https://vizier.agendamcp.dpdns.org/">Vizier authorization</a> · <a href="${origin}/trust">Trust &amp; limitations</a> · <a href="${origin}/privacy">Privacy</a></nav>
+  <details id="agent-integration"><summary>Agent integration and connection details</summary>
   <section id="connect-mcp" class="card" aria-labelledby="connect-mcp-title">
     <h2 id="connect-mcp-title">Connect your agent</h2>
     <p>Add this HTTPS address as a remote MCP server using Streamable HTTP.</p>
@@ -258,14 +282,17 @@ function landingHtml(request, env) {
     <p><a href="${escapeHtml(canonicalOrigin)}/.well-known/agent-card.json">A2A agent card</a> · <a href="${escapeHtml(canonicalOrigin)}/api/openapi.json">OpenAPI</a> · <a href="${escapeHtml(canonicalOrigin)}/.well-known/x402">Evaluation pricing</a></p>
     <small>Connecting and listing tools are free. Check the tool’s trial or payment terms before requesting an evaluation.</small>
   </section>
+  </details>
   <p><a href="#scoped-services">Scope an assignment with a person</a> · <a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=${encodeURIComponent(`Enterprise integration — ${card.name}`)}">Discuss enterprise integration</a> · <a href="${origin}/profiles/confidential-project-room">Open confidential project room</a></p>
   ${profile === 'agentic_interaction_trust' ? `<p>Integrating an A2A or MCP action? <a href="${REPOSITORY_URL}/blob/main/examples/agentic-interaction-trust/README.md">Use the minimal-input and three-stage review guide</a>. This is a hold for review, not action authorization.</p>` : ''}
   ${profile === "agenda" ? `<div class="card"><h2>Agent security and trade evidence</h2><p><a href="https://vizier.agendamcp.dpdns.org/">Vizier</a> checks proposed agent actions. Financial Guard, Interaction Trust and Output Verification review the evidence around those actions.</p><p><a href="https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/">Middle Corridor</a> and the regional and supply-chain profiles structure evidence for human trade-risk review.</p><a href="${origin}/.well-known/agents.json">Browse the complete profile registry</a></div>` : ""}
+  <details><summary>Scope and review boundaries</summary>
   <h2>What this is</h2>
   <p>The review service sits outside the calling model, but the caller must invoke it and enforce the returned route. This is an application-level policy boundary, not a sandbox, independent monitor, or hardware control. Supplied evidence remains unverified; configured upstream checks are identified in the response when available.</p>
   ${flagshipBlock}
   <p><strong>Not</strong> legal, compliance, sanctions, financial, investment, or insurance advice. <strong>Not</strong> a factuality verifier — schemas enforce structure, not truth. <strong>Source availability varies by profile and configuration; inspect the response provenance.</strong></p>
 
+  </details>
   ${isFinancialGuard && !freeTrial ? `
   <div style="background: linear-gradient(135deg, #1e1e2f 0%, #0d1117 100%); border: 1px solid #30363d; border-radius: 8px; padding: 18px 20px; margin: 16px 0 24px; color: #f0f6fc;">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
@@ -427,7 +454,7 @@ function landingHtml(request, env) {
   ${freeTrial && profile === 'agent_output_verification' ? reviewPanel : ''}
   <h2>${freeTrial ? 'Check your own evidence free' : 'Live paid evaluation'}</h2>
   <div class="card">
-    ${freeTrial ? `<p>Try ${trialTerms.attempts_per_network} live ${trialTerms.evaluation_kind === 'routing' ? 'routing requests' : 'checks'} without a wallet: review the result, correct the gaps, then try again. Replace the illustrative request with your own redacted inputs. Bring: ${escapeHtml(workflow.bring)} You receive: ${escapeHtml(workflow.get)} Shared networks share ${trialTerms.attempts_per_network} attempts per product; daily capacity is shared across all products. Do not submit secrets or confidential documents. Human review is required.</p>` : '<p>Editing and submitting this request uses the paid API and requires an EVM wallet or API integration. For a free demonstration use Run a worked example above. Use synthetic data only; the result is evidence review, not authorization.</p>'}
+    <p>${escapeHtml(workflow.bring)} Human review required. Use redacted inputs only. <a href="/terms#access">Trial and payment limits</a>.</p>
     ${profile === 'agent_output_verification' ? '' : allowancePanel}
     <form id="profile-console" onsubmit="runProfileExample(event)">
       ${freeTrial ? `<h3>Prepare your request</h3><p>The fields start with a synthetic example. Replace it with your redacted file, or start blank. Adding a document record does not verify its content.</p>
@@ -447,7 +474,7 @@ function landingHtml(request, env) {
   ${handoffTargets.length ? handoffHtml(handoffTargets,escapeHtml) : ''}
   ${serviceOffersHtml(escapeHtml,SUPPORT_CONTACT_EMAIL,REPOSITORY_URL)}
   <h2>API evaluations and existing paid services</h2>
-  <div class="card">${pricingHtml(escapeHtml, profile, env.BILLING_MODE, freeTrial)}<p><a href="mailto:${SUPPORT_CONTACT_EMAIL}?subject=Evidence%20review%20pilot">Discuss a pilot</a> · <a href="${origin}/sample-dossier">Synthetic sample dossier</a> · <a href="${origin}/.well-known/x402">Machine-readable prices</a></p><p>Agree the scope before paying for a human-reviewed service. API payment does not certify a decision or authorize a transaction. See <a href="${origin}/terms">service terms</a>.</p></div>
+  <div class="card"><p>${escapeHtml(priceLine)} <a href="/terms#access">Shared trial, payment and service terms</a> · <a href="/.well-known/x402">Current operation prices</a> · <a href="/sample-dossier">Synthetic sample dossier</a></p></div>
 
   <details style="margin: 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; background: #fafafa;">
     <summary style="font-weight: 700; cursor: pointer; font-size: 15px; color: var(--fg);">🛠️ Try it (curl &amp; AI Agent Integration)</summary>
@@ -457,10 +484,10 @@ function landingHtml(request, env) {
       <p>Free connectivity check — lists tools without evaluating evidence or requesting payment:</p>
       <pre>${escapeHtml(`curl -sS '${origin}/mcp' -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' --data-binary '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`)}</pre>
       <p>Read <a href="https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/deployment/hosted-quickstart.md">the hosted MCP / A2A quickstart</a> for initialization, heartbeat and paid-call handling.</p>
-      <p>This is a paid A2A 1.0 evaluation request. A valid unpaid request returns HTTP 402; invalid input may return HTTP 400. Free worked examples above never submit a live evaluation. Task trace IDs and continuation tokens apply only after successful admission.</p>
+      <p>Paid A2A request. <a href="/terms#access">Admission, HTTP 402 and recovery terms</a>. Saved examples do not submit an evaluation.</p>
       <p><a href="${origin}/.well-known/agent-card.json">Get the structured A2A request and headers from the agent card</a>${freeTrial ? ` or <a href="${trialTerms.endpoint}">get the matching free-trial input and A2A example</a>` : ''}. Use the JSON data part as shown; ordinary prose does not supply a gate’s required evidence.</p>
       <pre style="margin: 0; overflow-x: auto;">${escapeHtml(tryItCurl)}</pre>
-      <p>Keep the issued <code>task.metadata.continuation.token</code> private. GetTask and continuation require <code>X-Task-Token</code>; <code>X-Client-Id</code> is a telemetry label, not authorization. Task status expires after 24 hours; recreate older tasks.</p>
+      <p>Keep continuation tokens private. <a href="/terms#task-access">Task access and recovery</a>.</p>
       <p>Illustrative successful A2A 1.0 envelope after paid admission. Domain outcome and source dates vary; the unpaid response is a JSON-RPC error, not a completed task:</p>
       <pre>${escapeHtml(JSON.stringify({jsonrpc: "2.0", id: sampleRequest?.id ?? "example", result: {task: {id: "example-task", contextId: "example-context", ...sampleOutput.result}}}, null, 2))}</pre>
     </div>
@@ -511,6 +538,8 @@ function landingHtml(request, env) {
   </ul>
 
   <footer>
+    <p>Live evaluation · v${escapeHtml(VERSION)} · Profile: ${escapeHtml(profile)}</p>
+    <p><a href="/terms">Service terms</a> · <a href="/privacy">Privacy</a> · <a href="/trust">Trust and limits</a></p>
     <p>Hosted on Cloudflare Workers Edge. Evaluation is stateless; telemetry and payment records have separate data boundaries. See Privacy. Human review required before any commercial action.</p>
     <p>This live wrapper is intentionally limited. Full product behavior remains in the installable stdio MCP server (<code>pip install agenda-intelligence-md</code>).</p>
   </footer>
@@ -1233,8 +1262,21 @@ async function retryProActivation() {
 </main>
 </body>
 </html>`;
+  return externalClient ? externalizeLandingClient(html) : html;
 }
 
-
 return landingHtml;
+}
+
+// The same per-request renderer supplies the client. No evaluator or machine
+// contract is changed; split the largest payload out of the initial document.
+function workedTool(profile) { return WORKED_EXAMPLES[profile]?.tool; }
+export function landingClientSource(html) {
+  const start = html.lastIndexOf('<script>') + '<script>'.length;
+  return html.slice(start, html.indexOf('</script>', start));
+}
+export function externalizeLandingClient(html) {
+  const start = html.lastIndexOf('<script>');
+  const end = html.indexOf('</script>', start) + '</script>'.length;
+  return html.slice(0, start) + '<script src="/landing-client.js" defer></script>' + html.slice(end);
 }

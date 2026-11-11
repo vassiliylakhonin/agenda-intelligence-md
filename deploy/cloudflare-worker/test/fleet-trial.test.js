@@ -1,8 +1,10 @@
+import {withLandingScripts} from './helpers/landing-browser.js';
 import {routingToolForProfile, evaluationAmount} from '../src/pricing-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { handleRequest, DIRECT_V1_ROUTES, handleMcpJsonRpc, agentCard } from '../src/index.js';
+import { handleRequest as rawHandleRequest, DIRECT_V1_ROUTES, handleMcpJsonRpc, agentCard } from '../src/index.js';
+const handleRequest = withLandingScripts(rawHandleRequest);
 import { memoryD1 } from './helpers/d1.js';
 import { TRIAL_PROFILES, trialPath, OUTPUT_TRIAL_PATH } from '../src/trial-profiles.js';
 import { tokenHash } from '../src/payment-ledger.js';

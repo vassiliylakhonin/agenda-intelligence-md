@@ -1,8 +1,10 @@
+import {withLandingScripts} from './helpers/landing-browser.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-import {handleRequest} from '../src/index.js';
+import {handleRequest as rawHandleRequest} from '../src/index.js';
+const handleRequest = withLandingScripts(rawHandleRequest);
 import {GULF_WIZARD_SCRIPT,gulfGateHtml} from '../src/gulf-wizard.js';
 import {WORKED_EXAMPLES} from '../src/worked-examples.js';
 const schema=JSON.parse(readFileSync(new URL('../../../schemas/v1/gulf-maritime-exposure-request.schema.json',import.meta.url),'utf8'));
@@ -36,7 +38,7 @@ test('bundled Worker page initializes browser helpers and prepares a voyage with
  const bundled=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].text).toString('base64'));
  const old=console.log;console.log=()=>{};
  try{
-  const html=await(await bundled.handleRequest(new Request('https://example.test/',{headers:{accept:'text/html'}}),{...env,WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'})).text();
+  const html=await(await withLandingScripts(bundled.handleRequest)(new Request('https://example.test/',{headers:{accept:'text/html'}}),{...env,WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'})).text();
   const box={value:'{}'},context={URL,TextEncoder,window:{location:{href:'https://example.test/',origin:'https://example.test'},crypto:globalThis.crypto},crypto:globalThis.crypto,document:{getElementById:id=>id==='profile-request'?box:null,createElement:()=>({set textContent(x){this.innerHTML=String(x);}})}};
   vm.runInNewContext([...html.matchAll(/<script>([\s\S]*?)<\/script>/g)][0][1],context);
   const input={name:'',imo:'1234567',mmsi:'',flag:'',vessel_type:'',origin:'',destination:'',cargo:'',insurer:'',chokepoint:'red_sea',stage:'pre_fixture',question:'Review voyage',facets:['chokepoint_disruption'],sources:[]};

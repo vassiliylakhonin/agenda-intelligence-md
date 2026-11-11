@@ -1,5 +1,13 @@
 # Card discovery targeting (2026-11-11)
 
+## 2026-11-11 - Compact worker product pages
+
+- Derive the first-screen trial and Base USDC price line from serving configuration; distinguish free routing from bounded trials.
+- Move version/profile labels to the footer, keep human-review boundaries visible, and link shared access/payment terms.
+- Add per-product SoftwareApplication/WebAPI JSON-LD without ratings, certification or factuality claims.
+- Split the browser client from initial HTML and link full saved synthetic JSON instead of repeating it in the document. Keep task-specific summaries, request examples and forms; collapse integration and scope details.
+- No changes to machine cards, evaluator admission, MCP contracts or trial counters. Regression coverage loads the same external client as a browser.
+
 - Narrow Middle Corridor, Gulf Maritime, CIS and Corridor Assistant selection copy to trade, voyage and counterparty review rather than generic cover-related discovery. Preserve schema identifiers, executable examples, configured admission and no-advice limits.
 - Give Output Verification a citation-check-first introduction and focused report/quote tags. Remove the general Middle Corridor evidence-pack linter listing and scope its memo listing to shipment memos; keep the actual tools and their admission unchanged. Agenda policy-memo audit remains explicitly packaged-tool routing. No new evaluator, retrieval, claims or deployment resources.
 

@@ -1,3 +1,4 @@
+import {withLandingScripts} from './helpers/landing-browser.js';
 import {routingToolForProfile} from '../src/pricing-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -12,7 +13,8 @@ const bundle = await build({
   entryPoints: [new URL('../src/index.js', import.meta.url).pathname],
   bundle: true, keepNames: true, platform: 'neutral', format: 'esm', write: false,
 });
-const { handleRequest } = await import('data:text/javascript;base64,' + Buffer.from(bundle.outputFiles[0].text).toString('base64'));
+const { handleRequest: rawHandleRequest } = await import('data:text/javascript;base64,' + Buffer.from(bundle.outputFiles[0].text).toString('base64'));
+const handleRequest=withLandingScripts(rawHandleRequest);
 
 test('Interaction Trust routes enforcement requests to the real integration without claiming API execution control', async () => {
   const html = await (await handleRequest(new Request('https://example.test/',{headers:{accept:'text/html'}}),

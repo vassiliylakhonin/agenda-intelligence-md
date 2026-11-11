@@ -1,7 +1,9 @@
+import {withLandingScripts} from './helpers/landing-browser.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import {handleRequest} from '../src/index.js';
+import {handleRequest as rawHandleRequest} from '../src/index.js';
+const handleRequest = withLandingScripts(rawHandleRequest);
 import {prepareHandoff,projectHandoffValue,HANDOFF_CLIENT_SCRIPT} from '../src/handoff.js';
 import {WORKED_EXAMPLES} from '../src/worked-examples.js';
 const headers={'accept':'text/html','x-client-id':'agenda-owner-service-adoption'};

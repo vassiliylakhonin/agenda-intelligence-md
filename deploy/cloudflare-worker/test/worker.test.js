@@ -10228,8 +10228,8 @@ test("landing conversion: each profile has a usable console, v1 curl, honest pri
     assert.match(html, /-H &#39;A2A-Version: 1\.0&#39;/);
     assert.match(html, /method&quot;: &quot;SendMessage&quot;/);
     assert.match(html, /agenda-structured-verdict\/v1/);
-    assert.match(html, /50 queries\/hour/);
-    assert.match(html, /not certified for standard x402 clients/);
+    assert.match(html, /Base calls are free|Question routing is free/);
+    assert.match(html, /Shared trial, payment and service terms/);
     assert.ok(!html.includes("Agenstry listing:"));
   }
   const corridor = landingHtml(new Request("https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/"), {});
