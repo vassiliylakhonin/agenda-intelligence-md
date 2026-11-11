@@ -1097,9 +1097,7 @@ function agentCard(request, env = {}) {
           "geopolitical-risk",
           "policy-analysis",
           "signal-triage",
-          "decision-intelligence",
-          "memo",
-          "mcp"
+          "memo"
         ],
         examples: [
           "Analyze how Red Sea shipping disruption changes risk for a Central Asia logistics corridor.",
@@ -1127,14 +1125,12 @@ function agentCard(request, env = {}) {
       },
       {
         id: "agenda-audit-claims",
-        name: "Policy evidence quality gate",
+        name: "Packaged policy-memo evidence audit routing",
         description:
           "Routes callers to the packaged audit_claims MCP tool for claim-level evidence structure, support-level distribution, orphan evidence references, unsupported claims, and provenance discipline.",
         tags: [
-          "evidence-audit",
-          "claim-support",
-          "provenance",
-          "quality-gate",
+          "policy-memo",
+          "packaged-mcp-routing",
           "strategic-risk"
         ],
         examples: [
@@ -2785,7 +2781,7 @@ function applyAgentProfile(card, request, env = {}) {
   card.name = "Kazakhstan / Middle Corridor Deal Risk Gate";
   card.documentationUrl = discovery.documentation_url;
   card.description =
-    "A2A-compatible evidence-readiness gate for Kazakhstan-Caspian / Middle Corridor logistics, trade-finance, procurement, and insurance-adjacent workflows. Bring route, cargo, counterparties, and dated sources; get structured deal-risk triage, missing source categories, evidence gaps, watch-next indicators, decision-readiness score, risk signal, human-review routing, and named sanctions-exposure flags: OFAC named-sector (EO 14024/14114) and newly-formed-counterparty red flags, EU re-export / circumvention-watch jurisdictions (incl. the 20th-package measures on Kyrgyzstan), dual-use cargo screened against the EU/US Common High Priority List, a domestic-legal vs foreign-sanctions exposure decomposition, and a vessel deceptive-shipping-practice checklist. Deterministic rule-based logic, no model in the decision path. Presence-flagging and evidence triage only, not a sanctions determination." +
+    "A2A-compatible evidence-readiness gate for Kazakhstan-Caspian / Middle Corridor logistics, trade-finance, procurement, and marine cargo insurer handoff workflows. Bring route, cargo, counterparties, and dated sources; get structured deal-risk triage, missing source categories, evidence gaps, watch-next indicators, decision-readiness score, risk signal, human-review routing, and named sanctions-exposure flags: OFAC named-sector (EO 14024/14114) and newly-formed-counterparty red flags, EU re-export / circumvention-watch jurisdictions (incl. the 20th-package measures on Kyrgyzstan), dual-use cargo screened against the EU/US Common High Priority List, a domestic-legal vs foreign-sanctions exposure decomposition, and a vessel deceptive-shipping-practice checklist. Deterministic rule-based logic, no model in the decision path. Presence-flagging and evidence triage only, not a sanctions determination." +
     PROVIDER_FRONT_DOOR_POINTER;
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
@@ -2793,7 +2789,7 @@ function applyAgentProfile(card, request, env = {}) {
       id: "middle-corridor-deal-desk-triage",
       name: "Kazakhstan / Middle Corridor deal-risk gate",
       description:
-        "Turns a route, cargo, counterparty, and dated-source bundle into a structured deal-risk recommendation with risk signal, decision-readiness score, evidence gaps, and minimum source categories required before signature, shipment, insurer handoff, or committee review.",
+        "Turns a route, cargo, counterparty, and dated-source bundle into a structured deal-risk recommendation with risk signal, decision-readiness score, evidence gaps, and minimum source categories required before signature, shipment, or committee review.",
       tags: [
         "deal-desk",
         "kazakhstan",
@@ -2814,7 +2810,7 @@ function applyAgentProfile(card, request, env = {}) {
       id: "middle-corridor-source-coverage-auditor",
       name: "Middle Corridor source coverage auditor",
       description:
-        "Checks whether a Middle Corridor evidence pack has enough dated source coverage for a risk decision: sanctions lists, port/operator notices, customs or regulatory sources, counterparty registry extracts, and insurance or carrier notes.",
+        "Checks whether a Middle Corridor evidence pack has enough dated source coverage for a risk decision: sanctions lists, port/operator notices, customs or regulatory sources, counterparty registry extracts, and cargo-cover or carrier notes.",
       tags: [
         "source-coverage",
         "evidence-pack",
@@ -2851,40 +2847,18 @@ function applyAgentProfile(card, request, env = {}) {
       outputModes: ["application/json", "text/markdown"]
     },
     {
-      id: "risk-memo-quality-gate",
-      name: "Risk memo quality gate",
+      id: "middle-corridor-shipment-memo-check",
+      name: "Middle Corridor shipment memo check",
       description:
         "Check a structured Middle Corridor risk memo for schema issues, missing source references, weak follow-up and vague watch indicators. The named hosted MCP/A2A tool is free within the hourly limit and leaves the memo for human review.",
       tags: [
-        "memo-validation",
-        "evidence-audit",
-        "quality-gate",
-        "decision-readiness",
-        "watch-next",
-        "strategic-risk"
+        "middle-corridor",
+        "shipment-memo",
+        "aktau-baku",
+        "shipment-handoff"
       ],
       examples: [
         JSON.stringify({tool: MEMO_QUALITY_TOOL, ...CORRIDOR_MEMO_EXAMPLE})
-      ],
-      inputModes: ["application/json", "text/plain"],
-      outputModes: ["application/json", "text/markdown"]
-    },
-    {
-      id: "a2a-evidence-pack-linter",
-      name: "A2A evidence pack linter",
-      description:
-        "Lints caller-supplied evidence packs before they enter an agent workflow: missing dates, unknown evidence ids, orphan references, unsupported claims, quote-fragment presence, and source-category gaps.",
-      tags: [
-        "evidence-linting",
-        "quote-checking",
-        "provenance",
-        "agent-workflows",
-        "schema-validation",
-        "source-coverage"
-      ],
-      examples: [
-        "Lint this evidence pack before running a Middle Corridor deal-risk memo.",
-        "Find orphan evidence references and missing dates in this sanctions evidence bundle."
       ],
       inputModes: ["application/json", "text/plain"],
       outputModes: ["application/json", "text/markdown"]
@@ -2998,25 +2972,18 @@ function applyAgentOutputVerificationProfile(card, request) {
   card.skills = [
     {
       id: "agent-output-verification",
-      name: "Evidence audit for AI reports and policy memos",
+      name: "Citation check for AI reports",
       description:
         "Review AI-generated report and memo claims against supplied source text. Check evidence-reference consistency, missing source IDs and quoted excerpts; return structural evidence gaps, repair steps and a relay-readiness verdict. Human review is required; this does not establish factual truth, semantic entailment, source authenticity or permission to publish.",
       tags: [
-        "agentic-ai",
-        "a2a",
-        "agent-to-agent",
+        "citation-check",
+        "ai-report",
         "claims",
-        "evidence-readiness",
-        "quality-evaluation",
-        "evidence-validation",
-        "evidence-audit",
-        "claim-support",
-        "provenance",
+        "evidence-reference",
+        "supplied-source-text",
         "report-review",
         "quote-checking",
-        "trust-and-safety",
-        "human-review",
-        "free"
+        "human-review"
       ],
       examples: [
         "Another agent handed me an analysis with cited claims — is it safe to relay, or does it contain unsupported claims?",
@@ -3524,7 +3491,7 @@ function applyCorridorSanctionsAssistantProfile(card, request) {
   card.description =
     "Front door to the corridor and sanctions evidence-readiness gates. Ask about a specific Kazakhstan / Middle " +
     "Corridor deal or a CIS / Caucasus / Central Asia counterparty; get a plain-language read on what due-diligence " +
-    "evidence a bank, insurer, or compliance desk will still ask for, and a pointer to the structured gate that fits. " +
+    "evidence a bank or compliance desk will still ask for, and a pointer to the structured gate that fits. " +
     "For person-led work, email a one-line description of the route or counterparty and the next decision or review. " +
     "Fit, scope, fee, and timing are confirmed before work starts. Orientation and routing only. The structured " +
     "triage, scoring, and any screening happen in the named gates, and human review is required before any commercial action.";
@@ -3535,7 +3502,7 @@ function applyCorridorSanctionsAssistantProfile(card, request) {
       name: "Corridor & sanctions deal orientation",
       description:
         "Bring a one-line deal or counterparty (route, cargo, or entity + the decision pending). Get a plain-language " +
-        "read on the evidence gaps a bank/insurer/compliance desk will flag, which structured gate to run, and what " +
+        "read on the evidence gaps a bank or compliance desk will flag, which structured gate to run, and what " +
         "to send for person-led work. Fit, scope, fee, and timing are confirmed before work starts.",
       tags: ["corridor", "sanctions", "kazakhstan", "cis", "deal-risk", "evidence-readiness", "human-review", "free"],
       examples: [

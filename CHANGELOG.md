@@ -1,3 +1,8 @@
+# Card discovery targeting (2026-11-11)
+
+- Narrow Middle Corridor, Gulf Maritime, CIS and Corridor Assistant selection copy to trade, voyage and counterparty review rather than generic cover-related discovery. Preserve schema identifiers, executable examples, configured admission and no-advice limits.
+- Give Output Verification a citation-check-first introduction and focused report/quote tags. Remove the general Middle Corridor evidence-pack linter listing and scope its memo listing to shipment memos; keep the actual tools and their admission unchanged. Agenda policy-memo audit remains explicitly packaged-tool routing. No new evaluator, retrieval, claims or deployment resources.
+
 # CHANGELOG
 
 ## Unreleased

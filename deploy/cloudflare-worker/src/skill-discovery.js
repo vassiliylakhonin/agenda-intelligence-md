@@ -24,9 +24,9 @@ const FACETS = {
   ],
   gulf_maritime_exposure: [
     ['gulf-voyage-evidence-gaps', 'Vessel and voyage evidence-gap review',
-      'Reports missing voyage, insurance and counterparty source categories and reference-metadata issues. Does not verify physical vessel identity, ownership or cover.',
+      'Reports missing voyage, P&I cover and counterparty source categories and reference-metadata issues. Does not verify physical vessel identity, ownership or cover.',
       ['maritime', 'vessel', 'evidence-gaps'], ['/minimum_sources_before_review', '/evidence_gaps', '/source_record_review'],
-      'Which voyage and insurance evidence is missing before fixture review?'],
+      'Which voyage and P&I cover evidence is missing before fixture review?'],
     ['gulf-chokepoint-review-watch', 'Chokepoint review watchlist',
       'Returns route-related disruption questions and watch-next indicators from the supplied voyage. This is a static review checklist, not live maritime monitoring.',
       ['chokepoint', 'hormuz', 'review-checklist'], ['/chokepoint_disruption_watch', '/watch_next', '/triage_recommendation'],
