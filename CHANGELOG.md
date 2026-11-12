@@ -1,12 +1,18 @@
-# Hosted Output Verification numeric context check (2026-11-11)
+# CHANGELOG
+
+## Unreleased
+
+## 1.25.0 — 2026-11-12
+
+### Hosted Output Verification numeric context check (2026-11-11)
 
 - review_answer: replace the literal-token numeric_smoke_check with a numeric context check ported from the Python review_rag_answer pipeline. It canonicalizes bounded mass/length/time units, scales, currencies, dates and negative wording, and flags only claim numbers that no closest number-bearing sentence in the cited sources supports; numeric_smoke_check remains a deprecated alias. Add per-line citation_status, source_status and numeric-fact-level support_status (supported/contradicted/unknown; default unknown; never claim-level support, factuality or clearance). Route, findings codes, admission, pricing and trial counters are unchanged. Mark the pure check tools (review_answer, agent_output_verification, pre_action_check, decision_check) readOnlyHint=true: they only read caller-supplied input; admission counters are internal state. Version 1.25.0. Frozen synthetic evaluation (evals/ov-numeric-context-2026-11-11): unsupported catch 6/16 -> 16/16 on the new set and 1/16 -> 15/16 on the 2026-11-09 frozen set, false holds 9/16 -> 1/16 and 7/16 -> 0/16; the remaining false hold matches the Python heuristic verdict on the same input. Misses and false holds are reported in the evaluation README; synthetic sets, heuristic, human review still required.
 
-# Card discovery targeting (2026-11-11)
+### Card discovery targeting (2026-11-11)
 
 - Output Verification card and landing: point to the separate opt-in Vizier numeric consistency scan and verify constraint. State heuristic/REVIEW-only limits, no factuality claim, no implied integration, and distinguish the existing absent-from-sources numeric smoke check. Evaluation, MCP, forms, signed-card machinery and trial counters are unchanged.
 
-## 2026-11-11 - Compact worker product pages
+### 2026-11-11 - Compact worker product pages
 
 - Derive the first-screen trial and Base USDC price line from serving configuration; distinguish free routing from bounded trials.
 - Move version/profile labels to the footer, keep human-review boundaries visible, and link shared access/payment terms.
@@ -16,10 +22,6 @@
 
 - Narrow Middle Corridor, Gulf Maritime, CIS and Corridor Assistant selection copy to trade, voyage and counterparty review rather than generic cover-related discovery. Preserve schema identifiers, executable examples, configured admission and no-advice limits.
 - Give Output Verification a citation-check-first introduction and focused report/quote tags. Remove the general Middle Corridor evidence-pack linter listing and scope its memo listing to shipment memos; keep the actual tools and their admission unchanged. Agenda policy-memo audit remains explicitly packaged-tool routing. No new evaluator, retrieval, claims or deployment resources.
-
-# CHANGELOG
-
-## Unreleased
 
 - Harden the x402 payment path after an audit against arXiv 2605.11781: anchor the settlement log scan before the facilitator call so a front-run settlement is still found; retry `/settle` on a later request when it failed before any transaction was recorded, and report an expired unsettled authorization; claim settlements by (transaction, payer, nonce) so several authorizations in one transaction do not return a false 409 while legacy transaction claims still block reuse; require 3 block confirmations (12 from 10 USDC, including the legacy Pro settlement path) before releasing a paid result. SECURITY.md records the audit scope and accepted residual risks. Verified with offline tests only; no live payment has been run.
 
