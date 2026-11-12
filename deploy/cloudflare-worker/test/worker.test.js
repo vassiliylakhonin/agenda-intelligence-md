@@ -3370,6 +3370,49 @@ test("usage stats attributes calls to the addressed tool, not only to tools/call
   assert.ok(!JSON.stringify(stats).includes("private caller text"));
 });
 
+test("trial-path calls attribute usage to the trial tool actually invoked", async () => {
+  const log = console.log;
+  console.log = () => {};
+  try {
+    const kv = new MemoryKv();
+    const env = {
+      AGENT_PROFILE: "agent_output_verification",
+      WORKER_FREE_TRIAL: "1",
+      BILLING_MODE: "pay_per_call",
+      VIZIER_DISABLED: "1",
+      PAYMENT_LEDGER: memoryD1(),
+      AGENDA_USAGE: kv
+    };
+    const origin = "https://agent-output-verification-a2a.example.workers.dev";
+    const headers = { "content-type": "application/json", "cf-connecting-ip": "192.0.2.99", "x-client-id": "tool-attribution-test" };
+    const rpc = (name, args = {}) => handleRequest(new Request(origin + "/mcp", {
+      method: "POST", headers,
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } })
+    }), env);
+
+    const listed = await (await handleRequest(new Request(origin + "/mcp", {
+      method: "POST", headers,
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" })
+    }), env)).json();
+    const trialExample = listed.result.tools.find((tool) => tool.name === "free_trial")._meta["com.agenda/readiness"].example_arguments;
+
+    const trialResponse = await rpc("free_trial", trialExample);
+    assert.equal((await trialResponse.json()).result.isError, false);
+    const reviewResponse = await rpc("review_answer", { answer: "Capacity is 900 [s1].", sources: [{ source_id: "s1", text: "Capacity is 900." }] });
+    assert.equal((await reviewResponse.json()).result.isError, false);
+
+    // Both trial surfaces log through the shared trial path, which now carries
+    // the same tool attribution as paid tools/call rows.
+    const stats = await usageStats(env, new Date().toISOString().slice(0, 10));
+    assert.deepEqual(stats.tools, [
+      { name: "free_trial", count: 1 },
+      { name: "review_answer", count: 1 }
+    ]);
+  } finally {
+    console.log = log;
+  }
+});
+
 test("usage stats repairs historical scout and test-loop rows from the stored user agent", async () => {
   const kv = new MemoryKv();
   const env = { AGENDA_USAGE: kv };

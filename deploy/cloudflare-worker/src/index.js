@@ -41,7 +41,7 @@ import { snapshotAssetResponse } from "./snapshot-assets.js";
 import { consumeProQuota } from "./payment-ledger.js";
 import { OUTPUT_TRIAL_PATH, handleOutputTrial, outputTrialEnabled, outputTrialTerms, outputTrialAvailability } from './output-trial.js';
 import { trialCompletionStats, trialOriginGroup } from './trial-receipts.js';
-import { WORKER_TRIAL_PATH, trialProfile, trialPath, isMcpTrialTool, MCP_TRIAL_STATUS_TOOL, MCP_TRIAL_FEEDBACK_TOOL } from './trial-profiles.js';
+import { WORKER_TRIAL_PATH, trialProfile, trialPath, isMcpTrialTool, MCP_TRIAL_TOOL, MCP_TRIAL_STATUS_TOOL, MCP_TRIAL_FEEDBACK_TOOL } from './trial-profiles.js';
 import { WORKED_EXAMPLES, FOCUSED_WORKED_EXAMPLES } from './worked-examples.js';
 import { readBoundedJson, MAX_JSON_BODY_BYTES, jsonInputDiagnostics } from "./request-body.js";
 import { PUBLIC_SCHEMAS } from "./public-schemas.js";
@@ -13375,7 +13375,7 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
       }
       const adapter={module:ANSWER_REVIEW_TOOL,validate:value=>({value,errors:answerReviewErrors(value)}),evaluate:async value=>reviewAnswer(value)};
       return respond(id,await mcpTrialResult(await executeWorkerTrial(request,env,ctx,profile,()=>args,adapter,
-        answerReviewTerms(outputTrialTerms(profile)))));
+        answerReviewTerms(outputTrialTerms(profile)),ANSWER_REVIEW_TOOL)));
     }
     if (isMcpTrialTool(name) && outputTrialEnabled(profile, env)) {
       // Stateful calls require a correlatable request id; notifications and
@@ -13405,7 +13405,7 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
             code:'trial_unavailable',evaluated:false,attempt_consumed:false,admission_status:503})}]});
         }
       }
-      return respond(id, await mcpTrialResult(await executeWorkerTrial(request,env,ctx,profile,()=>args)));
+      return respond(id, await mcpTrialResult(await executeWorkerTrial(request,env,ctx,profile,()=>args,undefined,undefined,name)));
     }
     const spec = mcpToolSpecForProfile(profile, name);
     if (!spec || (outputVerificationPlugin && name !== "agent_output_verification")) {
@@ -14225,7 +14225,7 @@ async function handleA2ATrial(payload, request, env, ctx = {}) {
     if (!response.ok) return fail(response.status===503?-32010:-32602,'Feedback could not be recorded',response.status,await response.json());
     feedback={recorded:true,response:selected.input.response,evaluation_performed:false};
   } else {
-    const response=await executeWorkerTrial(request,env,ctx,profile,()=>selected.input);
+    const response=await executeWorkerTrial(request,env,ctx,profile,()=>selected.input,undefined,undefined,MCP_TRIAL_TOOL);
     for (const name of ['x-payment-trace-id','x-payment-attempt-id','retry-after']) if(response.headers.has(name)) trialHeaders[name]=response.headers.get(name);
     const body=await response.json();
     if (!response.ok) return fail(response.status===429?-32002:-32010,body.error || body.code || 'Trial refused',response.status,body);
@@ -15695,7 +15695,10 @@ function workerTrialAdapter(profile) {
 
 // One shared admission/evaluation path for REST and native MCP trials. The
 // original request keeps Cloudflare network identity and telemetry attribution.
-async function executeWorkerTrial(request, env, ctx, profile, readInput, adapter = workerTrialAdapter(profile), terms = outputTrialTerms(profile)) {
+// telemetryToolName is the server-resolved tool the caller addressed
+// (free_trial / review_answer), so trial usage rows carry the same event
+// version 11 tool attribution as paid tools/call rows, on every transport.
+async function executeWorkerTrial(request, env, ctx, profile, readInput, adapter = workerTrialAdapter(profile), terms = outputTrialTerms(profile), telemetryToolName = null) {
   if (!isProductionAuthorized(request, env, profile)) return jsonResponse({error:'Unauthorized'},401);
   const fingerprint = await callerHash(request, env).catch(() => null);
   return handleOutputTrial(request, env, {
@@ -15722,7 +15725,7 @@ async function executeWorkerTrial(request, env, ctx, profile, readInput, adapter
       const chars = JSON.stringify(structured).length;
       const probe = actionProbeReason(request, chars);
       const verdict = data.financial_guard_verdict || data.arbitration_ruling || data;
-      const event = await logUsageEvent(request, { agent_profile: profile, jsonrpc_method: new URL(request.url).pathname.startsWith('/mcp') ? 'tools/call' : new URL(request.url).pathname === '/message/send' || new URL(request.url).pathname === '/' ? 'SendMessage' : undefined, prompt_chars: chars,
+      const event = await logUsageEvent(request, { agent_profile: profile, tool_name: telemetryToolName, jsonrpc_method: new URL(request.url).pathname.startsWith('/mcp') ? 'tools/call' : new URL(request.url).pathname === '/message/send' || new URL(request.url).pathname === '/' ? 'SendMessage' : undefined, prompt_chars: chars,
         structured_chars: chars, modules_used: adapter.module ? [profile,adapter.module] : [profile], likely_probe: Boolean(probe), probe_reason: probe,
         outcome: { decision: verdict.verdict || verdict.triage_recommendation || verdict.decision || verdict.ruling || 'completed',
           status: 'completed', score: verdict.readiness_score ?? verdict.decision_readiness_score },
@@ -15831,7 +15834,7 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
     }
     if (request.method !== 'POST') return jsonResponse({ error: 'Use GET or POST.' }, 405, { allow: 'GET, POST, OPTIONS' });
     if (!isProductionAuthorized(request, env, profile)) return jsonResponse({ error: 'Unauthorized' }, 401);
-    return executeWorkerTrial(request, env, ctx, profile);
+    return executeWorkerTrial(request, env, ctx, profile, undefined, undefined, undefined, MCP_TRIAL_TOOL);
   }
   if (trialRequestPath === INPUT_VALIDATION_PATH) {
     if (request.method === 'OPTIONS') return execute();
