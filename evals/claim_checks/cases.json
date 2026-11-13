@@ -1,0 +1,348 @@
+{
+  "description": "Small hand-labelled diagnostic set, not representative accuracy. Flags mean review needed. No LLM judge. Public-source excerpts and explicitly synthetic probes; unpublished paper text is excluded.",
+  "source_provenance": {
+    "ebrd_release": "Snapshot from public release, 2026-11-12, EUR spelling and 2.5 formatting normalized by prior researcher. Rechecked 2026-11-13.",
+    "titr_tariffs": "Public page excerpt snapshot 2026-11-12; rechecked 2026-11-13."
+  },
+  "cases": [
+    {
+      "id": "public-growth",
+      "kind": "public_source",
+      "expect_flag": false,
+      "annotation": "",
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "public-growth",
+            "text": "Container cargo handling has increased by 121 per cent year on year so far in 2025.",
+            "source_ids": [
+              "ebrd_release"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "ebrd_release",
+            "text": "EBRD and EU help improve sustainability of transportation through Transcaspian Corridor. 30 Sep 2025. Author: Anton Usov.\n- EBRD lends EUR 35 million to Kazakhstan's port of Aktau\n- Project is also expected to benefit from EU grant of up to EUR 10 million\n- Investment will enable major Caspian Sea port to double its container-handling capacity\nThe European Bank for Reconstruction and Development (EBRD) is contributing to the optimisation of international transport routes by supporting upgrades of key port infrastructure in Kazakhstan. A financial package of up to EUR 45 million provided by the EBRD and the European Union will finance an increase in cargo handling capacity at the port of Aktau, Kazakhstan's primary maritime gateway, located on the Caspian Sea. Aktau Port was identified as one of the key elements of the Transcaspian Corridor by the EBRD-led and EU-funded study on sustainable transport connections between Europe and Central Asia.\nThe financial package consists of an EBRD loan of up to EUR 35 million and a potential investment grant of up to EUR 10 million under the EU's Asia Pacific Investment Facility. The funds will finance and the extension of two berths and the acquisition of weather-resilient ship-to-shore cranes to expand the handling capacity for container cargo, which has increased by 121 per cent year on year so far in 2025.\nThese enhancements will allow the port to double its container handling capacity and to operate two fully dedicated container berths, each with separate trans-shipment lines. Handling time per container is expected to decrease from the current average of four minutes to just 2.5 minutes.\nEBRD President Odile Renaud-Basso said: Together with the EU we are supporting this project because it meets our strategic objectives for Kazakhstan and Central Asia. It is also part of the global transport and logistics infrastructure solutions covered by the EU Global Gateway initiative. Our funds will help to address a key infrastructure bottleneck along the Transcaspian Corridor.\nThe project will contribute to the investment programme of the port of Aktau, which is owned by the national welfare fund Samruk-Kazyna and managed by Kazakhstan Railways. Its aims include the development of the largest container terminal in the Caspian region by the end of 2026 that is expected to process up to 240,000 twenty-foot equivalent units annually.\nThe EBRD has invested more than EUR 10 billion across 340 projects in Kazakhstan, with most of the funds supporting private entrepreneurship.",
+            "url": "https://www.ebrd.com/home/news-and-events/news/2025/ebrd-and-eu-help-improve-sustainability-of-transportation-throug.html"
+          },
+          {
+            "source_id": "titr_tariffs",
+            "text": "Tariffs - middlecorridor.com (Trans-Caspian International Transport Route, TITR).\nComprehensive tariff rates for the transportation of general-purpose containers using feeder vessels along the TITR route via Baku (Alat) port from January 1 to December 31, 2026 (approved by Working Group on December 5, 2025).\nComprehensive Tariff Rates for the Transportation of General-Purpose Containers with the Use of Feeder Vessels along the TITR Route via the Port of Baku (Govsan) Valid from January 1 to December 31, 2026 (approved by Working Group on December 5, 2025).\nComprehensive Tariff Rates for the Transportation of Loaded General-Purpose Containers via Ferry Services across the Caspian Sea along the TITR Route Valid from January 1 to December 31, 2026 (approved by Working Group on December 5, 2025).\nComprehensive tariff rates for wagon cargo shipments along the TITR route, effective from January 1 to December 31, 2026 (approved by Working Group on December 5, 2025).\nComprehensive tariff rates for container transportation through Black Sea ports (Constanta/Izmail/Chornomorsk/Odesa) to terminals in Europe (Duisburg/Slawkow/Budapest) (JSC Ukrzaliznytsia).\nTariff rates for container transportation along the Dostyk-Aktau and Aktau-Dostyk sections.",
+            "url": "https://middlecorridor.com/en/for-clients/tariffs"
+          }
+        ]
+      }
+    },
+    {
+      "id": "public-growth-wrong",
+      "kind": "public_source_mutation",
+      "expect_flag": true,
+      "annotation": "",
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "public-growth-wrong",
+            "text": "Container cargo handling has increased by 999 per cent year on year so far in 2025.",
+            "source_ids": [
+              "ebrd_release"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "ebrd_release",
+            "text": "EBRD and EU help improve sustainability of transportation through Transcaspian Corridor. 30 Sep 2025. Author: Anton Usov.\n- EBRD lends EUR 35 million to Kazakhstan's port of Aktau\n- Project is also expected to benefit from EU grant of up to EUR 10 million\n- Investment will enable major Caspian Sea port to double its container-handling capacity\nThe European Bank for Reconstruction and Development (EBRD) is contributing to the optimisation of international transport routes by supporting upgrades of key port infrastructure in Kazakhstan. A financial package of up to EUR 45 million provided by the EBRD and the European Union will finance an increase in cargo handling capacity at the port of Aktau, Kazakhstan's primary maritime gateway, located on the Caspian Sea. Aktau Port was identified as one of the key elements of the Transcaspian Corridor by the EBRD-led and EU-funded study on sustainable transport connections between Europe and Central Asia.\nThe financial package consists of an EBRD loan of up to EUR 35 million and a potential investment grant of up to EUR 10 million under the EU's Asia Pacific Investment Facility. The funds will finance and the extension of two berths and the acquisition of weather-resilient ship-to-shore cranes to expand the handling capacity for container cargo, which has increased by 121 per cent year on year so far in 2025.\nThese enhancements will allow the port to double its container handling capacity and to operate two fully dedicated container berths, each with separate trans-shipment lines. Handling time per container is expected to decrease from the current average of four minutes to just 2.5 minutes.\nEBRD President Odile Renaud-Basso said: Together with the EU we are supporting this project because it meets our strategic objectives for Kazakhstan and Central Asia. It is also part of the global transport and logistics infrastructure solutions covered by the EU Global Gateway initiative. Our funds will help to address a key infrastructure bottleneck along the Transcaspian Corridor.\nThe project will contribute to the investment programme of the port of Aktau, which is owned by the national welfare fund Samruk-Kazyna and managed by Kazakhstan Railways. Its aims include the development of the largest container terminal in the Caspian region by the end of 2026 that is expected to process up to 240,000 twenty-foot equivalent units annually.\nThe EBRD has invested more than EUR 10 billion across 340 projects in Kazakhstan, with most of the funds supporting private entrepreneurship.",
+            "url": "https://www.ebrd.com/home/news-and-events/news/2025/ebrd-and-eu-help-improve-sustainability-of-transportation-throug.html"
+          },
+          {
+            "source_id": "titr_tariffs",
+            "text": "Tariffs - middlecorridor.com (Trans-Caspian International Transport Route, TITR).\nComprehensive tariff rates for the transportation of general-purpose containers using feeder vessels along the TITR route via Baku (Alat) port from January 1 to December 31, 2026 (approved by Working Group on December 5, 2025).\nComprehensive Tariff Rates for the Transportation of General-Purpose Containers with the Use of Feeder Vessels along the TITR Route via the Port of Baku (Govsan) Valid from January 1 to December 31, 2026 (approved by Working Group on December 5, 2025).\nComprehensive Tariff Rates for the Transportation of Loaded General-Purpose Containers via Ferry Services across the Caspian Sea along the TITR Route Valid from January 1 to December 31, 2026 (approved by Working Group on December 5, 2025).\nComprehensive tariff rates for wagon cargo shipments along the TITR route, effective from January 1 to December 31, 2026 (approved by Working Group on December 5, 2025).\nComprehensive tariff rates for container transportation through Black Sea ports (Constanta/Izmail/Chornomorsk/Odesa) to terminals in Europe (Duisburg/Slawkow/Budapest) (JSC Ukrzaliznytsia).\nTariff rates for container transportation along the Dostyk-Aktau and Aktau-Dostyk sections.",
+            "url": "https://middlecorridor.com/en/for-clients/tariffs"
+          }
+        ]
+      }
+    },
+    {
+      "id": "public-tariff-paraphrase",
+      "kind": "public_source",
+      "expect_flag": false,
+      "annotation": "Human-supported paraphrase. A flag is a false positive, not a truth finding.",
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "public-tariff-paraphrase",
+            "text": "The TITR 2026 complex rate tables were approved 5 Dec 2025 and apply from 1 Jan to 31 Dec 2026.",
+            "source_ids": [
+              "titr_tariffs"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "ebrd_release",
+            "text": "EBRD and EU help improve sustainability of transportation through Transcaspian Corridor. 30 Sep 2025. Author: Anton Usov.\n- EBRD lends EUR 35 million to Kazakhstan's port of Aktau\n- Project is also expected to benefit from EU grant of up to EUR 10 million\n- Investment will enable major Caspian Sea port to double its container-handling capacity\nThe European Bank for Reconstruction and Development (EBRD) is contributing to the optimisation of international transport routes by supporting upgrades of key port infrastructure in Kazakhstan. A financial package of up to EUR 45 million provided by the EBRD and the European Union will finance an increase in cargo handling capacity at the port of Aktau, Kazakhstan's primary maritime gateway, located on the Caspian Sea. Aktau Port was identified as one of the key elements of the Transcaspian Corridor by the EBRD-led and EU-funded study on sustainable transport connections between Europe and Central Asia.\nThe financial package consists of an EBRD loan of up to EUR 35 million and a potential investment grant of up to EUR 10 million under the EU's Asia Pacific Investment Facility. The funds will finance and the extension of two berths and the acquisition of weather-resilient ship-to-shore cranes to expand the handling capacity for container cargo, which has increased by 121 per cent year on year so far in 2025.\nThese enhancements will allow the port to double its container handling capacity and to operate two fully dedicated container berths, each with separate trans-shipment lines. Handling time per container is expected to decrease from the current average of four minutes to just 2.5 minutes.\nEBRD President Odile Renaud-Basso said: Together with the EU we are supporting this project because it meets our strategic objectives for Kazakhstan and Central Asia. It is also part of the global transport and logistics infrastructure solutions covered by the EU Global Gateway initiative. Our funds will help to address a key infrastructure bottleneck along the Transcaspian Corridor.\nThe project will contribute to the investment programme of the port of Aktau, which is owned by the national welfare fund Samruk-Kazyna and managed by Kazakhstan Railways. Its aims include the development of the largest container terminal in the Caspian region by the end of 2026 that is expected to process up to 240,000 twenty-foot equivalent units annually.\nThe EBRD has invested more than EUR 10 billion across 340 projects in Kazakhstan, with most of the funds supporting private entrepreneurship.",
+            "url": "https://www.ebrd.com/home/news-and-events/news/2025/ebrd-and-eu-help-improve-sustainability-of-transportation-throug.html"
+          },
+          {
+            "source_id": "titr_tariffs",
+            "text": "Tariffs - middlecorridor.com (Trans-Caspian International Transport Route, TITR).\nComprehensive tariff rates for the transportation of general-purpose containers using feeder vessels along the TITR route via Baku (Alat) port from January 1 to December 31, 2026 (approved by Working Group on December 5, 2025).\nComprehensive Tariff Rates for the Transportation of General-Purpose Containers with the Use of Feeder Vessels along the TITR Route via the Port of Baku (Govsan) Valid from January 1 to December 31, 2026 (approved by Working Group on December 5, 2025).\nComprehensive Tariff Rates for the Transportation of Loaded General-Purpose Containers via Ferry Services across the Caspian Sea along the TITR Route Valid from January 1 to December 31, 2026 (approved by Working Group on December 5, 2025).\nComprehensive tariff rates for wagon cargo shipments along the TITR route, effective from January 1 to December 31, 2026 (approved by Working Group on December 5, 2025).\nComprehensive tariff rates for container transportation through Black Sea ports (Constanta/Izmail/Chornomorsk/Odesa) to terminals in Europe (Duisburg/Slawkow/Budapest) (JSC Ukrzaliznytsia).\nTariff rates for container transportation along the Dostyk-Aktau and Aktau-Dostyk sections.",
+            "url": "https://middlecorridor.com/en/for-clients/tariffs"
+          }
+        ]
+      }
+    },
+    {
+      "id": "public-no-source",
+      "kind": "public_source_question",
+      "expect_flag": true,
+      "annotation": "No supplied evidence. This is a source gap, not a falsehood label.",
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "public-no-source",
+            "text": "The whole corridor has one current percentage premium.",
+            "source_ids": []
+          }
+        ],
+        "sources": []
+      }
+    },
+    {
+      "id": "exact",
+      "kind": "synthetic",
+      "expect_flag": false,
+      "annotation": "",
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "exact",
+            "text": "The board approved the project.",
+            "source_ids": [
+              "fixture"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "fixture",
+            "text": "The board approved the project."
+          }
+        ]
+      }
+    },
+    {
+      "id": "negation",
+      "kind": "synthetic",
+      "expect_flag": true,
+      "annotation": "",
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "negation",
+            "text": "The board approved the project.",
+            "source_ids": [
+              "fixture"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "fixture",
+            "text": "The board did not approve the project."
+          }
+        ]
+      }
+    },
+    {
+      "id": "quote-absent",
+      "kind": "synthetic",
+      "expect_flag": true,
+      "annotation": "",
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "quote-absent",
+            "text": "The board approved the project.",
+            "source_ids": [
+              "fixture"
+            ],
+            "quotes": [
+              {
+                "source_id": "fixture",
+                "text": "The board rejected the project."
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "fixture",
+            "text": "The board approved the project."
+          }
+        ]
+      }
+    },
+    {
+      "id": "wrong-entity",
+      "kind": "synthetic",
+      "expect_flag": true,
+      "annotation": "",
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "wrong-entity",
+            "text": "The Coral branch employs 50 staff.",
+            "source_ids": [
+              "fixture"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "fixture",
+            "text": "The Amber branch employs 50 staff. The Coral branch employs 20 staff."
+          }
+        ]
+      }
+    },
+    {
+      "id": "unrelated-number",
+      "kind": "synthetic",
+      "expect_flag": true,
+      "annotation": "",
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "unrelated-number",
+            "text": "The project budget is 50 USD.",
+            "source_ids": [
+              "fixture"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "fixture",
+            "text": "The project budget is 20 USD. The office has 50 chairs."
+          }
+        ]
+      }
+    },
+    {
+      "id": "decimal",
+      "kind": "synthetic",
+      "expect_flag": false,
+      "annotation": "",
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "decimal",
+            "text": "The project budget is 10.5 USD.",
+            "source_ids": [
+              "fixture"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "fixture",
+            "text": "The project budget is 10.5 USD."
+          }
+        ]
+      }
+    },
+    {
+      "id": "unicode",
+      "kind": "synthetic",
+      "expect_flag": false,
+      "annotation": "",
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "unicode",
+            "text": "Выручка компании составила 50 USD.",
+            "source_ids": [
+              "fixture"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "fixture",
+            "text": "Выручка компании составила 50 USD."
+          }
+        ]
+      }
+    },
+    {
+      "id": "semantic-role-reversal",
+      "kind": "synthetic",
+      "expect_flag": true,
+      "annotation": "Known lexical blind spot: same terms, reversed roles. A pass is a miss.",
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "semantic-role-reversal",
+            "text": "Alpha acquired Beta.",
+            "source_ids": [
+              "fixture"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "fixture",
+            "text": "Beta acquired Alpha."
+          }
+        ]
+      }
+    },
+    {
+      "id": "semantic-causality",
+      "kind": "synthetic",
+      "expect_flag": true,
+      "annotation": "Known semantic blind spot; no entailment claim.",
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "semantic-causality",
+            "text": "Rain caused the delay.",
+            "source_ids": [
+              "fixture"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "fixture",
+            "text": "The delay caused rain."
+          }
+        ]
+      }
+    },
+    {
+      "id": "valid-paraphrase",
+      "kind": "synthetic",
+      "expect_flag": false,
+      "annotation": "Human-supported paraphrase with different terms; expected lexical false positive.",
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "valid-paraphrase",
+            "text": "The company cut its workforce.",
+            "source_ids": [
+              "fixture"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "fixture",
+            "text": "The business reduced headcount."
+          }
+        ]
+      }
+    }
+  ]
+}

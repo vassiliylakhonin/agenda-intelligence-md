@@ -25,6 +25,14 @@ inputs:
     description: 'Python version to use'
     required: false
     default: '3.11'
+  pr-comment:
+    description: 'Opt-in sticky result summary on same-repository pull_request events (check only)'
+    required: false
+    default: 'false'
+  github-token:
+    description: 'Token with pull-requests: write, used only when pr-comment is true'
+    required: false
+    default: ${{ github.token }}
 
 runs:
   using: 'composite'
@@ -36,31 +44,55 @@ runs:
 
     - name: Install agenda-intelligence-md
       shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
       run: |
         python -m pip install --upgrade pip
-        pip install .
+        pip install "$ACTION_PATH"
 
     - name: Run evidence check/review
       id: evidence_lint
       shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_STRICT: ${{ inputs.strict }}
+        INPUT_COMMAND: ${{ inputs.command }}
+        INPUT_FORMAT: ${{ inputs.format }}
+        PR_COMMENT: ${{ inputs.pr-comment }}
       run: |
-        STRICT_FLAG=""
-        if [ "${{ inputs.strict }}" = "true" ]; then
-          STRICT_FLAG="--strict"
-        fi
-
-        if [ "${{ inputs.command }}" = "check" ] && [ "${{ inputs.format }}" = "sarif" ]; then
-          set +e
-          agenda-intelligence check "${{ inputs.path }}" --format sarif \
-            --out "${RUNNER_TEMP}/agenda-intelligence.sarif" $STRICT_FLAG
-          CHECK_EXIT=$?
-          set -e
-          echo "exit_code=${CHECK_EXIT}" >> "${GITHUB_OUTPUT}"
-        elif [ "${{ inputs.command }}" = "review" ]; then
-          agenda-intelligence review "${{ inputs.path }}" --format "${{ inputs.format }}" $STRICT_FLAG
+        STRICT_FLAGS=()
+        if [ "$INPUT_STRICT" = "true" ]; then STRICT_FLAGS=(--strict); fi
+        case "$INPUT_COMMAND:$INPUT_FORMAT" in
+          check:text|check:json|check:sarif|review:markdown|review:json|review:html) ;;
+          *) echo 'Unsupported command/format combination'; exit 2 ;;
+        esac
+        set +e
+        if [ "$INPUT_COMMAND:$INPUT_FORMAT" = 'check:sarif' ]; then
+          agenda-intelligence check "$INPUT_PATH" --format sarif \
+            --out "${RUNNER_TEMP}/agenda-intelligence.sarif" "${STRICT_FLAGS[@]}"
         else
-          agenda-intelligence check "${{ inputs.path }}" --format "${{ inputs.format }}" $STRICT_FLAG
+          agenda-intelligence "$INPUT_COMMAND" "$INPUT_PATH" --format "$INPUT_FORMAT" "${STRICT_FLAGS[@]}"
         fi
+        CHECK_EXIT=$?
+        if [ "$PR_COMMENT" = 'true' ] && [ "$INPUT_COMMAND" = 'check' ]; then
+          agenda-intelligence check "$INPUT_PATH" --format json > "${RUNNER_TEMP}/agenda-evidence-result.json"
+          JSON_EXIT=$?
+          if [ "$JSON_EXIT" -ne 0 ] && [ "$CHECK_EXIT" -eq 0 ]; then CHECK_EXIT=$JSON_EXIT; fi
+        fi
+        echo "exit_code=${CHECK_EXIT}" >> "$GITHUB_OUTPUT"
+        exit 0
+
+    - name: Comment evidence summary on PR
+      if: ${{ always() && inputs.pr-comment == 'true' && inputs.command == 'check' && steps.evidence_lint.outputs.exit_code != '' }}
+      uses: actions/github-script@v7
+      env:
+        AGENDA_ACTION_PATH: ${{ github.action_path }}
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const path = require('node:path');
+          const { publishComment } = require(path.join(process.env.AGENDA_ACTION_PATH, 'scripts/evidence_pr_comment.cjs'));
+          await publishComment({ github, context, core, reportPath: path.join(process.env.RUNNER_TEMP, 'agenda-evidence-result.json') });
 
     - name: Upload SARIF
       if: ${{ inputs.command == 'check' && inputs.format == 'sarif' && always() }}
@@ -68,7 +100,7 @@ runs:
       with:
         sarif_file: ${{ runner.temp }}/agenda-intelligence.sarif
 
-    - name: Enforce strict SARIF result
-      if: ${{ inputs.command == 'check' && inputs.format == 'sarif' && steps.evidence_lint.outputs.exit_code != '0' }}
+    - name: Enforce evidence result
+      if: ${{ always() && steps.evidence_lint.outputs.exit_code != '' && steps.evidence_lint.outputs.exit_code != '0' }}
       shell: bash
       run: exit 1

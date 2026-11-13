@@ -1,0 +1,183 @@
+{
+  "suite_sha256": "6f9a742d6484c60c5c45e97dc6f56eb45c500990ac8fb97099d56b1f46409ea5",
+  "package_version": "1.25.0",
+  "python": "3.12.15",
+  "platform": "Linux-6.1.189+-x86_64-with-glibc2.35",
+  "timing": "full local service, one excluded warm-up per case, sequential, no network",
+  "repeats_per_case": 25,
+  "counts": {
+    "caught": 6,
+    "missed": 2,
+    "false_positive": 2,
+    "clear": 4
+  },
+  "results": [
+    {
+      "id": "public-growth",
+      "kind": "public_source",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 12.154,
+      "p95_ms": 12.274
+    },
+    {
+      "id": "public-growth-wrong",
+      "kind": "public_source_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_weak",
+        "unmatched_numbers"
+      ],
+      "median_ms": 12.029,
+      "p95_ms": 12.137
+    },
+    {
+      "id": "public-tariff-paraphrase",
+      "kind": "public_source",
+      "expect_flag": false,
+      "packet_status": "source_review_required",
+      "category": "false_positive",
+      "issues": [
+        "lexical_support_weak",
+        "unmatched_numbers"
+      ],
+      "median_ms": 12.113,
+      "p95_ms": 12.31
+    },
+    {
+      "id": "public-no-source",
+      "kind": "public_source_question",
+      "expect_flag": true,
+      "packet_status": "packet_incomplete",
+      "category": "caught",
+      "issues": [
+        "no_source_reference"
+      ],
+      "median_ms": 0.374,
+      "p95_ms": 0.418
+    },
+    {
+      "id": "exact",
+      "kind": "synthetic",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.54,
+      "p95_ms": 0.579
+    },
+    {
+      "id": "negation",
+      "kind": "synthetic",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_polarity_mismatch"
+      ],
+      "median_ms": 0.568,
+      "p95_ms": 0.602
+    },
+    {
+      "id": "quote-absent",
+      "kind": "synthetic",
+      "expect_flag": true,
+      "packet_status": "packet_incomplete",
+      "category": "caught",
+      "issues": [
+        "quote_absent:fixture"
+      ],
+      "median_ms": 0.756,
+      "p95_ms": 0.815
+    },
+    {
+      "id": "wrong-entity",
+      "kind": "synthetic",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_weak",
+        "unmatched_numbers"
+      ],
+      "median_ms": 0.897,
+      "p95_ms": 0.956
+    },
+    {
+      "id": "unrelated-number",
+      "kind": "synthetic",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_weak",
+        "unmatched_numbers"
+      ],
+      "median_ms": 0.837,
+      "p95_ms": 0.874
+    },
+    {
+      "id": "decimal",
+      "kind": "synthetic",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.729,
+      "p95_ms": 0.767
+    },
+    {
+      "id": "unicode",
+      "kind": "synthetic",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.779,
+      "p95_ms": 0.821
+    },
+    {
+      "id": "semantic-role-reversal",
+      "kind": "synthetic",
+      "expect_flag": true,
+      "packet_status": "packet_complete",
+      "category": "missed",
+      "issues": [],
+      "median_ms": 0.496,
+      "p95_ms": 0.553
+    },
+    {
+      "id": "semantic-causality",
+      "kind": "synthetic",
+      "expect_flag": true,
+      "packet_status": "packet_complete",
+      "category": "missed",
+      "issues": [],
+      "median_ms": 0.501,
+      "p95_ms": 0.546
+    },
+    {
+      "id": "valid-paraphrase",
+      "kind": "synthetic",
+      "expect_flag": false,
+      "packet_status": "source_review_required",
+      "category": "false_positive",
+      "issues": [
+        "lexical_support_unsupported"
+      ],
+      "median_ms": 0.484,
+      "p95_ms": 0.521
+    }
+  ],
+  "limitations": [
+    "Small hand-labelled diagnostic set, not a random sample or production accuracy estimate.",
+    "Public-source snapshots and synthetic probes are labelled separately. No unpublished paper text.",
+    "Flags indicate review needed, not falsity. Lexical passes are not semantic entailment or truth.",
+    "Latency depends on machine, Python version, text length and source count; not a speed guarantee.",
+    "No LLM judge, model call or comparison against another product."
+  ]
+}

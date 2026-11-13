@@ -83,7 +83,15 @@ def review_rag_answer(answer: str, sources: list[dict]) -> dict:
         if len(units) >= MAX_UNITS:
             raise RagReviewError(f"answer exceeds {MAX_UNITS} nonblank lines")
         units.append(
-            {"claim_id": claim_id, "line_number": line_number, "start": start, "end": start + len(text), "text": text}
+            {
+                "claim_id": claim_id,
+                "line_number": line_number,
+                "start": start,
+                "end": start + len(text),
+                "start_char": start,
+                "end_char": start + len(text),
+                "text": text,
+            }
         )
         references = []
         valid_spans = []

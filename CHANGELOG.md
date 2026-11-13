@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Local evidence diagnostics (2026-11-13)
+
+- Add a reproducible, hand-labelled mini-benchmark with public-source snapshots and labelled synthetic probes. Report catches, misses, false positives and full-service latency without a model judge or general accuracy claim. Do not publish the unpublished paper's Annex B.
+- Add optional exact source `start_char` / `end_char` to packet quote and lexical diagnostics; add answer-unit aliases in the RAG adapter. Unicode code points, end exclusive; omit coordinates when only normalized matching succeeds.
+- Add explicit operand-backed `sum`, `difference`, and `percent_change` proofs behind packet `derived_numbers: true`. Decimal arithmetic only, no rounding or inferred combinations; existing lexical, polarity and human-review gates remain.
+- Add an opt-in, sticky GitHub Action PR status summary. Preserve strict failures, skip forks, and never publish raw source/claim data. Move input interpolation to environment variables and install from the action directory. No hosted Worker, pricing, model retry or Vizier changes.
+
+
 ## 1.25.0 — 2026-11-12
 
 ### Hosted Output Verification numeric context check (2026-11-11)

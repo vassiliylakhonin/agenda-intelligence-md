@@ -285,6 +285,9 @@
                   "items": {
                     "type": "object"
                   }
+                },
+                "derived_numbers": {
+                  "type": "boolean"
                 }
               },
               "required": [
@@ -1828,6 +1831,9 @@
                   "items": {
                     "type": "object"
                   }
+                },
+                "derived_numbers": {
+                  "type": "boolean"
                 }
               },
               "required": [

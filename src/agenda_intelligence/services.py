@@ -26,6 +26,7 @@ from agenda_intelligence.evidence_ledger import EvidenceLedger
 from agenda_intelligence.grounding import GroundingIndex, _quote_check
 
 from .critical_minerals import STAGE_TIERS, review_mineral_dossier
+from .derived_numbers import check_derivations
 from .evaluation_contract import evaluation_contract
 from .remediation import build_remediation, input_remediation, pointer
 from .source_records import review_source_records
@@ -1091,6 +1092,9 @@ def check_evidence_packet(request_json: dict) -> dict:
                 if status == "absent":
                     structural_issues.append(f"quote_absent:{source_id}")
                     add_action(f"Fix or remove the quote from source {source_id} in claim {claim_id}.")
+                exact_start = sources[source_id]["text"].find(quote["text"])
+                if exact_start >= 0:
+                    details.update(start_char=exact_start, end_char=exact_start + len(quote["text"]))
                 quote_checks.append({"source_id": source_id, **details})
                 continue
             quote_checks.append({"source_id": source_id, "status": status})
@@ -1099,6 +1103,15 @@ def check_evidence_packet(request_json: dict) -> dict:
         best_source_id = match.document_id
         best_coverage = match.coverage
         unmatched_numbers = list(match.unmatched_numbers)
+        derivation_checks, accepted = check_derivations(
+            claim, sources, enabled=request_json.get("derived_numbers", False)
+        )
+        # Discharge only declared result displays whose every occurrence has
+        # the expected numeric/unit key. No inferred conversion or pooled sums.
+        unmatched_numbers = [number for number in unmatched_numbers if number not in accepted]
+        if any(check["status"] == "invalid" for check in derivation_checks):
+            review_issues.append("invalid_derivation")
+            add_action(f"Review explicit arithmetic declarations for claim {claim_id}.")
         if best_coverage >= 0.75:
             lexical_status = "supported"
         elif best_coverage >= 0.4:
@@ -1147,6 +1160,11 @@ def check_evidence_packet(request_json: dict) -> dict:
             packet_status = "packet_complete"
         counts[packet_status] += 1
 
+        diagnostic_spans = {}
+        if best_source_id and match.best_sentence:
+            sentence_start = sources[best_source_id]["text"].find(match.best_sentence)
+            if sentence_start >= 0:
+                diagnostic_spans = {"start_char": sentence_start, "end_char": sentence_start + len(match.best_sentence)}
         results.append(
             {
                 "claim_id": claim_id,
@@ -1159,7 +1177,9 @@ def check_evidence_packet(request_json: dict) -> dict:
                     "coverage": round(best_coverage, 3),
                     "best_source_id": best_source_id,
                     "unmatched_numbers": unmatched_numbers,
+                    **diagnostic_spans,
                 },
+                **({"derivation_checks": derivation_checks} if derivation_checks else {}),
                 "issues": structural_issues + review_issues,
             }
         )
@@ -1171,7 +1191,7 @@ def check_evidence_packet(request_json: dict) -> dict:
     else:
         packet_status = "packet_complete"
 
-    response = {
+    response: dict = {
         "packet_status": packet_status,
         "factuality_status": "not_assessed",
         "claim_count": len(results),
@@ -1189,6 +1209,11 @@ def check_evidence_packet(request_json: dict) -> dict:
             "No source discovery or live retrieval is performed; the caller controls the supplied source set.",
         ],
     }
+    if request_json.get("derived_numbers"):
+        response["limitations"].append(
+            "Opt-in derivations check declared arithmetic and verbatim operands only, not whether entities, "
+            "periods, units or the operation are appropriate. No rounding or unit conversion is inferred."
+        )
     response_validation = _validate_json(response, "evidence-packet-response.schema.json")
     return {
         "implemented": response_validation.get("implemented", True),

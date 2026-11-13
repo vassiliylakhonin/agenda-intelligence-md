@@ -35,6 +35,8 @@ def test_identical_cyrillic_claim_is_supported():
         "coverage": 1.0,
         "best_source_id": "s1",
         "unmatched_numbers": [],
+        "start_char": 0,
+        "end_char": len("Совет директоров одобрил проект."),
     }
 
 

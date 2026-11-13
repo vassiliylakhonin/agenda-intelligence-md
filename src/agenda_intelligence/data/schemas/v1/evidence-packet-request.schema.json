@@ -6,7 +6,10 @@
   "x-schema-version": "1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["claims", "sources"],
+  "required": [
+    "claims",
+    "sources"
+  ],
   "properties": {
     "packet_id": {
       "type": "string",
@@ -22,7 +25,10 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["claim_id", "text"],
+        "required": [
+          "claim_id",
+          "text"
+        ],
         "properties": {
           "claim_id": {
             "type": "string",
@@ -45,7 +51,10 @@
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["source_id", "text"],
+              "required": [
+                "source_id",
+                "text"
+              ],
               "properties": {
                 "source_id": {
                   "type": "string",
@@ -54,6 +63,71 @@
                 "text": {
                   "type": "string",
                   "minLength": 1
+                }
+              }
+            }
+          },
+          "derivations": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value",
+                "operation",
+                "operands"
+              ],
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80,
+                  "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+                },
+                "operation": {
+                  "enum": [
+                    "sum",
+                    "difference",
+                    "percent_change"
+                  ]
+                },
+                "operands": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 20,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "source_id",
+                      "quote",
+                      "value",
+                      "unit"
+                    ],
+                    "properties": {
+                      "source_id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "quote": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000
+                      },
+                      "value": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80,
+                        "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+                      },
+                      "unit": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -66,7 +140,10 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["source_id", "text"],
+        "required": [
+          "source_id",
+          "text"
+        ],
         "properties": {
           "source_id": {
             "type": "string",
@@ -84,6 +161,11 @@
           }
         }
       }
+    },
+    "derived_numbers": {
+      "type": "boolean",
+      "default": false,
+      "description": "Opt in to explicit operand-backed arithmetic checks. Never searches for arbitrary sums."
     }
   }
 }

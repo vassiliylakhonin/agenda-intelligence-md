@@ -10,9 +10,16 @@
     "quoteNearMiss": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["similarity", "difference"],
+      "required": [
+        "similarity",
+        "difference"
+      ],
       "properties": {
-        "similarity": {"type": "number", "minimum": 0.95, "maximum": 1},
+        "similarity": {
+          "type": "number",
+          "minimum": 0.95,
+          "maximum": 1
+        },
         "difference": {
           "type": "string",
           "maxLength": 240,
@@ -35,7 +42,11 @@
   "properties": {
     "packet_status": {
       "type": "string",
-      "enum": ["packet_complete", "source_review_required", "packet_incomplete"]
+      "enum": [
+        "packet_complete",
+        "source_review_required",
+        "packet_incomplete"
+      ]
     },
     "factuality_status": {
       "const": "not_assessed"
@@ -51,11 +62,24 @@
     "counts": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["packet_complete", "source_review_required", "packet_incomplete"],
+      "required": [
+        "packet_complete",
+        "source_review_required",
+        "packet_incomplete"
+      ],
       "properties": {
-        "packet_complete": {"type": "integer", "minimum": 0},
-        "source_review_required": {"type": "integer", "minimum": 0},
-        "packet_incomplete": {"type": "integer", "minimum": 0}
+        "packet_complete": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_review_required": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "packet_incomplete": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
     "claims": {
@@ -79,40 +103,80 @@
           },
           "packet_status": {
             "type": "string",
-            "enum": ["packet_complete", "source_review_required", "packet_incomplete"]
+            "enum": [
+              "packet_complete",
+              "source_review_required",
+              "packet_incomplete"
+            ]
           },
           "referenced_source_ids": {
             "type": "array",
-            "items": {"type": "string"}
+            "items": {
+              "type": "string"
+            }
           },
           "missing_source_ids": {
             "type": "array",
-            "items": {"type": "string"}
+            "items": {
+              "type": "string"
+            }
           },
           "quote_checks": {
             "type": "array",
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["source_id", "status"],
+              "required": [
+                "source_id",
+                "status"
+              ],
               "properties": {
-                "source_id": {"type": "string", "minLength": 1},
+                "source_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
                 "status": {
                   "type": "string",
-                  "enum": ["present", "absent", "missing_source", "source_not_declared"]
+                  "enum": [
+                    "present",
+                    "absent",
+                    "missing_source",
+                    "source_not_declared"
+                  ]
                 },
-                "near_miss": {"$ref": "#/$defs/quoteNearMiss"}
+                "near_miss": {
+                  "$ref": "#/$defs/quoteNearMiss"
+                },
+                "start_char": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Zero-based Unicode code-point offset in the original supplied source text; end is exclusive. Omitted when normalized matching cannot give exact raw coordinates."
+                },
+                "end_char": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Zero-based Unicode code-point offset in the original supplied source text; end is exclusive. Omitted when normalized matching cannot give exact raw coordinates."
+                }
               }
             }
           },
           "lexical_support": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["status", "coverage", "best_source_id", "unmatched_numbers"],
+            "required": [
+              "status",
+              "coverage",
+              "best_source_id",
+              "unmatched_numbers"
+            ],
             "properties": {
               "status": {
                 "type": "string",
-                "enum": ["supported", "weak", "unsupported"]
+                "enum": [
+                  "supported",
+                  "weak",
+                  "unsupported"
+                ]
               },
               "coverage": {
                 "type": "number",
@@ -120,24 +184,77 @@
                 "maximum": 1
               },
               "best_source_id": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "unmatched_numbers": {
                 "type": "array",
-                "items": {"type": "string"}
+                "items": {
+                  "type": "string"
+                }
+              },
+              "start_char": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Zero-based Unicode code-point offset in the original supplied source text; end is exclusive. Omitted when normalized matching cannot give exact raw coordinates."
+              },
+              "end_char": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Zero-based Unicode code-point offset in the original supplied source text; end is exclusive. Omitted when normalized matching cannot give exact raw coordinates."
               }
             }
           },
           "issues": {
             "type": "array",
-            "items": {"type": "string"}
+            "items": {
+              "type": "string"
+            }
+          },
+          "derivation_checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "value",
+                "operation",
+                "status",
+                "reason"
+              ],
+              "properties": {
+                "value": {
+                  "type": "string"
+                },
+                "operation": {
+                  "enum": [
+                    "sum",
+                    "difference",
+                    "percent_change"
+                  ]
+                },
+                "status": {
+                  "enum": [
+                    "invalid",
+                    "arithmetic_consistent"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            }
           }
         }
       }
     },
     "owner_actions": {
       "type": "array",
-      "items": {"type": "string"}
+      "items": {
+        "type": "string"
+      }
     },
     "human_review_required": {
       "const": true
@@ -145,7 +262,9 @@
     "limitations": {
       "type": "array",
       "minItems": 1,
-      "items": {"type": "string"}
+      "items": {
+        "type": "string"
+      }
     }
   }
 }

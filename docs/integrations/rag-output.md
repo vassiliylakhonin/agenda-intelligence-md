@@ -179,3 +179,5 @@ The fixtures are synthetic owner practice. Use the existing
 with consenting report reviewers to record accepted findings, false holds,
 unresolved issues, review minutes and voluntary repeat use. No invitations are
 sent by this integration. Human usefulness and willingness to pay remain unknown.
+
+Answer units expose `start_char` and `end_char` (Unicode code points, end exclusive) in the original answer. Existing `start` and `end` aliases remain. See [evidence diagnostics](../evidence-diagnostics.md) for source offsets and limitations.

@@ -39,6 +39,9 @@ jobs:
         with:
           node-version: 24
 
+      - name: Test opt-in evidence PR summary (offline)
+        run: node --test tests/evidence_pr_comment.test.cjs
+
       - name: Ensure generated package artifacts are not tracked
         shell: bash
         run: |
