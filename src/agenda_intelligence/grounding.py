@@ -730,8 +730,13 @@ class GroundingIndex:
                     row_context = clause_context - (document.table_anchors - anchors) if anchors else clause_context
                     score = self._weighted_overlap(row_context, terms) if row_context else 1.0
                     scored.append((score, numeric_facts))
-            best_score = max((score for score, _ in scored), default=0.0)
-            facts = set().union(*(facts for score, facts in scored if score == best_score and score >= 0.4))
+            # A number-free context can never support a claim number, so only
+            # number-bearing contexts compete for "closest", per the documented
+            # contract; fall back to all contexts when none carry numbers.
+            bearing = [(score, facts) for score, facts in scored if facts]
+            pool = bearing or scored
+            best_score = max((score for score, _ in pool), default=0.0)
+            facts = set().union(*(facts for score, facts in pool if score == best_score and score >= 0.4))
             unmatched.update(mention["display"] for mention in mentions if mention["key"] not in facts)
         unmatched_numbers = tuple(sorted(unmatched))
 

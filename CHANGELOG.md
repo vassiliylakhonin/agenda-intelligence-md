@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Closest-context numeric fix (2026-11-13)
+
+- Fix the 1.25.0 numeric context check: number-free contexts (for example a heading that shares claim terms) no longer win the closest-context match and mark a supported claim number unmatched. Only number-bearing contexts compete for "closest", per the documented "closest number-bearing sentence" contract; claims whose sources carry no numbers keep the 1.25.0 behavior. Adds a regression probe; matching, human review and hosted contracts otherwise unchanged.
+
 ### Narrow bound and confusable review (2026-11-13)
 
 - Local evidence packets and RAG reviews flag explicit upper/lower bound direction mismatches in closest numeric contexts and distinct mixed Cyrillic/Latin visual-confusable identifier spellings. Warnings route to review without normalizing suspicious identifiers into support. Add SARIF/repair descriptions and negative controls; no hosted JavaScript or Vizier changes.
