@@ -107,16 +107,16 @@ def test_number_free_title_context_does_not_mask_number_bearing_sentence():
     # Regression: a number-free heading that shares more claim terms than the
     # number-bearing sentence must not win the closest-context match and mark
     # the claim's number unsupported (GTTA cookbook false hold on 1.25.0).
-    request = packet(
-        "The synthetic policy note is dated 2026-08-15 and requires enhanced review of listed dual-use routing patterns.",
-        {
-            "policy-note": (
-                "Synthetic policy note\n\nIllustrative data only. "
-                "This note is dated 2026-08-15 and requires enhanced review of listed dual-use routing patterns. "
-                "It is not a real law, sanctions notice, designation, restricted-party list, or compliance determination."
-            )
-        },
+    claim = (
+        "The synthetic policy note is dated 2026-08-15 and requires "
+        "enhanced review of listed dual-use routing patterns."
     )
+    source = (
+        "Synthetic policy note\n\nIllustrative data only. "
+        "This note is dated 2026-08-15 and requires enhanced review of listed dual-use routing patterns. "
+        "It is not a real law, sanctions notice, designation, restricted-party list, or compliance determination."
+    )
+    request = packet(claim, {"policy-note": source})
     response = services.check_evidence_packet(request)["response"]
     assert response["packet_status"] == "packet_complete"
     assert response["claims"][0]["lexical_support"]["unmatched_numbers"] == []
