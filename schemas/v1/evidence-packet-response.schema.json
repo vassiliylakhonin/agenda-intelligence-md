@@ -204,6 +204,52 @@
                 "type": "integer",
                 "minimum": 0,
                 "description": "Zero-based Unicode code-point offset in the original supplied source text; end is exclusive. Omitted when normalized matching cannot give exact raw coordinates."
+              },
+              "table_checks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "source_id",
+                    "row",
+                    "column",
+                    "column_index",
+                    "cell",
+                    "status",
+                    "unmatched_numbers"
+                  ],
+                  "properties": {
+                    "source_id": {
+                      "type": "string"
+                    },
+                    "row": {
+                      "type": "string"
+                    },
+                    "column": {
+                      "type": "string"
+                    },
+                    "cell": {
+                      "type": "string"
+                    },
+                    "column_index": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "status": {
+                      "enum": [
+                        "cell_consistent",
+                        "mismatch"
+                      ]
+                    },
+                    "unmatched_numbers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
               }
             }
           },
@@ -232,7 +278,10 @@
                   "enum": [
                     "sum",
                     "difference",
-                    "percent_change"
+                    "percent_change",
+                    "product",
+                    "quotient",
+                    "percent"
                   ]
                 },
                 "status": {
@@ -242,6 +291,13 @@
                   ]
                 },
                 "reason": {
+                  "type": "string"
+                },
+                "derived_verified": {
+                  "const": true,
+                  "description": "Only explicit source-backed exact arithmetic, never semantic support or truth."
+                },
+                "formula": {
                   "type": "string"
                 }
               }

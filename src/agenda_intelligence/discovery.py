@@ -42,7 +42,7 @@ MAX_PATTERNS_PER_CLAIM = 12
 _QUOTED = re.compile(r"[\"“„«]([^\"”“»«]{8,120})[\"”»]")
 _NUMERIC = re.compile(r"\d")
 _LEGACY_TERM_PATTERN = re.compile(r"[^\W_]+(?:[.\-][^\W_]+)*(?:%)?", flags=re.UNICODE)
-_CANONICAL_NUMERIC_PREFIXES = ("numnumber-", "numdate-", "numpercent-", "numcurrency-")
+_CANONICAL_NUMERIC_PREFIXES = ("numnumber-", "numdate-", "numpercent-", "numcurrency-", "numquarter-")
 
 
 def _document_frequency(sources: list[dict]) -> dict[str, int]:

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Local numeric normalization and cell provenance (2026-11-13)
+
+- Extend local Python numeric matching with grouped decimal variants, percent/ratio equivalence (`50%` / `0.5`), and bounded English/Russian quarter forms. Currency, units and distinct quarter/year values remain separate; no written-number or FX inference.
+- Extend explicit opt-in arithmetic declarations with product, quotient and percentage ratios, normalized source/result spellings, and exact successful `derived_verified: true` + formula fields. Keep the existing status for compatibility. No arbitrary operand search, implicit rounding, CAGR, semantic support or truth clearance; invalid/disabled proofs get no marker.
+- Check explicitly named row/column intersections in rectangular Markdown and standalone CSV/TSV. Packet diagnostics report the selected cell; mismatches cannot borrow neighboring values or be cleared by arithmetic. Preserve empty/quoted CSV cells on local ingestion. Add positive and negative tests, including conflicts and large exact operands. Hosted Worker, version, PyPI release and GTTA pin unchanged.
+
 ### Closest-context numeric fix (2026-11-13)
 
 - Fix the 1.25.0 numeric context check: number-free contexts (for example a heading that shares claim terms) no longer win the closest-context match and mark a supported claim number unmatched. Only number-bearing contexts compete for "closest", per the documented "closest number-bearing sentence" contract; claims whose sources carry no numbers keep the 1.25.0 behavior. Adds a regression probe; matching, human review and hosted contracts otherwise unchanged.

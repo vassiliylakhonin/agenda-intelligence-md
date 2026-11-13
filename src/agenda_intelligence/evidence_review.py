@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import csv
 import html
+import io
 import json
 import os
 import re
@@ -74,17 +75,25 @@ def _read_csv(path: Path) -> str:
     except OSError as exc:
         raise EvidenceReviewError(f"Cannot read table source {path}: {exc}") from exc
 
-    lines: list[str] = []
     try:
-        reader = csv.reader(content.splitlines(), delimiter=delimiter)
-        for row in reader:
-            non_empty = [cell.strip() for cell in row if cell.strip()]
-            if non_empty:
-                lines.append(" | ".join(non_empty))
+        rows = list(csv.reader(io.StringIO(content), delimiter=delimiter, strict=True))
     except csv.Error as exc:
         raise EvidenceReviewError(f"Cannot parse CSV/TSV table {path}: {exc}") from exc
-
-    return _bounded_text("\n".join(lines), source=path)
+    # Preserve empty cells and quoted delimiters. A simple rectangle can be
+    # rendered as Markdown; complex cells stay raw CSV rather than losing axes.
+    if (
+        rows
+        and len(rows[0]) > 1
+        and all(len(row) == len(rows[0]) for row in rows)
+        and not any("|" in cell or "\n" in cell for row in rows for cell in row)
+    ):
+        lines = [
+            "| " + " | ".join(cell.strip() for cell in rows[0]) + " |",
+            "| " + " | ".join("---" for _ in rows[0]) + " |",
+        ]
+        lines.extend("| " + " | ".join(cell.strip() for cell in row) + " |" for row in rows[1:])
+        return _bounded_text("\n".join(lines), source=path)
+    return _bounded_text(content, source=path)
 
 
 class _HTMLTextExtractor(HTMLParser):

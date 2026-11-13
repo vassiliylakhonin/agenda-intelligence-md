@@ -1109,7 +1109,10 @@ def check_evidence_packet(request_json: dict) -> dict:
         )
         # Discharge only declared result displays whose every occurrence has
         # the expected numeric/unit key. No inferred conversion or pooled sums.
-        unmatched_numbers = [number for number in unmatched_numbers if number not in accepted]
+        table_mismatches = {number for check in match.table_checks for number in check["unmatched_numbers"]}
+        unmatched_numbers = [
+            number for number in unmatched_numbers if number not in accepted or number in table_mismatches
+        ]
         if any(check["status"] == "invalid" for check in derivation_checks):
             review_issues.append("invalid_derivation")
             add_action(f"Review explicit arithmetic declarations for claim {claim_id}.")
@@ -1190,6 +1193,7 @@ def check_evidence_packet(request_json: dict) -> dict:
                     "best_source_id": best_source_id,
                     "unmatched_numbers": unmatched_numbers,
                     **diagnostic_spans,
+                    **({"table_checks": list(match.table_checks)} if match.table_checks else {}),
                 },
                 **({"derivation_checks": derivation_checks} if derivation_checks else {}),
                 "issues": structural_issues + review_issues,

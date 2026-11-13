@@ -23,7 +23,7 @@ Unicode code points in the original supplied source `text`, end exclusive:
 
 ## Explicit opt-in derived numbers
 
-Default number matching is unchanged. To check a calculation, set the packet's
+To check a calculation, set the packet's
 `derived_numbers` to `true` and declare a claim's `derivations`. The checker does
 not search for combinations of unrelated numbers to make a claim pass.
 
@@ -47,23 +47,69 @@ not search for combinations of unrelated numbers to make a claim pass.
 }
 ```
 
-Operations are `sum` (2-20 operands), `difference` (first minus second), and
-`percent_change` ((second - first) / abs(first) * 100, nonzero first operand).
-Use plain decimal strings, not exponents, thousands separators or inferred
-scales. Operands need the same explicit unit, a declared source and a verbatim
-excerpt containing the value and unit. The result must occur in the claim.
-Decimal equality is exact; no implicit rounding, unit conversion, table parsing
-or JSONPath is performed. A repeating percentage needs review rather than a
-guessed rounding tolerance.
+Operations are:
 
-`derivation_checks` reports `arithmetic_consistent` or `invalid` plus a reason.
-A consistent proof can clear only its declared unmatched numeric display; it
-does not increase lexical coverage, skip polarity/quote/reference checks, or
-turn `factuality_status` into a truth label. Currency/scale spellings that the
-existing matcher renders differently may still need review. Invalid or disabled
-proofs remain review findings. A human must check entity, period, unit, operand
-selection and whether the chosen operation makes sense. This is a deterministic
-arithmetic check, not an automatic repair or repeat model call.
+- `sum`: 2-20 operands; `difference`: first minus second.
+- `percent_change`: (second - first) / abs(first) * 100, nonzero first operand.
+  This can express a declared YoY calculation; the checker does not infer which
+  years or entities the operands describe.
+- `product`: first times second; `quotient`: first divided by nonzero second.
+- `percent`: first / second * 100, nonzero second operand.
+
+Declaration values are bounded plain decimal strings. The source excerpt and
+claim can use supported currency/scale spellings, for example `$1.5M` for an
+operand declared as `1500000` `USD`. Quotes must still be verbatim in a cited
+source. Sum, difference and percentage operations require identical declared
+operand units. Product and quotient require `result_unit`: multiplication uses
+`left*right`, division `left/right`, equal units divide to `ratio`, and the
+literal unit `ratio` is dimensionless. There is no general unit algebra, automatic
+operand search, inferred rounding, CAGR, or model call. A repeating decimal
+needs review, not a guessed tolerance.
+
+`derivation_checks` retains `status: arithmetic_consistent` for compatibility.
+Only an exact successful check adds `derived_verified: true` and `formula`, for
+example `((120) - (100)) / abs(100) * 100 = 20`. Invalid/disabled checks do not get
+that marker or a formula. The marker means source-backed arithmetic consistency,
+not truth or semantic support. A proof can discharge its normalized numeric
+result, but cannot clear a table intersection mismatch, increase lexical coverage,
+skip polarity/quote/reference checks, or change `factuality_status`. Humans must
+check entity, period, units, operand selection and the chosen operation.
+
+## Bounded numeric formatting
+
+The local numeric matcher canonicalizes scales/currencies, supported grouped
+number formats, ratios (`50%` equals unitless `0.5`, not `50` or `0.5 USD`), and
+quarter forms such as `Q3 2026`, `2026-Q3`, `third quarter 2026`, and
+`третий квартал 2026`. It does not parse arbitrary written-out quantities,
+exchange currencies, or infer missing units. An ambiguous single separator such
+as `1.234` remains a decimal, not an inferred thousands grouping. Unknown units
+and unfamiliar language forms may need review. Formatting equivalence is not
+semantic equivalence.
+
+## Named table intersections
+
+For rectangular Markdown tables and standalone CSV/TSV, the first row is the
+header and the first column is the row label. A claim that literally names a row
+and a column has its numbers checked against that intersection, not pooled from
+neighbors. For example, `Company A` + `2025` + `500` cannot borrow `500` from
+Company B or 2024. Numeric labels themselves are retained as context. Raw CSV uses
+the standard-library parser; local file ingestion preserves empty cells and
+quoted delimiters rather than shifting values into adjacent columns.
+
+Packet `lexical_support.table_checks` is present only for recognized, explicitly
+named intersections. Each entry reports `source_id`, `row`, `column`,
+`column_index` (zero-based including the row-label column), `cell`, `status`
+(`cell_consistent` or `mismatch`) and `unmatched_numbers`. Conflicting selected
+cells/sources remain review findings. `cell_consistent` is numeric consistency
+with that supplied cell, not a claim-level truth verdict or original-file byte
+coordinates. Other lexical and human-review gates remain.
+
+This is deliberately bounded: one literal row/column selection per numeric
+claim works best. Multiple selections in one claim can require review rather
+than pooled support. No provenance is asserted for missing labels, ragged tables,
+HTML/PDF layout, escaped Markdown pipes, merged cells, multi-level headers or
+inferred entity aliases. Absence of `table_checks` means not assessed, not passed.
+The hosted JavaScript Worker is unchanged by these local Python additions.
 
 ## Opt-in PR summary
 

@@ -7,13 +7,15 @@ public service contract remains in :mod:`agenda_intelligence.services`.
 
 from __future__ import annotations
 
+import csv
 import difflib
+import io
 import math
 import re
 import unicodedata
 from dataclasses import dataclass
 from datetime import date
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, localcontext
 from typing import Iterable, Mapping, Optional
 
 _GROUNDED_CHECK_STOPWORDS = frozenset(
@@ -101,7 +103,7 @@ _DATE_PATTERNS = (
     ),
 )
 
-_NUMBER_PATTERN = r"(?:\d{1,3}(?:[ \u00a0\u202f,_]\d{3})+|\d+(?:[.,]\d+)?)"
+_NUMBER_PATTERN = r"(?:\d{1,3}(?:[ \u00a0\u202f,_]\d{3})+(?:[.,]\d+)?|\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)"
 _SCALE_PATTERN = (
     r"(?:thousand|million|billion|тыс(?:яч[аиу]?)?|млн|миллион(?:а|ов)?|млрд|миллиард(?:а|ов)?|"
     r"ألف|مليون|مليار|k|m|b|mn|bn)"
@@ -206,6 +208,8 @@ def _decimal_value(raw: str) -> Decimal | None:
             compact = compact.replace(",", "")
         else:
             compact = compact.replace(".", "").replace(",", ".")
+    elif compact.count(".") > 1 and all(len(group) == 3 for group in compact.split(".")[1:]):
+        compact = compact.replace(".", "")
     elif "," in compact:
         groups = compact.split(",")
         if len(groups) > 2 or (len(groups) == 2 and len(groups[1]) == 3):
@@ -277,7 +281,14 @@ def _date_mention(match: re.Match[str]) -> dict | None:
 
 
 def _numeric_mentions(text: str) -> list[dict]:
-    """Return conservative, canonical numeric facts with spans in normalized text."""
+    """Return canonical facts without rounding the bounded arithmetic operands."""
+    with localcontext() as context:
+        context.prec = max(200, len(text) + 20)
+        return _numeric_mentions_precise(text)
+
+
+def _numeric_mentions_precise(text: str) -> list[dict]:
+    """Conservative numeric facts with spans in normalized text."""
     normalized = _grounded_normalize(text)
     mentions: list[dict] = []
 
@@ -297,6 +308,32 @@ def _numeric_mentions(text: str) -> list[dict]:
                     "display": match.group(0).strip(),
                     "literal": match.group(0).strip(),
                     "key": f"nummeasure-{dimension}-{_canonical_decimal(value * Decimal(factor))}",
+                }
+            )
+
+    quarter_patterns = (
+        r"\bq(?P<quarter>[1-4])\s*[-/]?\s*(?P<year>\d{4})\b",
+        r"\b(?P<year>\d{4})\s*[-/]?\s*q(?P<quarter>[1-4])\b",
+        r"\b(?P<quarter>[1-4])(?:st|nd|rd|th|[- ]?[йя])?\s+(?:quarter|квартал)\s+(?P<year>\d{4})\b",
+        r"\b(?P<word>first|second|third|fourth|первый|второй|третий|четвертый)\s+"
+        r"(?:quarter|квартал)\s+(?P<year>\d{4})\b",
+    )
+    quarter_words = dict(
+        zip(
+            ("first", "second", "third", "fourth", "первый", "второй", "третий", "четвертый"),
+            (1, 2, 3, 4, 1, 2, 3, 4),
+        )
+    )
+    for quarter_pattern in quarter_patterns:
+        for match in re.finditer(quarter_pattern, normalized):
+            quarter = match.groupdict().get("quarter") or quarter_words[match.group("word")]
+            mentions.append(
+                {
+                    "start": match.start(),
+                    "end": match.end(),
+                    "display": match[0],
+                    "literal": match[0],
+                    "key": f"numquarter-{match.group('year')}-q{quarter}",
                 }
             )
 
@@ -328,7 +365,7 @@ def _numeric_mentions(text: str) -> list[dict]:
         if currency:
             key = f"numcurrency-{currency}-{rendered}"
         elif _is_percent_unit(unit):
-            key = f"numpercent-{rendered}"
+            key = f"numnumber-{_canonical_decimal(value / Decimal(100))}"
         else:
             key = f"numnumber-{rendered}"
         display = signed_number
@@ -500,7 +537,7 @@ def _matching_term(term: str) -> str:
     set of inflectional endings only when at least four characters remain. The
     original term is still retained for reviewer-facing diagnostics.
     """
-    if term.startswith(("numnumber-", "numdate-", "numpercent-", "numcurrency-", "nummeasure-")):
+    if term.startswith(("numnumber-", "numdate-", "numpercent-", "numcurrency-", "nummeasure-", "numquarter-")):
         return term
 
     if re.fullmatch(r"[a-z]+", term):
@@ -548,6 +585,7 @@ class GroundingMatch:
     unmatched_numbers: tuple[str, ...]
     best_sentence: str
     best_passage: str
+    table_checks: tuple[dict, ...] = ()
 
 
 def _numeric_clauses(text: str) -> list[str]:
@@ -703,7 +741,9 @@ class GroundingIndex:
         context_terms = {
             term
             for term in claim_terms
-            if not term.startswith(("numnumber-", "numdate-", "numpercent-", "numcurrency-", "nummeasure-"))
+            if not term.startswith(
+                ("numnumber-", "numdate-", "numpercent-", "numcurrency-", "nummeasure-", "numquarter-")
+            )
         }
         # Match each numeric clause to its closest contexts, rather than pooling
         # every loosely related sentence. A different entity's number must not
@@ -738,6 +778,17 @@ class GroundingIndex:
             best_score = max((score for score, _ in pool), default=0.0)
             facts = set().union(*(facts for score, facts in pool if score == best_score and score >= 0.4))
             unmatched.update(mention["display"] for mention in mentions if mention["key"] not in facts)
+        table_checks: list[dict] = []
+        for document_id in candidate_ids:
+            for check in _table_cell_checks(claim_text, self._documents[document_id].text):
+                check["source_id"] = document_id
+                table_checks.append(check)
+        # A selected cell is stronger evidence than whole-row numeric overlap.
+        # Never combine conflicting cells/sources into a passing provenance.
+        if table_checks and all(check["status"] == "cell_consistent" for check in table_checks):
+            unmatched.difference_update(mention["display"] for mention in _numeric_mentions(claim_text))
+        for check in table_checks:
+            unmatched.update(check["unmatched_numbers"])
         unmatched_numbers = tuple(sorted(unmatched))
 
         best_sentence = ""
@@ -754,6 +805,7 @@ class GroundingIndex:
             unmatched_numbers=unmatched_numbers,
             best_sentence=best_sentence,
             best_passage=best_passage,
+            table_checks=tuple(table_checks),
         )
 
 
@@ -889,6 +941,14 @@ def _grounded_contexts(text: str) -> list[tuple[str, tuple[str, ...]]]:
     Blank paragraphs, bullets, headings and fenced code separate contexts.
     Table rows receive only their own column labels, never another row's facts.
     """
+    tables = _table_rows(text)
+    if tables and "|" not in text:
+        # Give raw CSV the same row-scoped lexical contexts as Markdown.
+        text = (
+            "\n".join(" | ".join(row) for row in [tables[0][0], ["---"] * len(tables[0][0])])
+            + "\n"
+            + "\n".join(" | ".join(row) for _, row in tables)
+        )
     lines = text.splitlines()
     blocks: list[tuple[str, tuple[str, ...]]] = []
     paragraph: list[str] = []
@@ -977,3 +1037,78 @@ def _grounded_best_passage(sentences: list[str], claim_terms: set[str], window: 
     if len(best_excerpt) > 300:
         best_excerpt = best_excerpt[:297].rstrip() + "..."
     return best_excerpt
+
+
+def _table_rows(text: str) -> list[tuple[list[str], list[str]]]:
+    """Read rectangular Markdown or standalone CSV/TSV. First column is row label.
+
+    No HTML, escaped Markdown pipes, inferred multi-level headers or OCR.
+    CSV uses the standard library, retaining empty and quoted cells.
+    """
+    lines = text.strip().splitlines()
+    result: list[tuple[list[str], list[str]]] = []
+    index = 0
+    fenced = False
+    while index < len(lines):
+        if lines[index].lstrip().startswith(("```", "~~~")):
+            fenced = not fenced
+        if not fenced and index + 1 < len(lines) and "|" in lines[index]:
+            headers = [cell.strip() for cell in lines[index].strip().strip("|").split("|")]
+            divider = [cell.strip() for cell in lines[index + 1].strip().strip("|").split("|")]
+            if (
+                len(headers) > 1
+                and len(headers) == len(divider)
+                and all(re.fullmatch(r":?-{3,}:?", cell) for cell in divider)
+            ):
+                index += 2
+                while index < len(lines) and "|" in lines[index]:
+                    row = [cell.strip() for cell in lines[index].strip().strip("|").split("|")]
+                    if len(row) != len(headers):
+                        break
+                    result.append((headers, row))
+                    index += 1
+                continue
+        index += 1
+    if result or not lines or "```" in text or "~~~" in text:
+        return result
+    delimiter = "\t" if "\t" in lines[0] else ","
+    try:
+        rows = [
+            [cell.strip() for cell in row] for row in csv.reader(io.StringIO(text), delimiter=delimiter, strict=True)
+        ]
+    except csv.Error:
+        return []
+    if len(rows) < 2 or len(rows[0]) < 2 or any(len(row) != len(rows[0]) for row in rows):
+        return []
+    return [(rows[0], row) for row in rows[1:]]
+
+
+def _table_cell_checks(claim: str, source: str) -> list[dict]:
+    """Constrain explicitly named row/column claims to their intersection only."""
+    normalized = _grounded_normalize(claim)
+
+    def named(label: str) -> bool:
+        label = _grounded_normalize(label)
+        return bool(label and re.search(r"(?<!\w)" + re.escape(label) + r"(?!\w)", normalized))
+
+    checks = []
+    for headers, row in _table_rows(source):
+        if not row[0] or not named(row[0]):
+            continue
+        for column, (header, cell) in enumerate(zip(headers[1:], row[1:]), 1):
+            if not header or not named(header):
+                continue
+            labels = _numeric_fact_keys(row[0] + " " + header)
+            allowed = _numeric_fact_keys(cell) | labels
+            unmatched = sorted({m["display"] for m in _numeric_mentions(claim) if m["key"] not in allowed})
+            checks.append(
+                {
+                    "row": row[0],
+                    "column": header,
+                    "column_index": column,
+                    "cell": cell,
+                    "status": "mismatch" if unmatched else "cell_consistent",
+                    "unmatched_numbers": unmatched,
+                }
+            )
+    return checks

@@ -89,7 +89,10 @@
                   "enum": [
                     "sum",
                     "difference",
-                    "percent_change"
+                    "percent_change",
+                    "product",
+                    "quotient",
+                    "percent"
                   ]
                 },
                 "operands": {
@@ -128,6 +131,12 @@
                       }
                     }
                   }
+                },
+                "result_unit": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80,
+                  "description": "Required for product/quotient: exact symbolic unit or ratio for dimensionless results."
                 }
               }
             }

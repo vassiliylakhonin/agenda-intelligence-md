@@ -129,7 +129,7 @@ For CLI input, save `{"answer": "...", "sources": [...]}` as `answer.json`, then
 
 `--strict` exits nonzero when revision is required. See the [input contract and limitations](docs/integrations/rag-output.md) and the [runnable LangGraph repair loop](examples/langgraph-output-verification/README.md).
 
-Small, hand-labelled [diagnostics](evals/claim_checks/README.md) report misses and false positives as well as catches. [Exact source offsets, explicit opt-in arithmetic, and PR summaries](docs/evidence-diagnostics.md) are available in the local package. No factuality or general hallucination-detection claim.
+Small, hand-labelled [diagnostics](evals/claim_checks/README.md) report misses and false positives as well as catches. [Exact source offsets, explicit opt-in arithmetic, named table cells, and PR summaries](docs/evidence-diagnostics.md) are available in the local package. No factuality or general hallucination-detection claim.
 
 ## Use the CLI and CI
 
