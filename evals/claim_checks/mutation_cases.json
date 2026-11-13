@@ -1,0 +1,918 @@
+{
+  "description": "Entirely synthetic, hand-labelled mutation probes with paired unchanged controls. Deterministic declared edits, no random generation or factuality claim.",
+  "label_policy": "A mutation changes a sign, bound direction, digit order or exact Unicode identifier. It needs review against the unchanged source. These are not natural error frequencies. Bounds can overlap at equality; this tests altered constraints, not universal contradiction.",
+  "cases": [
+    {
+      "id": "sign-usd-control",
+      "kind": "synthetic_control",
+      "mutation_type": "sign_flip",
+      "seed_id": "sign-usd",
+      "expect_flag": false,
+      "annotation": "Unchanged assertion is supported by its identical supplied source.",
+      "mutation": null,
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The project balance was -50 USD.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The project balance was -50 USD."
+          }
+        ]
+      }
+    },
+    {
+      "id": "sign-usd-mutant",
+      "kind": "synthetic_mutation",
+      "mutation_type": "sign_flip",
+      "seed_id": "sign-usd",
+      "expect_flag": true,
+      "annotation": "Changed source assertion requires review.",
+      "mutation": {
+        "start_char": 24,
+        "end_char": 27,
+        "before": "-50",
+        "after": "+50"
+      },
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The project balance was +50 USD.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The project balance was -50 USD."
+          }
+        ]
+      }
+    },
+    {
+      "id": "sign-decimal-control",
+      "kind": "synthetic_control",
+      "mutation_type": "sign_flip",
+      "seed_id": "sign-decimal",
+      "expect_flag": false,
+      "annotation": "Unchanged assertion is supported by its identical supplied source.",
+      "mutation": null,
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The temperature was -12.5 degrees.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The temperature was -12.5 degrees."
+          }
+        ]
+      }
+    },
+    {
+      "id": "sign-decimal-mutant",
+      "kind": "synthetic_mutation",
+      "mutation_type": "sign_flip",
+      "seed_id": "sign-decimal",
+      "expect_flag": true,
+      "annotation": "Changed source assertion requires review.",
+      "mutation": {
+        "start_char": 20,
+        "end_char": 25,
+        "before": "-12.5",
+        "after": "+12.5"
+      },
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The temperature was +12.5 degrees.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The temperature was -12.5 degrees."
+          }
+        ]
+      }
+    },
+    {
+      "id": "sign-ru-control",
+      "kind": "synthetic_control",
+      "mutation_type": "sign_flip",
+      "seed_id": "sign-ru",
+      "expect_flag": false,
+      "annotation": "Unchanged assertion is supported by its identical supplied source.",
+      "mutation": null,
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "Баланс проекта составил -70 USD.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "Баланс проекта составил -70 USD."
+          }
+        ]
+      }
+    },
+    {
+      "id": "sign-ru-mutant",
+      "kind": "synthetic_mutation",
+      "mutation_type": "sign_flip",
+      "seed_id": "sign-ru",
+      "expect_flag": true,
+      "annotation": "Changed source assertion requires review.",
+      "mutation": {
+        "start_char": 24,
+        "end_char": 27,
+        "before": "-70",
+        "after": "+70"
+      },
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "Баланс проекта составил +70 USD.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "Баланс проекта составил -70 USD."
+          }
+        ]
+      }
+    },
+    {
+      "id": "sign-percent-control",
+      "kind": "synthetic_control",
+      "mutation_type": "sign_flip",
+      "seed_id": "sign-percent",
+      "expect_flag": false,
+      "annotation": "Unchanged assertion is supported by its identical supplied source.",
+      "mutation": null,
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "Revenue growth was -15%.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "Revenue growth was -15%."
+          }
+        ]
+      }
+    },
+    {
+      "id": "sign-percent-mutant",
+      "kind": "synthetic_mutation",
+      "mutation_type": "sign_flip",
+      "seed_id": "sign-percent",
+      "expect_flag": true,
+      "annotation": "Changed source assertion requires review.",
+      "mutation": {
+        "start_char": 19,
+        "end_char": 22,
+        "before": "-15",
+        "after": "+15"
+      },
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "Revenue growth was +15%.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "Revenue growth was -15%."
+          }
+        ]
+      }
+    },
+    {
+      "id": "bound-en-control",
+      "kind": "synthetic_control",
+      "mutation_type": "bound_direction",
+      "seed_id": "bound-en",
+      "expect_flag": false,
+      "annotation": "Unchanged assertion is supported by its identical supplied source.",
+      "mutation": null,
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The project budget was no more than 50 USD.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The project budget was no more than 50 USD."
+          }
+        ]
+      }
+    },
+    {
+      "id": "bound-en-mutant",
+      "kind": "synthetic_mutation",
+      "mutation_type": "bound_direction",
+      "seed_id": "bound-en",
+      "expect_flag": true,
+      "annotation": "Changed source assertion requires review.",
+      "mutation": {
+        "start_char": 23,
+        "end_char": 30,
+        "before": "no more",
+        "after": "no less"
+      },
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The project budget was no less than 50 USD.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The project budget was no more than 50 USD."
+          }
+        ]
+      }
+    },
+    {
+      "id": "bound-en-most-control",
+      "kind": "synthetic_control",
+      "mutation_type": "bound_direction",
+      "seed_id": "bound-en-most",
+      "expect_flag": false,
+      "annotation": "Unchanged assertion is supported by its identical supplied source.",
+      "mutation": null,
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The shipment weighed at most 30 kg.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The shipment weighed at most 30 kg."
+          }
+        ]
+      }
+    },
+    {
+      "id": "bound-en-most-mutant",
+      "kind": "synthetic_mutation",
+      "mutation_type": "bound_direction",
+      "seed_id": "bound-en-most",
+      "expect_flag": true,
+      "annotation": "Changed source assertion requires review.",
+      "mutation": {
+        "start_char": 21,
+        "end_char": 28,
+        "before": "at most",
+        "after": "at least"
+      },
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The shipment weighed at least 30 kg.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The shipment weighed at most 30 kg."
+          }
+        ]
+      }
+    },
+    {
+      "id": "bound-ru-control",
+      "kind": "synthetic_control",
+      "mutation_type": "bound_direction",
+      "seed_id": "bound-ru",
+      "expect_flag": false,
+      "annotation": "Unchanged assertion is supported by its identical supplied source.",
+      "mutation": null,
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "Бюджет проекта не более 50 USD.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "Бюджет проекта не более 50 USD."
+          }
+        ]
+      }
+    },
+    {
+      "id": "bound-ru-mutant",
+      "kind": "synthetic_mutation",
+      "mutation_type": "bound_direction",
+      "seed_id": "bound-ru",
+      "expect_flag": true,
+      "annotation": "Changed source assertion requires review.",
+      "mutation": {
+        "start_char": 15,
+        "end_char": 23,
+        "before": "не более",
+        "after": "не менее"
+      },
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "Бюджет проекта не менее 50 USD.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "Бюджет проекта не более 50 USD."
+          }
+        ]
+      }
+    },
+    {
+      "id": "bound-ru-max-control",
+      "kind": "synthetic_control",
+      "mutation_type": "bound_direction",
+      "seed_id": "bound-ru-max",
+      "expect_flag": false,
+      "annotation": "Unchanged assertion is supported by its identical supplied source.",
+      "mutation": null,
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "Срок доставки не больше 20 дней.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "Срок доставки не больше 20 дней."
+          }
+        ]
+      }
+    },
+    {
+      "id": "bound-ru-max-mutant",
+      "kind": "synthetic_mutation",
+      "mutation_type": "bound_direction",
+      "seed_id": "bound-ru-max",
+      "expect_flag": true,
+      "annotation": "Changed source assertion requires review.",
+      "mutation": {
+        "start_char": 14,
+        "end_char": 23,
+        "before": "не больше",
+        "after": "не меньше"
+      },
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "Срок доставки не меньше 20 дней.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "Срок доставки не больше 20 дней."
+          }
+        ]
+      }
+    },
+    {
+      "id": "digits-year-control",
+      "kind": "synthetic_control",
+      "mutation_type": "digit_transposition",
+      "seed_id": "digits-year",
+      "expect_flag": false,
+      "annotation": "Unchanged assertion is supported by its identical supplied source.",
+      "mutation": null,
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The factory opened in 1984.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The factory opened in 1984."
+          }
+        ]
+      }
+    },
+    {
+      "id": "digits-year-mutant",
+      "kind": "synthetic_mutation",
+      "mutation_type": "digit_transposition",
+      "seed_id": "digits-year",
+      "expect_flag": true,
+      "annotation": "Changed source assertion requires review.",
+      "mutation": {
+        "start_char": 22,
+        "end_char": 26,
+        "before": "1984",
+        "after": "1948"
+      },
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The factory opened in 1948.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The factory opened in 1984."
+          }
+        ]
+      }
+    },
+    {
+      "id": "digits-budget-control",
+      "kind": "synthetic_control",
+      "mutation_type": "digit_transposition",
+      "seed_id": "digits-budget",
+      "expect_flag": false,
+      "annotation": "Unchanged assertion is supported by its identical supplied source.",
+      "mutation": null,
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The project budget was 1250 USD.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The project budget was 1250 USD."
+          }
+        ]
+      }
+    },
+    {
+      "id": "digits-budget-mutant",
+      "kind": "synthetic_mutation",
+      "mutation_type": "digit_transposition",
+      "seed_id": "digits-budget",
+      "expect_flag": true,
+      "annotation": "Changed source assertion requires review.",
+      "mutation": {
+        "start_char": 23,
+        "end_char": 27,
+        "before": "1250",
+        "after": "1520"
+      },
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The project budget was 1520 USD.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The project budget was 1250 USD."
+          }
+        ]
+      }
+    },
+    {
+      "id": "digits-ru-control",
+      "kind": "synthetic_control",
+      "mutation_type": "digit_transposition",
+      "seed_id": "digits-ru",
+      "expect_flag": false,
+      "annotation": "Unchanged assertion is supported by its identical supplied source.",
+      "mutation": null,
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "Завод открыт в 1976 году.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "Завод открыт в 1976 году."
+          }
+        ]
+      }
+    },
+    {
+      "id": "digits-ru-mutant",
+      "kind": "synthetic_mutation",
+      "mutation_type": "digit_transposition",
+      "seed_id": "digits-ru",
+      "expect_flag": true,
+      "annotation": "Changed source assertion requires review.",
+      "mutation": {
+        "start_char": 15,
+        "end_char": 19,
+        "before": "1976",
+        "after": "1967"
+      },
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "Завод открыт в 1967 году.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "Завод открыт в 1976 году."
+          }
+        ]
+      }
+    },
+    {
+      "id": "digits-volume-control",
+      "kind": "synthetic_control",
+      "mutation_type": "digit_transposition",
+      "seed_id": "digits-volume",
+      "expect_flag": false,
+      "annotation": "Unchanged assertion is supported by its identical supplied source.",
+      "mutation": null,
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The shipment contained 243 tonnes.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The shipment contained 243 tonnes."
+          }
+        ]
+      }
+    },
+    {
+      "id": "digits-volume-mutant",
+      "kind": "synthetic_mutation",
+      "mutation_type": "digit_transposition",
+      "seed_id": "digits-volume",
+      "expect_flag": true,
+      "annotation": "Changed source assertion requires review.",
+      "mutation": {
+        "start_char": 23,
+        "end_char": 26,
+        "before": "243",
+        "after": "234"
+      },
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The shipment contained 234 tonnes.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The shipment contained 243 tonnes."
+          }
+        ]
+      }
+    },
+    {
+      "id": "glyph-latin-a-control",
+      "kind": "synthetic_control",
+      "mutation_type": "homoglyph",
+      "seed_id": "glyph-latin-a",
+      "expect_flag": false,
+      "annotation": "Unchanged assertion is supported by its identical supplied source.",
+      "mutation": null,
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The Atlas branch employs 50 staff.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The Atlas branch employs 50 staff."
+          }
+        ]
+      }
+    },
+    {
+      "id": "glyph-latin-a-mutant",
+      "kind": "synthetic_mutation",
+      "mutation_type": "homoglyph",
+      "seed_id": "glyph-latin-a",
+      "expect_flag": true,
+      "annotation": "Changed source assertion requires review.",
+      "mutation": {
+        "start_char": 4,
+        "end_char": 9,
+        "before": "Atlas",
+        "after": "Аtlas"
+      },
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The Аtlas branch employs 50 staff.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The Atlas branch employs 50 staff."
+          }
+        ]
+      }
+    },
+    {
+      "id": "glyph-latin-o-control",
+      "kind": "synthetic_control",
+      "mutation_type": "homoglyph",
+      "seed_id": "glyph-latin-o",
+      "expect_flag": false,
+      "annotation": "Unchanged assertion is supported by its identical supplied source.",
+      "mutation": null,
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The Coral branch employs 20 staff.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The Coral branch employs 20 staff."
+          }
+        ]
+      }
+    },
+    {
+      "id": "glyph-latin-o-mutant",
+      "kind": "synthetic_mutation",
+      "mutation_type": "homoglyph",
+      "seed_id": "glyph-latin-o",
+      "expect_flag": true,
+      "annotation": "Changed source assertion requires review.",
+      "mutation": {
+        "start_char": 4,
+        "end_char": 9,
+        "before": "Coral",
+        "after": "Cоral"
+      },
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "The Cоral branch employs 20 staff.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "The Coral branch employs 20 staff."
+          }
+        ]
+      }
+    },
+    {
+      "id": "glyph-cyrillic-o-control",
+      "kind": "synthetic_control",
+      "mutation_type": "homoglyph",
+      "seed_id": "glyph-cyrillic-o",
+      "expect_flag": false,
+      "annotation": "Unchanged assertion is supported by its identical supplied source.",
+      "mutation": null,
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "Отдел Орион обработал 70 заявок.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "Отдел Орион обработал 70 заявок."
+          }
+        ]
+      }
+    },
+    {
+      "id": "glyph-cyrillic-o-mutant",
+      "kind": "synthetic_mutation",
+      "mutation_type": "homoglyph",
+      "seed_id": "glyph-cyrillic-o",
+      "expect_flag": true,
+      "annotation": "Changed source assertion requires review.",
+      "mutation": {
+        "start_char": 6,
+        "end_char": 11,
+        "before": "Орион",
+        "after": "Ориoн"
+      },
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "Отдел Ориoн обработал 70 заявок.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "Отдел Орион обработал 70 заявок."
+          }
+        ]
+      }
+    },
+    {
+      "id": "glyph-cyrillic-a-control",
+      "kind": "synthetic_control",
+      "mutation_type": "homoglyph",
+      "seed_id": "glyph-cyrillic-a",
+      "expect_flag": false,
+      "annotation": "Unchanged assertion is supported by its identical supplied source.",
+      "mutation": null,
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "Отдел Альфа обработал 90 заявок.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "Отдел Альфа обработал 90 заявок."
+          }
+        ]
+      }
+    },
+    {
+      "id": "glyph-cyrillic-a-mutant",
+      "kind": "synthetic_mutation",
+      "mutation_type": "homoglyph",
+      "seed_id": "glyph-cyrillic-a",
+      "expect_flag": true,
+      "annotation": "Changed source assertion requires review.",
+      "mutation": {
+        "start_char": 6,
+        "end_char": 11,
+        "before": "Альфа",
+        "after": "Альфa"
+      },
+      "packet": {
+        "claims": [
+          {
+            "claim_id": "c",
+            "text": "Отдел Альфa обработал 90 заявок.",
+            "source_ids": [
+              "s"
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "source_id": "s",
+            "text": "Отдел Альфа обработал 90 заявок."
+          }
+        ]
+      }
+    }
+  ]
+}

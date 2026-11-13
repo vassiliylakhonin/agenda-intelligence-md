@@ -58,3 +58,58 @@ def test_action_captures_strict_failure_and_still_emits_comment_data(tmp_path, o
     assert response["packet_status"] == "packet_incomplete"
     if output_format == "sarif":
         assert json.loads((tmp_path / "agenda-intelligence.sarif").read_text())["version"] == "2.1.0"
+
+
+def mutation_module():
+    spec = importlib.util.spec_from_file_location("claim_mutations", ROOT / "evals/claim_checks/mutations.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_mutation_generator_is_frozen_and_edits_only_declared_span():
+    module = mutation_module()
+    suite = module.generate()
+    assert suite == module.generate()
+    frozen = json.loads((ROOT / "evals/claim_checks/mutation_cases.json").read_text())
+    assert frozen == suite
+    assert len(suite["cases"]) == 32
+    for case in suite["cases"]:
+        source = case["packet"]["sources"][0]["text"]
+        claim = case["packet"]["claims"][0]["text"]
+        if case["expect_flag"]:
+            edit = case["mutation"]
+            assert source[edit["start_char"] : edit["end_char"]] == edit["before"]
+            assert claim == source[: edit["start_char"]] + edit["after"] + source[edit["end_char"] :]
+            assert source != claim
+        else:
+            assert source == claim
+            assert case["mutation"] is None
+
+
+def test_mutation_metrics_keep_misses_and_undefined_precision_visible():
+    module = mutation_module()
+    suite = module.generate()
+    # Test metric mechanics independently of current matcher performance.
+    rows = [{"id": case["id"], "category": "missed" if case["expect_flag"] else "clear"} for case in suite["cases"]]
+    metrics = module.summarize({"results": rows}, suite)["per_mutation_type"]
+    assert set(metrics) == {"sign_flip", "bound_direction", "digit_transposition", "homoglyph"}
+    for counts in metrics.values():
+        assert counts == {"tp": 0, "fn": 4, "fp": 0, "tn": 4, "recall": 0.0, "precision": None}
+    rows[0]["category"] = "false_positive"
+    rows[1]["category"] = "caught"
+    sign = module.summarize({"results": rows}, suite)["per_mutation_type"]["sign_flip"]
+    assert sign["precision"] == 0.5
+    assert sign["recall"] == 0.25
+
+
+def test_mutation_run_counts_every_case_without_cherry_picking():
+    module = mutation_module()
+    spec = importlib.util.spec_from_file_location("claim_bench_mutations", ROOT / "evals/claim_checks/run.py")
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+    result = module.summarize(runner.run(ROOT / "evals/claim_checks/mutation_cases.json", 1), module.generate())
+    assert len(result["results"]) == 32
+    for counts in result["per_mutation_type"].values():
+        assert counts["tp"] + counts["fn"] == 4
+        assert counts["fp"] + counts["tn"] == 4

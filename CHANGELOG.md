@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Synthetic mutation diagnostics (2026-11-13)
+
+- Extend the small benchmark with 16 deterministic synthetic mutations plus 16 paired unchanged controls: minus-to-plus signs, upper-to-lower bound wording (English/Russian), digit transpositions, and Cyrillic/Latin homoglyphs in identifiers. Record recall, precision, confusion counts, misses and full-service time per type/case. Undefined precision stays null. No matcher changes or general accuracy claims.
+
+
 ### Local evidence diagnostics (2026-11-13)
 
 - Add a reproducible, hand-labelled mini-benchmark with public-source snapshots and labelled synthetic probes. Report catches, misses, false positives and full-service latency without a model judge or general accuracy claim. Do not publish the unpublished paper's Annex B.

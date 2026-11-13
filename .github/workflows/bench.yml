@@ -43,6 +43,10 @@ jobs:
           diff -u evals/baselines/source-backed.md /tmp/source-backed.md
           diff -u evals/baselines/source-backed.json /tmp/source-backed.json
 
+      - name: Verify deterministic synthetic mutation cases and record diagnostics
+        run: |
+          python evals/claim_checks/mutations.py --check --repeats 5 --out /tmp/mutation-diagnostics.json
+
       - name: Upload bench artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -51,4 +55,5 @@ jobs:
           path: |
             /tmp/source-backed.md
             /tmp/source-backed.json
+            /tmp/mutation-diagnostics.json
           if-no-files-found: ignore

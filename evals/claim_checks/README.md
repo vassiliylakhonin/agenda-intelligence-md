@@ -55,3 +55,36 @@ and [TITR tariffs page](https://middlecorridor.com/en/for-clients/tariffs).
 Snapshots were assembled on 2026-11-12 and the public pages rechecked on 2026-11-13.
 EBRD excerpt formatting was normalized in the earlier run (EUR spelling, 2.5).
 No unsupported relative-speed, production-accuracy or hallucination-prevention claims.
+
+## Deterministic synthetic mutations
+
+All 32 cases are synthetic: 16 altered claims and 16 paired unchanged controls.
+No random sampling, LLM judge, new matching rule or claim about real-world error rates.
+The generator applies one declared edit per seed: sign flip, bound-direction swap,
+digit transposition, or Cyrillic/Latin homoglyph substitution in a distinct identifier.
+The Unicode spelling, not a model judgment, defines identifier equality for this set.
+Inequality edits change a constraint, but the two bounds can overlap at equality.
+
+```bash
+python evals/claim_checks/mutations.py --check
+python evals/claim_checks/mutations.py --out /tmp/mutation-results.json --repeats 25
+```
+
+[Generated cases](mutation_cases.json), [generator](mutations.py), [recorded results](mutation_results.json).
+Recall = caught / (caught + missed). Precision = caught / (caught + false alarms),
+using only the four mutants and four paired identical controls per type. A null
+precision means no positive predictions, not perfect or zero precision. These
+small, balanced synthetic metrics are not production precision or accuracy.
+
+| Mutation | Caught / altered | Missed | False alarms / controls | Recall | Precision |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| sign_flip | 4 / 4 | 0 | 0 / 4 | 1.00 | 1.00 |
+| bound_direction | 0 / 4 | 4 | 0 / 4 | 0.00 | undefined (no flags) |
+| digit_transposition | 4 / 4 | 0 | 0 / 4 | 1.00 | 1.00 |
+| homoglyph | 0 / 4 | 4 | 0 / 4 | 0.00 | undefined (no flags) |
+
+Every generated case remains in the report, including failures. Unchanged controls
+are intentionally easy exact matches; absence of false alarms here does not show
+paraphrase quality. The original 14-case set retains its paraphrase false positives.
+Use per-case issues and full-service timing from the JSON, not an aggregate marketing
+claim. This change extends the benchmark only; the verifier is unchanged.
