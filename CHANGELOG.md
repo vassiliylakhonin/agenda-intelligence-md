@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Self-correcting input-validation errors on the paid path (2026-11-13)
+
+- Refused paid requests (`invalid_paid_request`, HTTP 400) now carry an additive `self_correction` object: the failed field or condition, the required fields, the expected request location, and a minimal valid example plus ready-to-send `wire_request` for the addressed tool. A2A requests that name a `capability` get that tool's example in `request_hint`. Deterministic, no LLM; no caller value is echoed. Acceptance, routing, status codes, payment checks and validation rules are unchanged.
+
 ### Local numeric normalization and cell provenance (2026-11-13)
 
 - Extend local Python numeric matching with grouped decimal variants, percent/ratio equivalence (`50%` / `0.5`), and bounded English/Russian quarter forms. Currency, units and distinct quarter/year values remain separate; no written-number or FX inference.

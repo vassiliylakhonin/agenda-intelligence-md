@@ -15638,12 +15638,76 @@ function paidRequestHint(request, body, profile, env) {
   }
   if (path === '/message/send' || path === '/') {
     const example = agentCard(request, { ...env, AGENT_PROFILE: profile }).x_agenda_intelligence.a2a_send_message_example;
+    // When the caller names a published capability, the example must match that tool, not the profile default.
+    const named = a2aNamedTool(body, profile, request, env);
+    const namedExample = named?._meta?.['com.agenda/readiness']?.example_arguments;
+    if (named && namedExample) {
+      const envelope = structuredClone(example.request);
+      envelope.params = { capability: named.name, message: { ...envelope.params.message, parts: [{ data: namedExample, mediaType: 'application/json' }] } };
+      return { transport: 'a2a', capability: named.name, required_fields: named.inputSchema?.required || [], example_request: envelope, headers: example.headers, expected: example.expected,
+        instruction: 'Use the matching A2A version and the structured example for the named capability; replace illustrative values with supplied evidence. A valid unpaid request on a paid deployment returns HTTP 402 without evaluation.' };
+    }
     return { transport: 'a2a', example_request: example.request, headers: example.headers, expected: example.expected,
       instruction: 'Use the matching A2A version and structured example; replace illustrative values with supplied evidence. A valid unpaid request on a paid deployment returns HTTP 402 without evaluation.' };
   }
   return guide ? { transport: 'rest', schema: route?.schema || guide.schema, required_fields: guide.required,
     example_request: guide.example, instruction: 'Use the canonical schema and replace illustrative values with supplied evidence.' }
     : { documentation: '/api/openapi.json' };
+}
+
+// Published paid tool the caller addressed by A2A capability, if any. Free, trial and validation tools never qualify.
+function a2aNamedTool(body, profile, request, env) {
+  const capability = body?.params?.capability;
+  if (typeof capability !== 'string' || !capability) return null;
+  if (capability === INPUT_VALIDATION_TOOL || isMcpTrialTool(capability) || isAnswerReviewTool(capability)) return null;
+  return hostedMcpTools(profile, request, env).find(tool => tool.name === capability && tool._meta?.['com.agenda/readiness']) || null;
+}
+
+// Deterministic self-correction record for a refused paid request: which fields or conditions
+// failed, the required fields, and a minimal valid example for the tool the caller addressed.
+// Built only from published names, validator messages and schema keys; never echoes caller values.
+function selfCorrectionHint(request, body, profile, env, operation, hint) {
+  const path = new URL(request.url).pathname;
+  const mcp = path.startsWith('/mcp');
+  const a2a = path === '/message/send' || path === '/';
+  const transport = mcp ? 'mcp' : a2a ? 'a2a' : 'rest';
+  const tool = mcp ? body?.params?.name : a2a ? (hint?.capability || body?.params?.capability || null) : null;
+  const required = Array.isArray(hint?.required_fields) ? hint.required_fields.filter(key => typeof key === 'string') : [];
+  const location = mcp ? 'params.arguments of the tools/call request'
+    : a2a ? 'message.parts[0].data of the SendMessage request (a JSON object with mediaType application/json; prose in text is not evaluated)'
+    : 'the JSON request body';
+  let failed = [];
+  const issues = operation.remediation?.issues;
+  if (Array.isArray(issues)) failed = issues.slice(0, 64).map(issue => ({ field: issue.field ?? null, problem: issue.problem, code: issue.code ?? null }));
+  if (!failed.length) {
+    for (const message of (operation.errors || []).slice(0, 64)) {
+      const text = String(message);
+      const match = /^(?:Unexpected field: )?([A-Za-z_][\w.\[\]-]*)(?::| must| is| are| should)/u.exec(text);
+      failed.push({ field: match && !/^(Supply|Missing|Request|Invalid|Unsupported)$/u.test(match[1]) ? '/' + match[1].replaceAll('.', '/') : null, problem: text, code: operation.validationCategory || null });
+    }
+  }
+  if (['missing_structured_request', 'missing_input'].includes(operation.validationCategory) && required.length) {
+    const supplied = new Set();
+    const params = body?.params;
+    const candidates = [mcp ? params?.arguments : null, a2a ? params?.request : null, ...(a2a && Array.isArray(params?.message?.parts) ? params.message.parts.map(part => part?.data) : []),
+      !mcp && !a2a ? (body?.packet || body) : null];
+    for (const item of candidates) if (item && typeof item === 'object' && !Array.isArray(item)) for (const key of Object.keys(item)) supplied.add(key);
+    const missing = required.filter(key => !supplied.has(key)).map(key => ({ code: 'required', field: '/' + key, machine_key: key, message: 'Required field is missing.' }));
+    if (missing.length) {
+      const detail = inputRemediation(missing, hint?.schema?.$id || 'input', { profile }).issues || [];
+      failed = [{ field: null, problem: `No structured request fields were found in ${location}. Send the required fields there.`, code: 'missing_structured_request' },
+        ...detail.map(issue => ({ field: issue.field, problem: 'Required field is missing.', code: 'required' }))];
+    }
+  }
+  const out = { version: 'input-self-correction.v1', evaluation_performed: false, transport, ...(tool ? { tool } : {}),
+    failed, expected_location: location, ...(required.length ? { required_fields: required } : {}),
+    instruction: 'Fix each failed field or condition, send minimal_valid_example as the shape (replace illustrative values with your own evidence), or re-check free first. Nothing was evaluated or charged.' };
+  if (hint?.example_request) {
+    out.minimal_valid_example = hint.example_request;
+    out.wire_request = { url: new URL(request.url).origin + path, method: 'POST',
+      headers: { ...(hint.headers || {}), 'Content-Type': 'application/json' }, body: JSON.stringify(hint.example_request) };
+  }
+  return out;
 }
 
 // The trial selects one server-owned operation and reuses its validator and evaluator.
@@ -15981,6 +16045,7 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
   if (operation.errors?.length) {
     if (wantsPayment || standardProof !== undefined || env.BILLING_MODE === 'pay_per_call' || bearerTokenFromRequest(request).startsWith('agy_pro_')) {
       emit('payment_rejected', 'invalid_paid_request', 400);
+      const paidHint = paidRequestHint(request, body, profile, env);
       return reply(jsonResponse({ code: 'invalid_paid_request', errors: operation.errors,
         validation: { category: operation.validationCategory, error_count: operation.errors.length },
         // Field-level repair guidance the validator already computed; never
@@ -15991,7 +16056,7 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
               evaluation_performed: false, attempt_consumed: false, payment_required: false,
               instruction: 'Repair the input using remediation and request_hint, then re-check it free with the validate_input MCP tool or POST ' + INPUT_VALIDATION_PATH + ' before any payment; no evaluation, payment or trial attempt is consumed.' } }
           : {}),
-        request_hint: paidRequestHint(request, body, profile, env) }, 400));
+        request_hint: paidHint, self_correction: selfCorrectionHint(request, body, profile, env, operation, paidHint) }, 400));
     }
     return execute();
   }
