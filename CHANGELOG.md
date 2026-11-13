@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Narrow bound and confusable review (2026-11-13)
+
+- Local evidence packets and RAG reviews flag explicit upper/lower bound direction mismatches in closest numeric contexts and distinct mixed Cyrillic/Latin visual-confusable identifier spellings. Warnings route to review without normalizing suspicious identifiers into support. Add SARIF/repair descriptions and negative controls; no hosted JavaScript or Vizier changes.
+- Preserve frozen before reports and add after reports on identical synthetic/public case hashes. Bound/homoglyph mutation catches 0/4 to 4/4 each, unchanged sign/digit catches 4/4; 0/16 false alarms on easy paired controls. The 14-case set remains 6 catches, 2 misses, 2 false positives and 4 clear. Targeted synthetic diagnostics, not general accuracy.
+
+
 ### Synthetic mutation diagnostics (2026-11-13)
 
 - Extend the small benchmark with 16 deterministic synthetic mutations plus 16 paired unchanged controls: minus-to-plus signs, upper-to-lower bound wording (English/Russian), digit transpositions, and Cyrillic/Latin homoglyphs in identifiers. Record recall, precision, confusion counts, misses and full-service time per type/case. Undefined precision stays null. No matcher changes or general accuracy claims.

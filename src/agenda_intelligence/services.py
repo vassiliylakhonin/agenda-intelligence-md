@@ -30,6 +30,7 @@ from .derived_numbers import check_derivations
 from .evaluation_contract import evaluation_contract
 from .remediation import build_remediation, input_remediation, pointer
 from .source_records import review_source_records
+from .text_consistency import consistency_issues
 
 PACKAGE_NAME = "agenda_intelligence"
 
@@ -1131,6 +1132,17 @@ def check_evidence_packet(request_json: dict) -> dict:
             if polarity_conflict:
                 lexical_status = "weak"
 
+        consistency = consistency_issues(claim["text"], [sources[sid]["text"] for sid in valid_source_ids])
+        if consistency:
+            lexical_status = "weak" if lexical_status == "supported" else lexical_status
+            review_issues.extend(consistency)
+            if "lexical_support_bound_direction_mismatch" in consistency:
+                add_action(
+                    f"Review upper/lower bound direction against the closest source context for claim {claim_id}."
+                )
+            if "lexical_support_confusable_identifier" in consistency:
+                add_action(f"Review distinct Cyrillic/Latin confusable identifier spelling in claim {claim_id}.")
+
         if polarity_conflict:
             review_issues.append("lexical_support_polarity_mismatch")
             add_action(
@@ -1318,6 +1330,10 @@ def build_repair_prompt(request_json: dict, response_json: dict | None = None) -
                     "disagree on polarity (negation/denial cues). "
                     "Verify that the claim asserts what the source asserts."
                 )
+            elif issue == "lexical_support_bound_direction_mismatch":
+                lines.append("- **Bound Direction**: Review the upper/lower bound against its cited context.")
+            elif issue == "lexical_support_confusable_identifier":
+                lines.append("- **Confusable Spelling**: Review distinct Latin/Cyrillic identifier spellings.")
             elif issue == "unmatched_numbers":
                 nums = lexical.get("unmatched_numbers", [])
                 lines.append(

@@ -100,3 +100,35 @@ repository permissions. It is not enabled automatically in this repository.
 See [the small diagnostic suite](../evals/claim_checks/README.md). It reports
 catches, misses, false positives and time, including known semantic failures.
 There is no LLM-judge comparison and no claim of general hallucination detection.
+
+## Narrow bound-direction and confusable-spelling review
+
+The local Python evidence-packet checker now adds:
+
+- `lexical_support_bound_direction_mismatch`: explicit `at most`/`at least`,
+  `no more than`/`no less than`, `не более`/`не менее`, `не больше`/`не меньше`
+  changed direction at the same numeric value/unit in the closest local context.
+- `lexical_support_confusable_identifier`: a claim/source word has a distinct
+  Cyrillic/Latin visual-confusable spelling and one spelling mixes the scripts.
+  The bounded character map is `аеорсухіјкмтнв` to `aeopcyxijkmthb` (case-folded).
+
+Both are review warnings, not assertions of falsehood or malicious intent.
+No characters are silently replaced to make a claim pass. Identical supplied
+mixed-script words do not trigger this mismatch warning. Separate English and
+Russian words in bilingual prose are not mixed-script tokens. This is not a full
+Unicode confusables scanner or transliteration system; unlisted characters,
+whole-script substitutions, zero-width controls and other attacks are outside
+this rule. It compares exact normalized spellings, not identities or intent.
+
+Bounds are matched to nearby numeric contexts with a lexical overlap threshold
+and a limited English proper-name anchor. A matching bound direction among the
+closest sources avoids the direction warning. Missing bounds, different values
+or currencies are not inferred into opposites by this rule. Logical entailment,
+open/closed interval reasoning, entity resolution, scope, nested negation and
+arbitrary inequalities are not implemented. Text beyond these rules may still
+require review through existing lexical or numeric checks. Source contradictions
+and manipulated sources remain the caller's responsibility.
+
+The additions propagate through `check_evidence_packet`, its CLI and the local
+`review_rag_answer` adapter. No new hosted JavaScript capability or deployment is
+implied. See the frozen before/after diagnostic reports for the tested scope.

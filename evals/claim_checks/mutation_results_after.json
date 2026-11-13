@@ -1,0 +1,426 @@
+{
+  "suite_sha256": "16dda2f0fc3c42c98a02cd47349459c7aa97f7110f30ca822f1a005a3d2baf3d",
+  "package_version": "1.25.0",
+  "python": "3.12.15",
+  "platform": "Linux-6.1.189+-x86_64-with-glibc2.35",
+  "timing": "full local service, one excluded warm-up per case, sequential, no network",
+  "repeats_per_case": 25,
+  "counts": {
+    "caught": 16,
+    "missed": 0,
+    "false_positive": 0,
+    "clear": 16
+  },
+  "results": [
+    {
+      "id": "sign-usd-control",
+      "kind": "synthetic_control",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.781,
+      "p95_ms": 0.875
+    },
+    {
+      "id": "sign-usd-mutant",
+      "kind": "synthetic_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_weak",
+        "unmatched_numbers"
+      ],
+      "median_ms": 0.725,
+      "p95_ms": 0.777
+    },
+    {
+      "id": "sign-decimal-control",
+      "kind": "synthetic_control",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.833,
+      "p95_ms": 0.885
+    },
+    {
+      "id": "sign-decimal-mutant",
+      "kind": "synthetic_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_weak",
+        "unmatched_numbers"
+      ],
+      "median_ms": 0.791,
+      "p95_ms": 0.845
+    },
+    {
+      "id": "sign-ru-control",
+      "kind": "synthetic_control",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.891,
+      "p95_ms": 0.945
+    },
+    {
+      "id": "sign-ru-mutant",
+      "kind": "synthetic_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_weak",
+        "unmatched_numbers"
+      ],
+      "median_ms": 0.822,
+      "p95_ms": 0.878
+    },
+    {
+      "id": "sign-percent-control",
+      "kind": "synthetic_control",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.719,
+      "p95_ms": 0.766
+    },
+    {
+      "id": "sign-percent-mutant",
+      "kind": "synthetic_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_weak",
+        "unmatched_numbers"
+      ],
+      "median_ms": 0.689,
+      "p95_ms": 0.794
+    },
+    {
+      "id": "bound-en-control",
+      "kind": "synthetic_control",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.858,
+      "p95_ms": 0.953
+    },
+    {
+      "id": "bound-en-mutant",
+      "kind": "synthetic_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_bound_direction_mismatch",
+        "lexical_support_weak"
+      ],
+      "median_ms": 0.874,
+      "p95_ms": 0.934
+    },
+    {
+      "id": "bound-en-most-control",
+      "kind": "synthetic_control",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.819,
+      "p95_ms": 0.872
+    },
+    {
+      "id": "bound-en-most-mutant",
+      "kind": "synthetic_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_bound_direction_mismatch",
+        "lexical_support_weak"
+      ],
+      "median_ms": 0.842,
+      "p95_ms": 0.89
+    },
+    {
+      "id": "bound-ru-control",
+      "kind": "synthetic_control",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.884,
+      "p95_ms": 0.946
+    },
+    {
+      "id": "bound-ru-mutant",
+      "kind": "synthetic_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_bound_direction_mismatch",
+        "lexical_support_weak"
+      ],
+      "median_ms": 0.918,
+      "p95_ms": 0.968
+    },
+    {
+      "id": "bound-ru-max-control",
+      "kind": "synthetic_control",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.977,
+      "p95_ms": 1.023
+    },
+    {
+      "id": "bound-ru-max-mutant",
+      "kind": "synthetic_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_bound_direction_mismatch",
+        "lexical_support_weak"
+      ],
+      "median_ms": 0.993,
+      "p95_ms": 1.05
+    },
+    {
+      "id": "digits-year-control",
+      "kind": "synthetic_control",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.757,
+      "p95_ms": 0.8
+    },
+    {
+      "id": "digits-year-mutant",
+      "kind": "synthetic_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_weak",
+        "unmatched_numbers"
+      ],
+      "median_ms": 0.722,
+      "p95_ms": 0.79
+    },
+    {
+      "id": "digits-budget-control",
+      "kind": "synthetic_control",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.774,
+      "p95_ms": 0.826
+    },
+    {
+      "id": "digits-budget-mutant",
+      "kind": "synthetic_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_weak",
+        "unmatched_numbers"
+      ],
+      "median_ms": 0.732,
+      "p95_ms": 0.781
+    },
+    {
+      "id": "digits-ru-control",
+      "kind": "synthetic_control",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.881,
+      "p95_ms": 1.214
+    },
+    {
+      "id": "digits-ru-mutant",
+      "kind": "synthetic_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_weak",
+        "unmatched_numbers"
+      ],
+      "median_ms": 0.824,
+      "p95_ms": 1.039
+    },
+    {
+      "id": "digits-volume-control",
+      "kind": "synthetic_control",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.795,
+      "p95_ms": 0.841
+    },
+    {
+      "id": "digits-volume-mutant",
+      "kind": "synthetic_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_weak",
+        "unmatched_numbers"
+      ],
+      "median_ms": 0.753,
+      "p95_ms": 0.799
+    },
+    {
+      "id": "glyph-latin-a-control",
+      "kind": "synthetic_control",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.827,
+      "p95_ms": 0.869
+    },
+    {
+      "id": "glyph-latin-a-mutant",
+      "kind": "synthetic_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_confusable_identifier",
+        "lexical_support_weak"
+      ],
+      "median_ms": 0.9,
+      "p95_ms": 0.953
+    },
+    {
+      "id": "glyph-latin-o-control",
+      "kind": "synthetic_control",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.822,
+      "p95_ms": 0.874
+    },
+    {
+      "id": "glyph-latin-o-mutant",
+      "kind": "synthetic_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_confusable_identifier",
+        "lexical_support_weak"
+      ],
+      "median_ms": 0.899,
+      "p95_ms": 0.943
+    },
+    {
+      "id": "glyph-cyrillic-o-control",
+      "kind": "synthetic_control",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.9,
+      "p95_ms": 0.946
+    },
+    {
+      "id": "glyph-cyrillic-o-mutant",
+      "kind": "synthetic_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_confusable_identifier",
+        "lexical_support_weak"
+      ],
+      "median_ms": 0.923,
+      "p95_ms": 0.981
+    },
+    {
+      "id": "glyph-cyrillic-a-control",
+      "kind": "synthetic_control",
+      "expect_flag": false,
+      "packet_status": "packet_complete",
+      "category": "clear",
+      "issues": [],
+      "median_ms": 0.909,
+      "p95_ms": 0.96
+    },
+    {
+      "id": "glyph-cyrillic-a-mutant",
+      "kind": "synthetic_mutation",
+      "expect_flag": true,
+      "packet_status": "source_review_required",
+      "category": "caught",
+      "issues": [
+        "lexical_support_confusable_identifier",
+        "lexical_support_weak"
+      ],
+      "median_ms": 0.922,
+      "p95_ms": 0.982
+    }
+  ],
+  "limitations": [
+    "Small hand-labelled diagnostic set, not a random sample or production accuracy estimate.",
+    "Public-source snapshots and synthetic probes are labelled separately. No unpublished paper text.",
+    "Flags indicate review needed, not falsity. Lexical passes are not semantic entailment or truth.",
+    "Latency depends on machine, Python version, text length and source count; not a speed guarantee.",
+    "No LLM judge, model call or comparison against another product."
+  ],
+  "per_mutation_type": {
+    "sign_flip": {
+      "tp": 4,
+      "fn": 0,
+      "fp": 0,
+      "tn": 4,
+      "recall": 1.0,
+      "precision": 1.0
+    },
+    "bound_direction": {
+      "tp": 4,
+      "fn": 0,
+      "fp": 0,
+      "tn": 4,
+      "recall": 1.0,
+      "precision": 1.0
+    },
+    "digit_transposition": {
+      "tp": 4,
+      "fn": 0,
+      "fp": 0,
+      "tn": 4,
+      "recall": 1.0,
+      "precision": 1.0
+    },
+    "homoglyph": {
+      "tp": 4,
+      "fn": 0,
+      "fp": 0,
+      "tn": 4,
+      "recall": 1.0,
+      "precision": 1.0
+    }
+  },
+  "metric_scope": "Recall uses four altered claims per type. Precision uses flagged mutants and their four paired identical controls only; null means no positive predictions. Not production precision or general accuracy."
+}

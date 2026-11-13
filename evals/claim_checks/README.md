@@ -88,3 +88,31 @@ are intentionally easy exact matches; absence of false alarms here does not show
 paraphrase quality. The original 14-case set retains its paraphrase false positives.
 Use per-case issues and full-service timing from the JSON, not an aggregate marketing
 claim. This change extends the benchmark only; the verifier is unchanged.
+
+## After narrow bound/confusable rules (2026-11-13)
+
+The original reports above are retained unchanged as the before baseline at
+commit `4e87ae7`. [Mutation after report](mutation_results_after.json) and
+[14-case after report](results_after.json) use the identical frozen case hashes.
+Only the local Python evidence-packet checker and RAG adapter gained two narrow
+review diagnostics; the hosted JavaScript `review_answer` is unchanged.
+
+| Mutation | Before caught / 4 | After caught / 4 | Controls falsely flagged before / after |
+| --- | ---: | ---: | ---: |
+| Sign flip | 4 | 4 | 0 / 0 |
+| Bound direction | 0 | 4 | 0 / 0 |
+| Digit transposition | 4 | 4 | 0 / 0 |
+| Mixed-script homoglyph | 0 | 4 | 0 / 0 |
+
+Within this tiny synthetic set, recall is now 4/4 for each type and precision
+is 4/(4+0) for each type. This is targeted regression coverage, not a claim that
+all inequalities or confusables are handled. The 14-case public/synthetic set
+is unchanged: 6 caught, 2 semantic misses, 4 clear, 2 false positives. Its two
+paraphrase false positives were not fixed or dropped to improve this result.
+No claim of production accuracy, general hallucination prevention or speedup.
+
+The extra unit tests include unchanged mixed identifiers, ordinary bilingual
+prose, equivalent upper-bound wording, distinct currencies/numbers, unrelated
+entities, multiple clauses, and same-direction supplied sources. Those tests
+check the new diagnostic codes, not absence of every older lexical warning.
+A valid paraphrase may still require review under existing lexical rules.

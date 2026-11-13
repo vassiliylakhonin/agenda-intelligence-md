@@ -22,6 +22,8 @@ _RULES = {
     "lexical_support_polarity_mismatch": ("Claim and source disagree on negation", "warning"),
     "lexical_support_weak": ("Claim has weak lexical support", "warning"),
     "lexical_support_unsupported": ("Claim lacks lexical support", "warning"),
+    "lexical_support_bound_direction_mismatch": ("Claim and source bound directions differ", "warning"),
+    "lexical_support_confusable_identifier": ("Distinct Cyrillic/Latin confusable identifier spelling", "warning"),
     "unmatched_numbers": ("Claim contains unmatched numeric facts", "warning"),
 }
 
