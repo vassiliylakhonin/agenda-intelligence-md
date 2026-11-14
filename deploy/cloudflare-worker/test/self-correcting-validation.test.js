@@ -96,3 +96,47 @@ test('empty request lists each required field and the missing location', async (
   for (const key of sc.required_fields) assert.ok(sc.failed.some(f => f.field === '/' + key && f.code === 'required'), key);
   assert.match(sc.expected_location, /params\.arguments/);
 });
+
+test('A2A refusal without capability names the profile default paid tool and its required fields', async () => {
+  const r = await post('m2m_escrow_arbiter', '/message/send', { jsonrpc: '2.0', id: 1, method: 'SendMessage',
+    params: { message: { messageId: 'm', role: 'ROLE_USER', parts: [{ text: 'please arbitrate my escrow dispute' }] } } }, { ...payment, 'a2a-version': '1.0' });
+  assert.equal(r.status, 400);
+  assert.equal(r.data.validation.category, 'missing_structured_request');
+  const sc = r.data.self_correction;
+  assert.equal(sc.tool, 'm2m_escrow_arbitration_ruling');
+  assert.ok(sc.required_fields.includes('escrow_id') && sc.required_fields.includes('deal_terms'));
+  assert.ok(sc.failed.some(f => f.field === '/escrow_id' && f.code === 'required'));
+  assert.ok(sc.failed.some(f => f.field === '/deal_terms' && f.code === 'required'));
+  const again = await post('m2m_escrow_arbiter', '/message/send', sc.minimal_valid_example, { ...payment, 'a2a-version': '1.0' });
+  assert.notEqual(again.data?.code, 'invalid_paid_request');
+});
+
+test('oneOf-wrapped tool schemas still list required fields over MCP', async () => {
+  for (const [profile, tool, key] of [['m2m_escrow_arbiter', 'm2m_escrow_arbitration_ruling', 'escrow_id'], ['agent_financial_guard', 'agent_financial_pre_sign_check', 'run_id']]) {
+    const r = await post(profile, '/mcp', mcpCall(tool, {}), payment);
+    assert.equal(r.status, 400);
+    assert.equal(r.data.validation.category, 'missing_structured_request');
+    const sc = r.data.self_correction;
+    assert.ok(sc.required_fields.includes(key), `${tool} required_fields names ${key}`);
+    assert.ok(sc.failed.some(f => f.field === '/' + key && f.code === 'required'), key);
+  }
+});
+
+test('A2A envelope violations carry readable problems, not stringified objects', async () => {
+  const r = await post('m2m_escrow_arbiter', '/message/send', { jsonrpc: '2.0', id: 1, method: 'SendMessage',
+    params: { message: { messageId: 'm', role: 'ROLE_USER', parts: [] } } }, { ...payment, 'a2a-version': '1.0' });
+  assert.equal(r.status, 400);
+  assert.equal(r.data.validation.category, 'invalid_message');
+  const sc = r.data.self_correction;
+  assert.ok(sc.failed.length > 0);
+  assert.ok(sc.failed.every(f => f.problem && !f.problem.includes('[object Object]')));
+  assert.ok(sc.failed.some(f => f.field === '/message/parts'));
+});
+
+test('text-routing profiles keep the capability-less A2A hint generic', async () => {
+  const r = await post('agenda', '/message/send', { jsonrpc: '2.0', id: 1, method: 'SendMessage',
+    params: { message: { messageId: 'm', role: 'ROLE_USER', parts: [{ text: '' }] } } }, { ...payment, 'a2a-version': '1.0' });
+  assert.equal(r.status, 400);
+  assert.equal(r.data.code, 'invalid_paid_request');
+  assert.ok(!r.data.self_correction.tool);
+});

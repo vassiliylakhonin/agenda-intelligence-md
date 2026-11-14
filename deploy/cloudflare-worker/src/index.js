@@ -15615,6 +15615,19 @@ async function paidProtocolResponse(request, body, response) {
     {status:response.status, headers:response.headers});
 }
 
+// Required top-level fields of a published tool schema. Several gate schemas
+// put the flat request in a oneOf branch next to the legacy request wrapper,
+// so the required list lives on the branch, not the schema root.
+function toolInputRequiredFields(tool) {
+  const schema = tool?.inputSchema;
+  if (!schema || typeof schema !== 'object') return [];
+  if (Array.isArray(schema.required)) return schema.required;
+  for (const branch of [...(schema.oneOf || []), ...(schema.anyOf || [])]) {
+    if (Array.isArray(branch?.required)) return branch.required;
+  }
+  return [];
+}
+
 function paidRequestHint(request, body, profile, env) {
   const path = new URL(request.url).pathname;
   const route = DIRECT_V1_ROUTES[path] || (path.startsWith('/v1/evidence-packet/')
@@ -15630,7 +15643,7 @@ function paidRequestHint(request, body, profile, env) {
       instruction: 'Serialize a JSON object, list the published tools, then use the selected inputSchema. This discovery example performs no evaluation.' };
     const example = tool._meta['com.agenda/readiness'].example_arguments;
     return { transport: 'mcp', schema: tool.inputSchema,
-      required_fields: tool.inputSchema?.required || [],
+      required_fields: toolInputRequiredFields(tool),
       headers: { 'MCP-Protocol-Version': '2025-11-25' },
       ...(example !== null ? { example_request: { jsonrpc: '2.0', id: 'example', method: 'tools/call',
         params: { name: tool.name, arguments: example } } } : {}),
@@ -15644,10 +15657,17 @@ function paidRequestHint(request, body, profile, env) {
     if (named && namedExample) {
       const envelope = structuredClone(example.request);
       envelope.params = { capability: named.name, message: { ...envelope.params.message, parts: [{ data: namedExample, mediaType: 'application/json' }] } };
-      return { transport: 'a2a', capability: named.name, required_fields: named.inputSchema?.required || [], example_request: envelope, headers: example.headers, expected: example.expected,
+      return { transport: 'a2a', capability: named.name, required_fields: toolInputRequiredFields(named), example_request: envelope, headers: example.headers, expected: example.expected,
         instruction: 'Use the matching A2A version and the structured example for the named capability; replace illustrative values with supplied evidence. A valid unpaid request on a paid deployment returns HTTP 402 without evaluation.' };
     }
-    return { transport: 'a2a', example_request: example.request, headers: example.headers, expected: example.expected,
+    // A capability-less caller still gets the refusal bound to the profile's
+    // default paid tool and its required fields, when the card example is that
+    // tool's structured request. Text-routing profiles have no structured
+    // guide, so their hint stays generic.
+    const a2aGuide = GATE_REQUEST_GUIDES[profile] || (profile === 'market_entry_readiness' ? GATE_REQUEST_GUIDES.kazakhstan_market_entry_readiness : null);
+    const defaultTool = a2aGuide ? mcpToolsForProfile(profile)[0] : null;
+    return { transport: 'a2a', ...(defaultTool ? { capability: defaultTool.name, required_fields: toolInputRequiredFields(defaultTool) } : {}),
+      example_request: example.request, headers: example.headers, expected: example.expected,
       instruction: 'Use the matching A2A version and structured example; replace illustrative values with supplied evidence. A valid unpaid request on a paid deployment returns HTTP 402 without evaluation.' };
   }
   return guide ? { transport: 'rest', schema: route?.schema || guide.schema, required_fields: guide.required,
@@ -15681,6 +15701,14 @@ function selfCorrectionHint(request, body, profile, env, operation, hint) {
   if (Array.isArray(issues)) failed = issues.slice(0, 64).map(issue => ({ field: issue.field ?? null, problem: issue.problem, code: issue.code ?? null }));
   if (!failed.length) {
     for (const message of (operation.errors || []).slice(0, 64)) {
+      // Envelope validators report structured {field, description} objects;
+      // stringify those field by field instead of as "[object Object]".
+      if (message && typeof message === 'object') {
+        failed.push({ field: typeof message.field === 'string' ? '/' + message.field.replaceAll('.', '/') : null,
+          problem: String(message.description || message.problem || message.message || operation.validationCategory || 'Invalid request'),
+          code: operation.validationCategory || null });
+        continue;
+      }
       const text = String(message);
       const match = /^(?:Unexpected field: )?([A-Za-z_][\w.\[\]-]*)(?::| must| is| are| should)/u.exec(text);
       failed.push({ field: match && !/^(Supply|Missing|Request|Invalid|Unsupported)$/u.test(match[1]) ? '/' + match[1].replaceAll('.', '/') : null, problem: text, code: operation.validationCategory || null });
