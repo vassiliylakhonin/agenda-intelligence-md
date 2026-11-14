@@ -15282,13 +15282,13 @@ function directRouteHtml(endpoint, route, request, env) {
 <title>${title}</title>
 <style>
   :root {
-    --bg: #0f172a;
-    --card: #1e293b;
-    --border: #334155;
-    --text: #f8fafc;
-    --muted: #94a3b8;
-    --accent: #38bdf8;
-    --good: #34d399;
+    --bg: #f3f5f9;
+    --card: #ffffff;
+    --border: #dfe6ee;
+    --text: #17202b;
+    --muted: #536173;
+    --accent: #0284c7;
+    --good: #0d9668;
     --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
@@ -15315,32 +15315,32 @@ function directRouteHtml(endpoint, route, request, env) {
     background: var(--card); border: 1px solid var(--border);
     border-radius: 8px; padding: 20px; margin-bottom: 20px;
   }
-  h1 { font-size: 24px; margin: 0 0 8px; color: #fff; }
+  h1 { font-size: 24px; margin: 0 0 8px; color: var(--text); }
   h2 { font-size: 17px; margin: 0 0 12px; color: var(--accent); }
   p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
-  code { font-family: var(--font-mono); font-size: 13px; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; color: #e2e8f0; }
+  code { font-family: var(--font-mono); font-size: 13px; background: rgba(15,23,42,0.06); padding: 2px 6px; border-radius: 4px; color: #1f2937; }
   pre {
-    background: #0b1120; border: 1px solid var(--border); border-radius: 6px;
+    background: #f6f8fb; border: 1px solid var(--border); border-radius: 6px;
     padding: 14px; overflow-x: auto; font-family: var(--font-mono); font-size: 13px;
-    color: #e2e8f0; margin: 0 0 14px; line-height: 1.5;
+    color: #1f2937; margin: 0 0 14px; line-height: 1.5;
   }
   textarea {
-    width: 100%; height: 180px; background: #0b1120; border: 1px solid var(--border);
-    border-radius: 6px; color: #e2e8f0; font-family: var(--font-mono); font-size: 13px;
+    width: 100%; height: 180px; background: #ffffff; border: 1px solid var(--border);
+    border-radius: 6px; color: #1f2937; font-family: var(--font-mono); font-size: 13px;
     padding: 12px; resize: vertical; margin-bottom: 12px; outline: none;
   }
   textarea:focus { border-color: var(--accent); }
   button {
-    background: var(--accent); color: #0f172a; border: none; padding: 10px 20px;
+    background: var(--accent); color: #ffffff; border: none; padding: 10px 20px;
     border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;
     transition: opacity 0.15s;
   }
   button:hover { opacity: 0.9; }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
   #resultBox {
-    display: none; margin-top: 14px; background: #0b1120; border: 1px solid var(--border);
+    display: none; margin-top: 14px; background: #f6f8fb; border: 1px solid var(--border);
     border-radius: 6px; padding: 14px; font-family: var(--font-mono); font-size: 13px;
     white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow-y: auto;
   }

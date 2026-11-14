@@ -153,7 +153,7 @@ export function reviewDeltaHtml(previous, current, escape) {
 }
 
 export function taskChooserHtml(directory, escape) {
-  return '<section aria-label="Choose by task"><h2>What do you need to do?</h2>' +
+  return '<section aria-label="Choose by task" class="task-chooser"><h2>What do you need to do?</h2>' +
     ['Review agent work', 'Prepare a dossier', 'Choose a review'].map(group => '<h3>' + group + '</h3><ul>' +
       Object.entries(PRODUCT_WORKFLOWS).filter(([, work]) => work.group === group).map(([profile, work]) => {
         const gate = directory.gates.find(item => item.profile === profile);

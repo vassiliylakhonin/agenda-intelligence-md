@@ -178,22 +178,32 @@ function landingHtml(request, env, externalClient = false) {
 <link rel="ai-catalog" href="${origin}/.well-known/ai-catalog.json">
 <style>
   :root {
-    --fg: #1a1a1a; --muted: #4a4a4a; --line: #d8d8d8;
-    --bg: #fafafa; --card: #ffffff; --accent: #1e5b8c;
+    --fg: #17202b; --muted: #536173; --line: #dfe6ee;
+    --bg: #f3f5f9; --card: #ffffff; --accent: #1e5b8c; --accent-hover: #17496f; --accent-soft: #e9f1f7;
     --good: #1f7a3a; --warn: #8c5a1e;
     --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+    --radius: 10px;
+    --shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 2px 8px rgba(15, 23, 42, 0.04);
   }
   * { box-sizing: border-box; }
   input, select, textarea { min-width: 0; max-width: 100%; }
   .card, li, nav { overflow-wrap: anywhere; }
-  body { font-family: var(--sans); color: var(--fg); background: var(--bg); margin: 0; line-height: 1.55; }
-  main { max-width: 760px; margin: 0 auto; padding: 48px 24px 96px; }
-  h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.01em; }
+  body { font-family: var(--sans); color: var(--fg); background: var(--bg); margin: 0; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  .site-header { background: var(--card); border-bottom: 1px solid var(--line); }
+  .site-header-inner { max-width: 760px; margin: 0 auto; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; }
+  .site-brand { font-weight: 700; font-size: 15px; color: var(--fg); }
+  .site-brand:hover { color: var(--accent); text-decoration: none; }
+  .site-nav { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; }
+  .site-nav a { color: var(--muted); }
+  .site-nav a:hover { color: var(--accent); text-decoration: none; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 24px 96px; }
+  h1 { font-size: 30px; margin: 0 0 8px; letter-spacing: -0.02em; line-height: 1.2; }
   h2 { font-size: 16px; margin: 32px 0 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
   p { margin: 0 0 12px; }
-  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(30,91,140,0.3); }
-  a:hover { border-bottom-color: var(--accent); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 4px; }
   .tagline { color: var(--muted); font-size: 17px; margin: 0 0 24px; }
   .status-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 0 0 8px; }
   .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-family: var(--mono); border: 1px solid var(--line); background: var(--card); }
@@ -201,29 +211,42 @@ function landingHtml(request, env, externalClient = false) {
   .badge-live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--good); display: inline-block; }
   .access-summary { font-size: 14px; color: var(--muted); margin: -12px 0 20px; }
   details > summary { cursor: pointer; font-weight: 600; padding: 10px 0; }
+  main > details { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 2px 20px 12px; margin: 0 0 16px; }
   .primary-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 16px 0 24px; }
-  .primary-action { display: inline-flex; padding: 9px 14px; border-radius: 6px; border: 1px solid var(--accent); font-weight: 650; background: #fff; font: inherit; cursor: pointer; }
-  .primary-action-main { color: #fff; background: var(--accent); }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px 20px; margin: 0 0 16px; }
-  pre { background: #1a1a1a; color: #f0f0f0; padding: 16px; border-radius: 6px; overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.5; margin: 0; }
-  code { font-family: var(--mono); font-size: 13px; background: rgba(0,0,0,0.05); padding: 1px 5px; border-radius: 3px; }
+  .primary-action { display: inline-flex; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--accent); font-weight: 650; background: #fff; font: inherit; cursor: pointer; color: var(--accent); }
+  .primary-action:hover { background: var(--accent-soft); text-decoration: none; }
+  .primary-action-main { color: #fff; background: var(--accent); box-shadow: 0 1px 2px rgba(30, 91, 140, 0.35); }
+  .primary-action-main:hover { background: var(--accent-hover); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px 20px; margin: 0 0 16px; }
+  pre { background: #f6f8fb; color: #1f2937; border: 1px solid var(--line); padding: 16px; border-radius: 8px; overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.5; margin: 0; }
+  code { font-family: var(--mono); font-size: 13px; background: rgba(15, 23, 42, 0.06); padding: 1px 5px; border-radius: 4px; }
+  pre code { background: none; padding: 0; }
   ul { margin: 0; padding-left: 20px; }
   li { margin: 4px 0; }
+  .task-chooser ul { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+  .task-chooser li { margin: 0; }
+  .task-chooser li a { display: block; padding: 10px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); color: var(--fg); }
+  .task-chooser li a:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+  .task-chooser h3 { margin: 20px 0 8px; font-size: 14px; color: var(--muted); }
   .endpoints { font-family: var(--mono); font-size: 13px; }
   .endpoints li { margin: 6px 0; }
   .endpoints .label { color: var(--muted); display: inline-block; min-width: 140px; }
   footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
   footer p { margin: 0 0 6px; }
-#profile-intake fieldset { border:1px solid var(--line);border-radius:8px;padding:14px;margin:16px 0;min-width:0; }
+#profile-intake fieldset { border:1px solid var(--line);border-radius:8px;padding:14px;margin:16px 0;min-width:0;background:var(--card); }
 #profile-intake legend { font-weight:600;padding:0 6px; }
-#profile-intake input:not([type=checkbox]), #profile-intake textarea, #profile-intake select { padding:9px;border:1px solid var(--line);border-radius:6px;font:inherit;line-height:1.4; }
+#profile-intake input:not([type=checkbox]), #profile-intake textarea, #profile-intake select { padding:9px;border:1px solid var(--line);border-radius:6px;font:inherit;line-height:1.4;background:#fff; }
 #profile-intake label { font-size:14px;font-weight:600;margin:4px 0; }
 #profile-intake small { display:block;color:var(--muted); }
+button { padding:8px 12px;border:1px solid var(--line);border-radius:6px;cursor:pointer;margin:8px 4px 8px 0;background:#fff;font:inherit;color:var(--fg); }
+button:hover { border-color:var(--accent); }
 #profile-console button { padding:8px 12px;border:1px solid var(--line);border-radius:6px;cursor:pointer;margin:8px 4px 8px 0; }
-#profile-run { background:var(--accent);color:white; }
+#profile-run { background:var(--accent);color:#fff;border-color:var(--accent); }
+#profile-run:hover { background:var(--accent-hover); }
 </style>
 </head>
 <body>
+<header class="site-header"><div class="site-header-inner"><a class="site-brand" href="/">${escapeHtml(presentation[0].split(' | ', 1)[0])}</a><nav class="site-nav" aria-label="Site"><a href="https://agendamcp.dpdns.org/">All profiles</a><a href="${origin}/trust">Trust &amp; limitations</a><a href="${origin}/privacy">Privacy</a><a href="${origin}/terms">Terms</a></nav></div></header>
 <main>
   ${new URL(request.url).searchParams.get('owner_test') === '1' ? '<p role="status">Owner test mode: this page marks example and evaluation requests as self-declared operator traffic. Normal payment rules apply.</p>' : ''}
   <h1>${escapeHtml(presentation[0].split(' | ', 1)[0])}</h1>
@@ -294,12 +317,12 @@ function landingHtml(request, env, externalClient = false) {
 
   </details>
   ${isFinancialGuard && !freeTrial ? `
-  <div style="background: linear-gradient(135deg, #1e1e2f 0%, #0d1117 100%); border: 1px solid #30363d; border-radius: 8px; padding: 18px 20px; margin: 16px 0 24px; color: #f0f6fc;">
+  <div style="background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 20px; margin: 16px 0 24px; color: var(--fg);">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
       <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: #6366f1; color: #fff; padding: 3px 8px; border-radius: 4px;">Developer &amp; Agent Ecosystem</span>
-      <span style="font-size: 12px; color: #8b949e;">EVM and Solana input examples</span>
+      <span style="font-size: 12px; color: var(--muted);">EVM and Solana input examples</span>
     </div>
-    <p style="font-size: 13px; color: #c9d1d9; margin: 0 0 12px; line-height: 1.45;">
+    <p style="font-size: 13px; color: var(--muted); margin: 0 0 12px; line-height: 1.45;">
       Integration examples for pre-sign evidence review. Enforcement depends on the host wallet and its trusted policies.
     </p>
     <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
@@ -948,10 +971,10 @@ async function runFinancialGuardSimulation(e) {
       checksHtml +
       violationsHtml + reviewSummaryHtml(data, safeHtml) +
       '<div style="font-size:13px; color:var(--muted); margin-top:8px;"><strong>Execution Advisory:</strong> ' + safeHtml(v.execution_advisory) + '</div>' +
-      '<div style="margin-top:12px; background:#0f172a; padding:10px 14px; border-radius:6px; color:#e2e8f0; font-family:var(--mono); font-size:11px; line-height:1.6;">' +
-      '<div style="color:#94a3b8; font-weight:600; margin-bottom:4px; display:flex; justify-content:space-between; flex-wrap:wrap;"><span>🛡️ Zero-Boilerplate Mobile SDK Protect:</span><a href="https://www.npmjs.com/package/@agenda-intelligence/guard-mobile" target="_blank" style="color:#38bdf8; text-decoration:none;">npm i @agenda-intelligence/guard-mobile &rarr;</a></div>' +
-      '<code><span style="color:#f472b6;">import</span> { AgentFinancialGuardClient } <span style="color:#f472b6;">from</span> <span style="color:#a7f3d0;">"@agenda-intelligence/guard-mobile"</span>;<br/>' +
-      '<span style="color:#fbbf24;">await</span> guard.<span style="color:#60a5fa;">protect</span>(tx, () =&gt; wallet.<span style="color:#60a5fa;">sendTransaction</span>(tx));</code>' +
+      '<div style="margin-top:12px; background:#f6f8fb; border:1px solid var(--line); padding:10px 14px; border-radius:6px; color:#1f2937; font-family:var(--mono); font-size:11px; line-height:1.6;">' +
+      '<div style="color:#536173; font-weight:600; margin-bottom:4px; display:flex; justify-content:space-between; flex-wrap:wrap;"><span>🛡️ Zero-Boilerplate Mobile SDK Protect:</span><a href="https://www.npmjs.com/package/@agenda-intelligence/guard-mobile" target="_blank" style="color:#0284c7; text-decoration:none;">npm i @agenda-intelligence/guard-mobile &rarr;</a></div>' +
+      '<code><span style="color:#a21caf;">import</span> { AgentFinancialGuardClient } <span style="color:#a21caf;">from</span> <span style="color:#0d9668;">"@agenda-intelligence/guard-mobile"</span>;<br/>' +
+      '<span style="color:#b45309;">await</span> guard.<span style="color:#1d4ed8;">protect</span>(tx, () =&gt; wallet.<span style="color:#1d4ed8;">sendTransaction</span>(tx));</code>' +
       '</div>' +
       '<div style="margin-top:12px; padding-top:10px; border-top:1px solid ' + border + '; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">' +
       '<span style="font-size:12px; font-weight:600; color:var(--muted);">Pro Deployment:</span>' +
