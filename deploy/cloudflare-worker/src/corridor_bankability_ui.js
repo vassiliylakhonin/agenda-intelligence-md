@@ -542,7 +542,7 @@ ${PAYMENT_CLIENT_SCRIPT}
         var payload = getFormPayload();
         var resp = await fetch("/v1/corridor-bankability/screen", {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: agendaTelemetryHeaders("/v1/corridor-bankability/screen", { "content-type": "application/json" }),
           body: JSON.stringify(payload)
         });
         var data = await resp.json();
@@ -634,7 +634,7 @@ ${PAYMENT_CLIENT_SCRIPT}
 
         pendingDossierPayment = pendingDossierPayment || { txHash: txHash, payload: payload, signature: null };
         // Obtain and sign the server's exact-request challenge; retain proof on retry.
-        var options = { method: "POST", headers: { "content-type": "application/json", "x-payment-tx": txHash }, body: JSON.stringify(payload) };
+        var options = { method: "POST", headers: agendaTelemetryHeaders("/v1/corridor-bankability/screen", { "content-type": "application/json", "x-payment-tx": txHash }), body: JSON.stringify(payload) };
         agendaShowRecovery({ url: "${origin}/v1/corridor-bankability/screen", options: options, tx: txHash, payer: currentAccount, signature: pendingDossierPayment.signature });
         if (pendingDossierPayment.signature) options.headers["x-payment-signature"] = pendingDossierPayment.signature;
         var resp = await fetch("/v1/corridor-bankability/screen", options);
