@@ -84,7 +84,7 @@ runs:
 
     - name: Comment evidence summary on PR
       if: ${{ always() && inputs.pr-comment == 'true' && inputs.command == 'check' && steps.evidence_lint.outputs.exit_code != '' }}
-      uses: actions/github-script@v7
+      uses: actions/github-script@v9
       env:
         AGENDA_ACTION_PATH: ${{ github.action_path }}
       with:
