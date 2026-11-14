@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.registry_version != '' && github.sha || (github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || github.ref) }}
 
