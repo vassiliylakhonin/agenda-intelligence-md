@@ -14759,10 +14759,10 @@ function robotsTxt(request, env = {}) {
 }
 
 function sitemapXml(request, env) {
-  const origin = originFromRequest(request);
-  const paths = agentProfile(request, env) === 'agenda'
-    ? ['/', '/trust', '/privacy', '/terms', '/sample-dossier', '/supplier-desk', '/supplier-review', '/document-archive', '/archive-review']
-    : ['/'];
+  const origin = publicSiteOrigin(request, env);
+  // Every profile serves these shared public trust and evidence pages. Keep
+  // the product sitemap useful to search crawlers instead of listing only `/`.
+  const paths = ['/', '/trust', '/privacy', '/terms', '/sample-dossier', '/supplier-desk', '/supplier-review', '/document-archive', '/archive-review'];
   const urls = paths.map((path) => `  <url><loc>${origin}${path}</loc></url>`).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
 }

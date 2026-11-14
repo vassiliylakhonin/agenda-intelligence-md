@@ -82,9 +82,10 @@ test('every profile landing links its MCP setup and uses a search sitemap for pu
     assert.ok(page.includes(`href="${gate.example_url}"`));
     assert.ok(page.includes('href="#connect-mcp"'));
     const sitemap = await (await handleRequest(new Request(origin + '/sitemap.xml'), env)).text();
-    assert.ok(sitemap.includes(`<loc>${origin}/</loc>`));
+    const publicPaths = ['/', '/trust', '/privacy', '/terms', '/sample-dossier', '/supplier-desk', '/supplier-review', '/document-archive', '/archive-review'];
+    assert.equal(sitemap.match(/<loc>/g).length, publicPaths.length);
+    for (const path of publicPaths) assert.ok(sitemap.includes(`<loc>${origin}${path}</loc>`), `${gate.profile} sitemap should include ${path}`);
     assert.doesNotMatch(sitemap, /\.well-known|openapi\.json|llms\.txt/);
-    if (gate.profile !== 'agenda') assert.equal(sitemap.match(/<loc>/g).length, 1);
   }
   assert.equal(titles.size, fleet.gates.length);
   assert.ok(!titles.has(undefined));
