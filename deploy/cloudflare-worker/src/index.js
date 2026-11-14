@@ -14662,7 +14662,7 @@ function healthInfo(request, env) {
     message_send: `${origin}/message/send`,
     status: `${origin}/status`,
     stats: `${origin}/stats`,
-    stats_auth: "x-stats-token header or token query parameter",
+    stats_auth: "x-stats-token header",
     repository: REPOSITORY_URL,
     payments: false
   };

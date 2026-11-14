@@ -34,8 +34,15 @@ def fetch_stats(date_str: str, base_url: str = DEFAULT_BASE_URL) -> dict:
             file=sys.stderr,
         )
         return {}
-    url = f"{base_url}?token={STATS_TOKEN}&date={date_str}"
-    req = urllib.request.Request(url, headers={"User-Agent": "agenda-intelligence-telemetry/1.0"})
+    url = f"{base_url}?date={date_str}"
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "agenda-intelligence-telemetry/1.0",
+            # Header only: /stats no longer accepts ?token= in the URL.
+            "x-stats-token": STATS_TOKEN,
+        },
+    )
     try:
         with urllib.request.urlopen(req, timeout=10.0) as resp:
             return json.loads(resp.read().decode("utf-8"))

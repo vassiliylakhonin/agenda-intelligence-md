@@ -644,8 +644,9 @@ function dateKeyFromRequest(request) {
 }
 
 function statsTokenFromRequest(request) {
-  const url = new URL(request.url);
-  return request.headers.get("x-stats-token") || url.searchParams.get("token") || "";
+  // Header only. A query-parameter token ends up in browser history, proxy
+  // logs and copied URLs, so /stats stopped accepting one.
+  return request.headers.get("x-stats-token") || "";
 }
 
 function isStatsAuthorized(request, env) {

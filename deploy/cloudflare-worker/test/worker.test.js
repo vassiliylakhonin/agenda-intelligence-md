@@ -3748,7 +3748,9 @@ test("stats endpoint returns JSON for requested date", async () => {
   );
 
   const response = await handleRequest(
-    new Request("https://agenda-intelligence-a2a.example.workers.dev/stats?date=2026-05-22&token=test-token"),
+    new Request("https://agenda-intelligence-a2a.example.workers.dev/stats?date=2026-05-22", {
+      headers: { "x-stats-token": "test-token" }
+    }),
     env
   );
   const body = await response.json();
@@ -3765,7 +3767,7 @@ test("stats endpoint requires token", async () => {
 
   assert.equal(
     isStatsAuthorized(new Request("https://agenda-intelligence-a2a.example.workers.dev/stats?token=test-token"), env),
-    true
+    false
   );
   assert.equal(
     isStatsAuthorized(
