@@ -35,7 +35,7 @@
     "esbuild": "0.28.1",
     "fflate": "0.8.3",
     "pdf-lib": "1.17.1",
-    "pdfjs-dist": "6.4.299",
+    "pdfjs-dist": "6.5.438",
     "saxes": "6.0.0",
     "viem": "2.57.7"
   }
