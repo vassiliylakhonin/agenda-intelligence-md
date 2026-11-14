@@ -162,7 +162,7 @@ jobs:
           test "$GITHUB_REF" = "refs/heads/main"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain)"
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         if: matrix.env == 'cis-secondary-sanctions'
         with:
           python-version: '3.12'
