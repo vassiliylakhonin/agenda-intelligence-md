@@ -31,7 +31,7 @@ Documentation = "https://github.com/vassiliylakhonin/agenda-intelligence-md/tree
 
 [project.optional-dependencies]
 reviews = ["cryptography>=43", "rfc8785>=0.1.4"]
-mcp-check = ["mcp==1.30.0; python_version >= '3.10'"]
+mcp-check = ["mcp==2.3.0; python_version >= '3.10'"]
 dev = [
     "cryptography>=43",
     "rfc8785>=0.1.4",
