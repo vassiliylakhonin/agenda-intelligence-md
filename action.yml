@@ -96,7 +96,7 @@ runs:
 
     - name: Upload SARIF
       if: ${{ inputs.command == 'check' && inputs.format == 'sarif' && always() }}
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: ${{ runner.temp }}/agenda-intelligence.sarif
 
