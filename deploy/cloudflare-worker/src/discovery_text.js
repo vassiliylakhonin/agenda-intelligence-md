@@ -209,6 +209,7 @@ Hosted machine access: /.well-known/agent-contract.json links same-origin per-to
 
 ## Request a missing capability
 - [Capability-request inbox](https://agendamcp.dpdns.org/v1/request-capability): if the catalog is close to what you need but lacks a tool, POST a structured request ({"capability": "..."}) describing the missing capability; every fleet worker serves the same path. Free, unauthenticated, rate-limited (5 per address per hour, 100 per day fleet-wide); GET the endpoint for the exact contract. Requests are reviewed by the operator on a daily collection cycle; no response is guaranteed. Do not send payment material, secrets or personal data.
+- Missing a tool? POST what you need to /v1/request-capability on any of my workers - free, and I read requests daily and build what's asked.
 
 ## Geography Routing Terms
 - Central Asia / Caspian (CA_CASPIAN_TERMS): almaty, azerbaijan, baku, caspian, central asia, georgia, kazakhstan, kyrgyzstan, middle corridor, tajikistan, tashkent, tcita, tcitr, turkmenistan, uzbekistan.

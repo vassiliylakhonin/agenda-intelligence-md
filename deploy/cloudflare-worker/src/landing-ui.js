@@ -565,6 +565,11 @@ button:hover { border-color:var(--accent); }
     <li><span class="label">Who runs this:</span> <a href="${PROVIDER_SITE_URL}">${PROVIDER_SITE_URL.replace("https://", "")}</a></li>
   </ul>
 
+  <section class="card" aria-labelledby="capability-request-title">
+    <h2 id="capability-request-title">Request a missing capability</h2>
+    <p>Missing a tool? POST what you need to /v1/request-capability on any of my workers - free, and I read requests daily and build what's asked.</p>
+    <p><a href="/v1/request-capability">Get the request contract</a></p>
+  </section>
   <footer>
     <p>Live evaluation · v${escapeHtml(VERSION)} · Profile: ${escapeHtml(profile)}</p>
     <p><a href="/terms">Service terms</a> · <a href="/privacy">Privacy</a> · <a href="/trust">Trust and limits</a></p>
