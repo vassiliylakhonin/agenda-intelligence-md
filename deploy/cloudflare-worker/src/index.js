@@ -747,6 +747,37 @@ function originFromRequest(request) {
   return `${url.protocol}//${url.host}`;
 }
 
+function freeTrialRequestExample(profile, origin) {
+  const trial = trialProfile(profile);
+  if (!trial || !WORKED_EXAMPLES[profile]) return null;
+  return {
+    tool: trial.tool,
+    method: "POST",
+    endpoint: `${origin}${trialPath(profile)}`,
+    content_type: "application/json",
+    request_body: workerTrialAdapter(profile).example,
+    schema_url: `${origin}${trialPath(profile)}`,
+    example_is_synthetic: true,
+    instruction: "This synthetic sample passes the published input schema. Replace fictional values with your own authorized evidence; use dated source material where required. Schema validity does not verify facts or authorize action, and results may flag evidence gaps. Configured access, trial limits and human review still apply."
+  };
+}
+
+function llmsTextForProfile(profile, origin) {
+  const example = freeTrialRequestExample(profile, origin);
+  if (!example) return LLMS_TXT;
+  const profileName = profileDiscovery(profile).canonical_product_name;
+  const section = [
+    "## Minimal free-trial request example",
+    `Profile: ${profileName} (${profile}). Tool: ${example.tool}.`,
+    `Send this JSON body to POST ${example.endpoint} with Content-Type: application/json. GET the same endpoint for its input schema.`,
+    "This synthetic sample passes the published input schema, but it is not evidence. Replace fictional values with your own authorized evidence; use dated source material where required. A valid input shape does not verify facts or authorize action, and results may flag evidence gaps. Configured access, trial limits and human review still apply.",
+    "```json",
+    JSON.stringify(example.request_body, null, 2),
+    "```"
+  ].join("\n\n");
+  return LLMS_TXT.replace("## Connect an agent", `${section}\n\n## Connect an agent`);
+}
+
 function didIdentifierFromOrigin(origin) {
   return `did:web:${new URL(origin).host}`;
 }
@@ -1338,6 +1369,7 @@ function agentCard(request, env = {}) {
   shaped.x_agenda_intelligence.service_limits = REMEDIATION_PROFILES[profile]?.service_limits||[];
   shaped.x_agenda_intelligence.diagnostics = {field:"remediation",contract_version:"worker-remediation.v1",input_preflight:"/v1/validate-input",network_reset_policy:"campaign_no_scheduled_reset"};
   if (trial) {
+    shaped.x_agenda_intelligence.free_trial_request_example = freeTrialRequestExample(profile, origin);
     shaped.x_agenda_intelligence.a2a_free_trial = a2aTrialDiscovery(workerTrialAdapter(profile).example);
     shaped.capabilities = {...shaped.capabilities,extensions:[...(shaped.capabilities?.extensions || []),
       {uri:A2A_TRIAL_URI,description:'Opt-in free evaluation or allowance status through message metadata; HTTP/MCP/A2A share one allowance.',required:false,
@@ -16578,7 +16610,7 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
   }
 
   if (request.method === "GET" && (url.pathname === "/llms.txt" || url.pathname === "/.well-known/llms.txt")) {
-    return new Response(LLMS_TXT, {
+    return new Response(llmsTextForProfile(agentProfile(request, env), originFromRequest(request)), {
       status: 200,
       headers: {
         "content-type": "text/plain; charset=utf-8",
