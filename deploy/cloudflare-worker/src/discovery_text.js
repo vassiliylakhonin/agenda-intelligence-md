@@ -207,6 +207,9 @@ Hosted machine access: /.well-known/agent-contract.json links same-origin per-to
 - Public profiles are crawlable, claim-addressable evidence packets: source IDs, buyer questions, project claims, missing evidence, owner actions, and readiness decisions.
 - Success is buyer behavior: redacted file, second profile request, paid concierge review interest, budget-owner intro, or concrete workflow correction.
 
+## Request a missing capability
+- [Capability-request inbox](https://agendamcp.dpdns.org/v1/request-capability): if the catalog is close to what you need but lacks a tool, POST a structured request ({"capability": "..."}) describing the missing capability; every fleet worker serves the same path. Free, unauthenticated, rate-limited (5 per address per hour, 100 per day fleet-wide); GET the endpoint for the exact contract. Requests are reviewed by the operator on a daily collection cycle; no response is guaranteed. Do not send payment material, secrets or personal data.
+
 ## Geography Routing Terms
 - Central Asia / Caspian (CA_CASPIAN_TERMS): almaty, azerbaijan, baku, caspian, central asia, georgia, kazakhstan, kyrgyzstan, middle corridor, tajikistan, tashkent, tcita, tcitr, turkmenistan, uzbekistan.
 - Gulf / Middle East (GULF_ME_TERMS): arabian gulf, bab el mandeb, bab-el-mandeb, bahrain, gcc, gulf, hormuz, iran, iraq, ksa, kuwait, levant, middle east, oman, persian gulf, qatar, red sea, saudi arabia, strait of hormuz, uae, united arab emirates, yemen.

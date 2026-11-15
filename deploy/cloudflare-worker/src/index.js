@@ -235,6 +235,11 @@ const AGENSTRY_VERIFICATION_PATHS = new Set([
   "/agenstry-verification.txt"
 ]);
 const CIS_REVIEW_INTAKE_PATH = "/intake/cis-review";
+const CAPABILITY_REQUEST_PATH = "/v1/request-capability";
+const CAPABILITY_REQUEST_MAX_BYTES = 8 * 1024;
+const CAPABILITY_REQUEST_RETENTION_SECONDS = 90 * 24 * 60 * 60;
+const CAPABILITY_REQUEST_RATE_LIMIT_PER_HOUR = 5;
+const CAPABILITY_REQUEST_DAILY_LIMIT = 100;
 // The intake form used to be hosted off-Worker and its origin was allow-listed
 // here. That host was never published, so no browser can present it; only local
 // development origins remain. Add a real origin here when a form is hosted again.
@@ -1218,6 +1223,16 @@ function agentCard(request, env = {}) {
           "Use a stable non-personal integration label so aggregate stats can group repeat calls; do not send a person's name, email, token, or secret."
       },
       fleet_directory: `${origin}/.well-known/fleet.json`,
+      capability_request: {
+        endpoint: `${origin}${CAPABILITY_REQUEST_PATH}`,
+        method: "POST",
+        price: "free",
+        authentication: "none",
+        summary:
+          "Missing a capability this deployment does not offer? Leave a structured request describing what you need. " +
+          "Free, unauthenticated and rate-limited; GET the endpoint for the exact contract. " +
+          "Requests are reviewed by the operator on a daily collection cycle; no response is guaranteed."
+      },
       ai_catalog: `${origin}/.well-known/ai-catalog.json`,
       oauth_protected_resource: `${origin}/.well-known/oauth-protected-resource`,
       repository: REPOSITORY_URL,
@@ -2133,6 +2148,52 @@ function openApiDocument(request, env = {}) {
               description: "Health information.",
               content: { "application/json": { schema: { $ref: "#/components/schemas/HealthInfo" } } }
             }
+          }
+        }
+      },
+      "/v1/request-capability": {
+        get: {
+          tags: ["discovery"],
+          summary: "Capability-request contract",
+          description: "Returns the exact request contract for leaving a structured capability request with this deployment. Free and unauthenticated.",
+          responses: {
+            200: {
+              description: "Capability-request contract, limits and example.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        },
+        post: {
+          tags: ["discovery"],
+          summary: "Request a missing capability",
+          description: "Leave a structured request for a capability this deployment does not yet offer. Free, unauthenticated, rate-limited (5 per address per hour, 100 per day fleet-wide). Reviewed by the operator on a daily collection cycle; no response is guaranteed. Payment headers are rejected.",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["capability"],
+                  properties: {
+                    capability: { type: "string", minLength: 3, maxLength: 2000 },
+                    details: { type: "string", maxLength: 4000 },
+                    callback_url: { type: "string", maxLength: 500, description: "Optional HTTPS webhook." },
+                    contact: { type: "string", maxLength: 254 },
+                    agent: { type: "string", maxLength: 200 }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: { description: "Validated owner-verification traffic; never stored." },
+            201: { description: "Request stored for operator review.", content: { "application/json": { schema: { type: "object", additionalProperties: true } } } },
+            202: { description: "Accepted without storage (honeypot)." },
+            400: { description: "Invalid JSON or payment headers present." },
+            413: { description: "Request exceeds the 8 KiB body limit." },
+            422: { description: "Validation failed; fields lists the problems." },
+            429: { description: "Rate limit exceeded.", headers: { "Retry-After": { schema: { type: "integer" } } } },
+            503: { description: "Request storage unavailable." }
           }
         }
       },
@@ -11887,6 +11948,7 @@ const {
   logArchiveFeedback,
   logPaymentEvent,
   callerHash,
+  callerKind,
   callOutcome,
   dateKeyFromRequest,
   isStatsAuthorized,
@@ -14394,6 +14456,7 @@ async function handleStats(request, env) {
 
   const stats = await usageStats(env, date);
   stats.trial_completions = await trialCompletionStats(env, date);
+  stats.capability_requests = await capabilityRequestsForDate(env, date);
   return jsonResponse(stats, stats.configured ? 200 : 503);
 }
 
@@ -14622,6 +14685,233 @@ async function handleCisReviewIntakeList(request, env) {
     .filter(Boolean)
     .sort((left, right) => right.submitted_at.localeCompare(left.submitted_at));
   return jsonResponse({ count: records.length, records }, 200, headers);
+}
+
+// Free, unauthenticated capability-request inbox. Discovering agent runtimes
+// often find a catalog close to what they need but have no way to say what is
+// missing; this endpoint lets them leave a structured request the operator
+// reviews on the daily telemetry collection cycle. It is deliberately cheap
+// to ignore: no payment, no auth, small body, per-address and daily caps, and
+// owner verification traffic (owner_test=1 / X-Client-Id agenda-owner-* or
+// instinct-owner-*) is validated but never stored, so it cannot pollute the
+// operator's request list.
+function capabilityRequestContract(origin) {
+  return {
+    endpoint: `${origin}${CAPABILITY_REQUEST_PATH}`,
+    method: "POST",
+    price: "free",
+    authentication: "none",
+    description:
+      "Leave a structured request for a capability this deployment does not yet offer. " +
+      "The operator reviews requests on a daily collection cycle and may build or expose the requested capability. " +
+      "No response is guaranteed; a callback_url is used only if the operator chooses to respond.",
+    request_body: {
+      type: "object",
+      required: ["capability"],
+      properties: {
+        capability: { type: "string", minLength: 3, maxLength: 2000, description: "What you need: the missing capability, tool, check, data or integration." },
+        details: { type: "string", maxLength: 4000, description: "Optional context: constraints, expected inputs/outputs, volume or deadline." },
+        callback_url: { type: "string", maxLength: 500, description: "Optional HTTPS webhook the operator may POST to if this capability becomes available." },
+        contact: { type: "string", maxLength: 254, description: "Optional free-form contact (email or handle). Do not send secrets." },
+        agent: { type: "string", maxLength: 200, description: "Optional self-declared agent or runtime name." }
+      },
+      additionalProperties: true
+    },
+    example_request: {
+      capability: "Batch variant of the corridor sanctions screen accepting up to 50 counterparties per call.",
+      details: "The single-entity screen works; a batch mode is needed for nightly portfolio sweeps.",
+      callback_url: "https://agent.example.com/hooks/agenda-capability",
+      agent: "example-runtime/1.0"
+    },
+    limits: {
+      requests_per_hour_per_address: CAPABILITY_REQUEST_RATE_LIMIT_PER_HOUR,
+      requests_per_day_fleet: CAPABILITY_REQUEST_DAILY_LIMIT,
+      max_body_bytes: CAPABILITY_REQUEST_MAX_BYTES,
+      retention_days: 90
+    },
+    privacy:
+      "Stored with the receiving worker profile, your user-agent and a caller classification in the operator's private telemetry vault. " +
+      "Do not include personal data, secrets or payment material. Payment headers are rejected."
+  };
+}
+
+async function checkCapabilityRequestRateLimit(request, env) {
+  const kv = env?.AGENDA_USAGE;
+  if (!kv) return { limited: false };
+  try {
+    const day = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+    const dayKey = `rate:capability-request:day:${day}`;
+    const daily = Number.parseInt((await kv.get(dayKey)) || "0", 10) || 0;
+    if (daily >= CAPABILITY_REQUEST_DAILY_LIMIT) {
+      const midnight = new Date();
+      midnight.setUTCHours(24, 0, 0, 0);
+      return { limited: true, reason: "daily_fleet_cap", retryAfter: Math.max(60, Math.ceil((midnight - Date.now()) / 1000)) };
+    }
+    const ip = clientIpFromRequest(request);
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip));
+    const token = [...new Uint8Array(digest)]
+      .slice(0, 12)
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+    const hour = new Date().toISOString().slice(0, 13);
+    const hourKey = `rate:capability-request:${token}:${hour}`;
+    const current = Number.parseInt((await kv.get(hourKey)) || "0", 10) || 0;
+    if (current >= CAPABILITY_REQUEST_RATE_LIMIT_PER_HOUR) {
+      return { limited: true, reason: "hourly_address_limit", retryAfter: 3600 };
+    }
+    await kv.put(hourKey, String(current + 1), { expirationTtl: 7200 });
+    await kv.put(dayKey, String(daily + 1), { expirationTtl: 172800 });
+    return { limited: false };
+  } catch (_error) {
+    return { limited: false };
+  }
+}
+
+async function handleCapabilityRequest(request, env, ctx) {
+  const headers = { "cache-control": "no-store" };
+  if (request.method === "GET") {
+    return jsonResponse(capabilityRequestContract(originFromRequest(request)), 200, headers);
+  }
+  if (request.method !== "POST") {
+    return jsonResponse({ error: "Use GET or POST." }, 405, { allow: "GET, POST, OPTIONS", ...headers });
+  }
+  if (["x-payment-tx", "x-payment-signature", "payment-signature", "x-payment"].some((name) => request.headers.has(name))) {
+    return jsonResponse(
+      { code: "payment_not_applicable", error: "Capability requests are free; do not send payment material." },
+      400,
+      headers
+    );
+  }
+  const contentLength = Number(request.headers.get("content-length") || 0);
+  if (contentLength > CAPABILITY_REQUEST_MAX_BYTES) {
+    return jsonResponse({ code: "capability_request_too_large", error: "Request is too large" }, 413, headers);
+  }
+  let payload;
+  try {
+    payload = await readBoundedJson(request, CAPABILITY_REQUEST_MAX_BYTES);
+  } catch (error) {
+    const status = error.status === 413 ? 413 : 400;
+    return jsonResponse(
+      { code: status === 413 ? "capability_request_too_large" : "invalid_capability_request_json", error: "Request must be a valid JSON object" },
+      status,
+      headers
+    );
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return jsonResponse({ code: "invalid_capability_request", error: "Request must be a JSON object" }, 400, headers);
+  }
+  const requestId = crypto.randomUUID();
+  if (normalizedIntakeText(payload.website, 200)) {
+    return jsonResponse({ received: true, request_id: requestId }, 202, headers);
+  }
+  const errors = [];
+  const capability = normalizedIntakeText(payload.capability, 2000);
+  if (payload.capability !== undefined && typeof payload.capability !== "string") errors.push("capability must be a string");
+  if (capability.length < 3) errors.push("capability is required (3-2000 characters)");
+  for (const [field, max] of [["details", 4000], ["contact", 254], ["agent", 200], ["callback_url", 500]]) {
+    if (payload[field] !== undefined && typeof payload[field] !== "string") errors.push(`${field} must be a string of at most ${max} characters`);
+  }
+  const details = normalizedIntakeText(payload.details, 4000);
+  const contact = normalizedIntakeText(payload.contact, 254);
+  const agent = normalizedIntakeText(payload.agent, 200);
+  const callbackUrl = normalizedIntakeText(payload.callback_url, 500);
+  if (callbackUrl) {
+    let valid = false;
+    try {
+      valid = new URL(callbackUrl).protocol === "https:";
+    } catch (_error) {
+      valid = false;
+    }
+    if (!valid) errors.push("callback_url must be an https URL");
+  }
+  if (errors.length) {
+    return jsonResponse({ code: "invalid_capability_request", error: "Invalid capability request", fields: errors }, 422, headers);
+  }
+  const kind = callerKind(request);
+  if (kind === "owner_synthetic") {
+    return jsonResponse(
+      { received: true, stored: false, classification: "owner_synthetic", note: "Owner verification traffic is validated but never stored or counted." },
+      200,
+      headers
+    );
+  }
+  if (!env.AGENDA_USAGE || typeof env.AGENDA_USAGE.put !== "function") {
+    return jsonResponse({ code: "capability_request_storage_unavailable", error: "Request storage is unavailable" }, 503, headers);
+  }
+  const rate = await checkCapabilityRequestRateLimit(request, env);
+  if (rate.limited) {
+    return jsonResponse(
+      { code: "capability_request_rate_limited", error: "Too many capability requests. Try again later.", limit_reason: rate.reason },
+      429,
+      { "retry-after": String(rate.retryAfter), ...headers }
+    );
+  }
+  const receivedAt = new Date().toISOString();
+  const retentionUntil = new Date(Date.now() + CAPABILITY_REQUEST_RETENTION_SECONDS * 1000).toISOString();
+  const dayKey = receivedAt.slice(0, 10).replaceAll("-", "");
+  const record = {
+    schema_version: "1.0",
+    request_id: requestId,
+    received_at: receivedAt,
+    retention_until: retentionUntil,
+    profile: agentProfile(request, env),
+    capability,
+    details: details || null,
+    callback_url: callbackUrl || null,
+    contact: contact || null,
+    agent: agent || null,
+    user_agent: (request.headers.get("user-agent") || "").slice(0, 300) || null,
+    caller_kind: kind,
+    country: request.cf?.country || null
+  };
+  await env.AGENDA_USAGE.put(`capability-request:${dayKey}:${requestId}`, JSON.stringify(record), {
+    expirationTtl: CAPABILITY_REQUEST_RETENTION_SECONDS
+  });
+  try {
+    await logFunnelEvent(request, "capability_request", env);
+  } catch (_error) {
+    // Observability must never block intake.
+  }
+  return jsonResponse(
+    {
+      received: true,
+      request_id: requestId,
+      stored: true,
+      retention_until: retentionUntil,
+      review: "Requests are reviewed by the operator on a daily collection cycle. No response is guaranteed."
+    },
+    201,
+    headers
+  );
+}
+
+async function capabilityRequestsForDate(env, date) {
+  const kv = env?.AGENDA_USAGE;
+  if (!kv || typeof kv.list !== "function") {
+    return { contract_version: 1, status: "unavailable", count: 0, records: [] };
+  }
+  try {
+    const dayKey = date.replaceAll("-", "");
+    const listed = await kv.list({ prefix: `capability-request:${dayKey}:`, limit: 1000 });
+    const records = (
+      await Promise.all(
+        listed.keys.map(async ({ name }) => {
+          const value = await kv.get(name);
+          if (!value) return null;
+          try {
+            return JSON.parse(value);
+          } catch (_error) {
+            return null;
+          }
+        })
+      )
+    )
+      .filter(Boolean)
+      .sort((left, right) => String(left.received_at).localeCompare(String(right.received_at)));
+    return { contract_version: 1, status: "complete", count: records.length, records };
+  } catch (_error) {
+    return { contract_version: 1, status: "error", count: 0, records: [] };
+  }
 }
 
 function healthInfo(request, env) {
@@ -16237,6 +16527,10 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
     return handleCisReviewIntakeList(request, env);
   }
 
+  if (url.pathname === CAPABILITY_REQUEST_PATH && ["GET", "POST"].includes(request.method)) {
+    return handleCapabilityRequest(request, env, ctx);
+  }
+
   if (request.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
@@ -16906,6 +17200,10 @@ export {
   funnelStepForPath,
   handleCisReviewIntake,
   handleCisReviewIntakeList,
+  handleCapabilityRequest,
+  capabilityRequestsForDate,
+  capabilityRequestContract,
+  CAPABILITY_REQUEST_PATH,
   DIRECT_V1_ROUTES,
   directRouteHtml,
   directRouteJson,
