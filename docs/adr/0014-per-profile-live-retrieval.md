@@ -5,7 +5,7 @@ Date: 2026-05-26
 
 ## Context
 
-Until v1.0.1, all surfaces of the runtime (MCP server, HTTP API, A2A adapter, Cloudflare Worker) declared the boundary `live_retrieval: false`. The `analyze` MCP tool and every vertical worker accepted only user-supplied sources via the `dated_sources` or `evidence_mode: user_provided` paths. This was a deliberate positioning choice (see [AGENTS.md](../../AGENTS.md) "It is NOT a live source retrieval engine") and reduced the surface area for adversarial inputs.
+Until v1.0.1, all surfaces of the runtime (MCP server, HTTP API, A2A adapter, Cloudflare Worker) declared the boundary `live_retrieval: false`. The `analyze` MCP tool and every vertical worker accepted only user-supplied sources via the `dated_sources` or `evidence_mode: user_provided` paths. This was a deliberate positioning choice (as described by the project's then-current boundary) and reduced the surface area for adversarial inputs.
 
 A gap analysis of the Agenstry agent marketplace (71,664 agents indexed 2026-05-26) identified **secondary-sanctions exposure scoring for CIS-domiciled counterparties** as an underserved niche (0 agents covering OFAC EO 14114 / EU 14th package / UK OFSI specifically for Kazakhstan, Uzbekistan, Georgia, etc. counterparties). To deliver a non-trivial product in this niche, the runtime needs to consult a canonical, regularly-updated sanctions dataset rather than ask the caller to attach SDN list extracts manually.
 
@@ -60,7 +60,7 @@ The first profile under this decision is `cis_secondary_sanctions`, which querie
 ## References
 
 - [SOURCE_POLICY.md](../../SOURCE_POLICY.md) — updated to declare the per-profile whitelist and attribution / degrade requirements.
-- [AGENTS.md](../../AGENTS.md) — "Honesty rules" section continues to forbid claims of live retrieval beyond what is actually implemented; this ADR documents the implementation.
+- Historical project honesty guidance required live-retrieval claims to match the implementation; this ADR documents the implementation.
 - OpenSanctions API: https://api.opensanctions.org
 - OpenSanctions data license: CC-BY 4.0 (https://www.opensanctions.org/licensing/).
 

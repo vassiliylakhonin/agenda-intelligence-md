@@ -5,7 +5,6 @@ What this toolkit **does** and **does not** catch when used to validate, score, 
 This document is honest about the gap between structural validation (what `validate-brief`, `validate-evidence`, and `score` actually check) and the broader trust questions a downstream reader cares about. It is not a security threat model in the InfoSec sense; it is an analytical-trust threat model for the validator surface.
 
 Companion to:
-- [`AGENTS.md`](../AGENTS.md) — project rules and retrieved-content trust
 - [`evals/human_checklist.md`](../evals/human_checklist.md) — manual reviewer pass
 - [`evals/rubric.md`](../evals/rubric.md) — scoring rubric
 - [`SOURCE_POLICY.md`](../SOURCE_POLICY.md) — source-tiering rules
@@ -75,7 +74,7 @@ This memo-first ordering is also the measured-performance ordering: format-const
 
 ### 7. Prompt-injection inside processed content
 
-`AGENTS.md` declares the retrieved-content trust rule for agents using the toolkit, but the validators themselves do not detect prompt-injection material embedded in evidence-pack `excerpt` fields, `notes` fields, or in the brief's body text. A brief that has absorbed an injected directive (e.g., dropped caveats, inverted a conclusion) can still pass structural validation.
+The toolkit docs advise treating retrieved content as untrusted data, but the validators themselves do not detect prompt-injection material embedded in evidence-pack `excerpt` fields, `notes` fields, or in the brief's body text. A brief that has absorbed an injected directive (e.g., dropped caveats, inverted a conclusion) can still pass structural validation.
 
 Mitigation: enforce the trust rule at the consuming-agent layer; surface suspected injections in the brief's `data_integrity_notes` field when the analyst or agent notices them.
 

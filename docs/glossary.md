@@ -6,7 +6,7 @@ This file is the single source of truth. The three sibling repos do not maintain
 
 ## How to use this file
 
-Most terms have a dedicated `##` section in the relevant `AGENTS.md`. For those, this file is an index: a one-line description plus a direct anchor link to the canonical definition. A handful of terms that are used across the portfolio but are not surfaced as their own `##` section get a short definition here.
+Some terms have a dedicated section in a relevant portfolio document. For those, this file is an index: a one-line description plus a direct link to the canonical definition. A handful of terms that are used across the portfolio get a short definition here.
 
 If a term you need is missing, open an issue against [agenda-intelligence-md](https://github.com/vassiliylakhonin/agenda-intelligence-md/issues) rather than redefining it locally — that's how the glossary stays the single source of truth.
 
@@ -21,7 +21,7 @@ Every example memo in the portfolio must declare one of four evidence modes at t
 - **`illustrative source packet`** — the memo demonstrates structure using a fabricated but clearly labeled source set. Not a claim of factual accuracy.
 - **`reasoning-only`** — no sources used. Reasoning-from-context only.
 
-Authoritative reference: `## Evidence rules` in each skill repo's `AGENTS.md`.
+Authoritative references: each skill repo's current skill documentation.
 
 ### Per-claim uncertainty labels (Verified / Plausible / Judgment / Unknown)
 
@@ -40,7 +40,7 @@ The rule that per-claim provenance tags (Axis A/B) must persist inside markdown 
 
 Common failure: a tag gets dropped or mutated under layout pressure ("`[primary]`" disappears from a cell because the column is narrow). This is treated as a regression, not a formatting choice. A bulk-attribution footnote ("all cells: `[analyst-judgment]`") is not a substitute. A dedicated "Provenance" column is acceptable if it improves readability.
 
-Authoritative reference: end of `## Per-claim provenance tags` in CA-Caspian and Gulf+ME `AGENTS.md`. Tracked as a known canon-failure mode in [`evals/failure-modes.md`](https://github.com/vassiliylakhonin/global-think-tank-analyst/blob/main/evals/failure-modes.md) in the Global Think Tank Analyst repo.
+Authoritative reference: the CA-Caspian and Gulf+ME skill documentation. Tracked as a known canon-failure mode in [`evals/failure-modes.md`](https://github.com/vassiliylakhonin/global-think-tank-analyst/blob/main/evals/failure-modes.md) in the Global Think Tank Analyst repo.
 
 ### Attribution / citation / quotation — mapping to the external literature
 
@@ -58,18 +58,18 @@ On timing, the toolkit is **post-hoc** and **in-context** in the survey's scheme
 
 ## Terms that have their own `##` section — index
 
-For these, click through to the canonical definition. Where a term exists in more than one repo's `AGENTS.md`, the linked one is the most fully developed.
+For these, click through to the canonical definition. Where a term exists in more than one repo, the linked source is the most fully developed.
 
 | Term | Canonical location |
 |---|---|
 | Per-claim provenance tags (Axis A, Axis B) | [CA-Caspian `AGENTS.md` § Per-claim provenance tags](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill/blob/main/AGENTS.md#per-claim-provenance-tags) |
-| Retrieved-content trust | [agenda-intelligence-md `AGENTS.md` § Retrieved-content trust](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/AGENTS.md#retrieved-content-trust) |
-| Honesty rules | [agenda-intelligence-md `AGENTS.md` § Honesty rules](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/AGENTS.md#honesty-rules) |
+| Retrieved-content trust | [agenda-intelligence-md threat model](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/threat-model.md) |
+| Honesty rules | [agenda-intelligence-md threat model](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/threat-model.md) |
 | Three-value response logic (Answer / Flag-but-don't-use / Stop-and-request) | [global-think-tank-analyst `AGENTS.md` § Three-value response logic](https://github.com/vassiliylakhonin/global-think-tank-analyst/blob/main/AGENTS.md#three-value-response-logic) |
 | Stop-and-request — explicit triggers | [CA-Caspian `AGENTS.md` § Three-value response logic](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill/blob/main/AGENTS.md#three-value-response-logic) (subsection) |
 | Linguistic faithfulness | [global-think-tank-analyst `AGENTS.md` § Linguistic faithfulness](https://github.com/vassiliylakhonin/global-think-tank-analyst/blob/main/AGENTS.md#linguistic-faithfulness) |
 | Geography routing | [agenda-intelligence-md `docs/geography-routing.md`](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/geography-routing.md) |
-| Skill packaging convention | [agenda-intelligence-md `AGENTS.md` § Skill packaging convention](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/AGENTS.md#skill-packaging-convention-portfolio-wide) |
+| Skill packaging convention | [agenda-intelligence-md skill packaging docs](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/CONTRIBUTING.md) |
 | Currency watch (list of fast-moving topics to re-verify) | [CA-Caspian `AGENTS.md` § Currency watch](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill/blob/main/AGENTS.md#currency-watch) |
 | Currency trigger (policy: when web-search is mandatory) | [CA-Caspian `AGENTS.md` § Currency trigger](https://github.com/vassiliylakhonin/central-asia-caspian-hybrid-intelligence-skill/blob/main/AGENTS.md#currency-trigger) |
 

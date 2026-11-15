@@ -52,7 +52,7 @@ Do **not** treat every `ok=True` as a bug to "fix" — most are the threat-model
 
 `check_evidence_mode_discipline` is **test-only**: its own docstring says "Not an MCP tool. Not a CLI subcommand yet." It is not wired into `validate_memo` / the MCP server / HTTP API / A2A adapter, so a memo served at runtime is **never** subjected to it. That means the validator guards fixtures, not production output.
 
-Wiring it into runtime changes the behavior of existing endpoints and touches the v1 contract surface — per [AGENTS.md](../../AGENTS.md) change-discipline that is **not** an unprompted additive change. **Do not wire it in this round.** Write a one-paragraph note (in the PR description or a short `docs/adr/` draft stub) stating the gap and the options (post-hoc validator surfaced via existing `validate-memo`, vs. left as eval-only), so the human can decide. Surfacing the decision is the deliverable, not the rewrite.
+Wiring it into runtime changes the behavior of existing endpoints and touches the v1 contract surface — which is **not** part of this round. **Do not wire it in this round.** Write a one-paragraph note (in the PR description or a short `docs/adr/` draft stub) stating the gap and the options (post-hoc validator surfaced via existing `validate-memo`, vs. left as eval-only), so the human can decide. Surfacing the decision is the deliverable, not the rewrite.
 
 ## Constraints (repo change-discipline)
 

@@ -196,7 +196,7 @@ See the [workspace guide](docs/use-cases/supplier-evidence-desk.md) and [service
 | Examples | [Runnable examples](examples/README.md) · [Before / after](examples/before-after/README.md) · [EU AI Act](examples/source-backed/eu-ai-act.md) |
 | Contracts | [Schemas](schemas/v1/) · [Source policy](SOURCE_POLICY.md) |
 | Status and evidence | [Evaluation](docs/evaluation.md) · [Adoption record](ADOPTION.md) · [Roadmap](ROADMAP.md) |
-| Deeper reference | [AnalysisBank](analysis-bank/README.md) · [Project architecture and rules](AGENTS.md) |
+| Deeper reference | [AnalysisBank](analysis-bank/README.md) · [Vertical worker architecture](docs/vertical-workers.md) · [Local checks](docs/local-checks.md) |
 | Development | [Contributing](CONTRIBUTING.md) · [Local checks](docs/local-checks.md) |
 
 Core code lives in `src/`; runnable packets in `examples/`; guides in `docs/`; adapters in `clients/` and `integrations/`; deployment packages in `deploy/`.

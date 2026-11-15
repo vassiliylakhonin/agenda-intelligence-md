@@ -2,7 +2,7 @@
 
 Worked examples for the Agenda Intelligence MD product shell. The examples here serve **four distinct purposes**; pick the group that matches what you're trying to do.
 
-Every example declares its evidence mode. None of these are intelligence products. None are legal, compliance, sanctions, AML, or investment advice. Live retrieval and factuality verification are explicit non-goals of this repo — see [`README.md`](../README.md) and [`AGENTS.md`](../AGENTS.md).
+Every example declares its evidence mode. None of these are intelligence products. None are legal, compliance, sanctions, AML, or investment advice. Live retrieval and factuality verification are explicit non-goals of this repo — see [`README.md`](../README.md) and [the threat model](../docs/threat-model.md).
 
 ## Hosted Worker integration
 
