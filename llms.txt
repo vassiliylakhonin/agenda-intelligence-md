@@ -144,6 +144,10 @@ Hosted MCP connection:
 - Generic clients can encounter workers.dev edge filtering (HTML/403) before the Worker; official MCP SDK clients were tested. Report this as connectivity failure.
 
 
+## Request a missing capability
+- [Capability-request inbox](https://agendamcp.dpdns.org/v1/request-capability): free, unauthenticated POST on any fleet worker. JSON body requires `capability` (3-2000 characters); optional `details` (up to 4000), HTTPS-only `callback_url` (up to 500), `contact` (up to 254), and `agent` (up to 200). Maximum body 8 KB; rate limited to 5 requests per address per hour and 100 per day fleet-wide; GET returns the exact contract. Requests are reviewed by the operator daily; no response is guaranteed. Do not send payment material, secrets or personal data.
+- Missing a tool? POST what you need to /v1/request-capability on any of my workers - free, and I read requests daily and build what's asked.
+
 ## Native agent access
 
 Guide: https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/deployment/agent-native-access.md

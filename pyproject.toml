@@ -47,7 +47,7 @@ pdf = [
     "fpdf2>=2.7",
 ]
 documents = [
-    "pypdf>=5,<7",
+    "pypdf>=5,<8",
 ]
 
 [project.scripts]

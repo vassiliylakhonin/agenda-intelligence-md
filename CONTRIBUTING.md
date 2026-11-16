@@ -7,8 +7,9 @@ If you've just landed in this repo and want to understand it before editing, do 
 **1. Read these three files, in order:**
 
 1. [`README.md`](README.md) — what this is (product shell + evidence-discipline layer), the four-repo stack, and the non-goals (no live retrieval, no factual verification).
-2. [`AGENTS.md`](AGENTS.md) — canonical project rules: identity, honesty rules, retrieved-content trust, change discipline. Everything else in this file inherits from there. It points to [`docs/vertical-workers.md`](docs/vertical-workers.md), [`docs/geography-routing.md`](docs/geography-routing.md) (the routing term sets, which moved out of `AGENTS.md`), and [`docs/local-checks.md`](docs/local-checks.md).
-3. [`ROADMAP.md`](ROADMAP.md) — what's shipping vs explicitly deferred. The version targets here are how this repo signals maturity (this repo does **not** use the Bar 1 / Bar 2 framework — that belongs to the vertical specialists).
+2. [`docs/vertical-workers.md`](docs/vertical-workers.md) — the worker architecture and shipped surfaces.
+3. [`docs/local-checks.md`](docs/local-checks.md) — checks to run before pushing.
+4. [`ROADMAP.md`](ROADMAP.md) — what's shipping vs explicitly deferred. The version targets here are how this repo signals maturity (this repo does **not** use the Bar 1 / Bar 2 framework — that belongs to the vertical specialists).
 
 **2. Get the validator running locally:**
 
@@ -29,9 +30,9 @@ If `make ci-fast` is green locally, the Python lint/type/test surface should not
 - [`examples/agenda-brief.json`](examples/agenda-brief.json) → [`schemas/v1/agenda-brief.schema.json`](schemas/v1/agenda-brief.schema.json) → run `agenda-intelligence validate-brief examples/agenda-brief.json`. This is the smallest complete loop the product shell exposes: a structured brief, the schema it conforms to, the validator that enforces it.
 - For the MCP product surface: skim [`docs/geography-routing.md`](docs/geography-routing.md) and the four product tools (`analyze`, `validate_memo`, `list_signals` / `get_signal`, `deep_dive`).
 
-**Unfamiliar with a term in `AGENTS.md`?** See the [portfolio glossary](docs/glossary.md) — single source of truth for evidence modes, uncertainty labels (`Verified`/`Plausible`/`Judgment`/`Unknown`), table-cell discipline, Axis A/B provenance tags, three-value response logic, and the deliberate maturity-framework asymmetry across the four repos (Bar 1/2 ≠ Maturity framework ≠ ROADMAP versioning).
+**Unfamiliar with a term in the project docs?** See the [portfolio glossary](docs/glossary.md) — single source of truth for evidence modes, uncertainty labels (`Verified`/`Plausible`/`Judgment`/`Unknown`), table-cell discipline, Axis A/B provenance tags, three-value response logic, and the deliberate maturity-framework asymmetry across the four repos (Bar 1/2 ≠ Maturity framework ≠ ROADMAP versioning).
 
-**When something is unclear**, the lookup order is: this repo's [`AGENTS.md`](AGENTS.md) → portfolio canon ([global-think-tank-analyst/AGENTS.md](https://github.com/vassiliylakhonin/global-think-tank-analyst/blob/main/AGENTS.md), vertical-skill AGENTS.md files) → open an issue using the template under [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/).
+**When something is unclear**, check the relevant docs under [`docs/`](docs/) and the portfolio references; if it remains unclear, open an issue using the template under [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/).
 
 **Before your first PR**, the single most common reason CI breaks on `main` for new contributors is the **dual-copy invariant** — read the "Critical invariant: dual-copy sync" section below before editing any of the listed files.
 

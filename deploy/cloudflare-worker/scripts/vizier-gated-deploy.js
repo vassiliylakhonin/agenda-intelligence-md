@@ -1,9 +1,9 @@
 import { execFile, spawn } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { resolve } from "node:path";
-import { open, readFile, readdir, lstat } from "node:fs/promises";
+import { open, readFile, readdir, lstat, rm } from "node:fs/promises";
 import process from "node:process";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { DIGEST_PREFIX, bundleDigest, fleetEnvironments } from "./deploy-all.js";
 import { assertBootstrapTarget, initializeCardSigning, verifyLiveCardSigning } from "./card-signing-bootstrap.js";
 
@@ -335,7 +335,33 @@ export async function readDeploymentGrant(environment = process.env) {
   }
 }
 
-function executeWranglerDeploy(receiptId, digest, env = DEFAULT_ENV, snapshotSha256 = null) {
+export function omitCronTriggers(toml) {
+  let inTriggerTable = false;
+  return toml.split("\n").filter((line) => {
+    const header = line.trim();
+    if (/^\[\[?\s*[a-z0-9_"'-]/i.test(header)) {
+      inTriggerTable = /^\[\s*(?:env\.[a-z0-9-]+\.)?triggers\s*\]\s*(?:#.*)?$/.test(header);
+    }
+    return !inTriggerTable;
+  }).join("\n");
+}
+
+export async function withPreservedCronConfig(deploy) {
+  const source = new URL("../wrangler.toml", import.meta.url);
+  const config = omitCronTriggers(await readFile(source, "utf8"));
+  // Relative entry points and bindings resolve from the config directory.
+  const temporary = new URL(`.wrangler-deploy-${randomUUID()}.toml`, source);
+  const file = await open(temporary, "wx", 0o600);
+  try {
+    await file.writeFile(config);
+    return await deploy(fileURLToPath(temporary));
+  } finally {
+    await file.close();
+    await rm(temporary, { force: true });
+  }
+}
+
+function executeWranglerDeploy(receiptId, digest, env, snapshotSha256, configPath) {
   // The receipt says the gate allowed this deploy; the digest says what was
   // deployed. deploy-all.js --check reads both from the same message, and
   // without the second a gated environment reports as unstamped forever
@@ -352,6 +378,7 @@ function executeWranglerDeploy(receiptId, digest, env = DEFAULT_ENV, snapshotSha
         `wrangler@${env === "" ? RESEARCH_WRANGLER_VERSION : WRANGLER_VERSION}`,
         "deploy",
         ...(env ? ["--env", env] : []),
+        ...(configPath ? ["--config", configPath] : []),
         "--strict",
         "--message",
         message
@@ -391,6 +418,7 @@ async function main() {
   }
   const env = envFromArgv(process.argv.slice(2));
   const initializeSigning = process.env.INITIALIZE_AGENT_CARD_SIGNING === "true";
+  const preserveCronTriggers = process.env.PRESERVE_CRON_TRIGGERS === "true";
   if (initializeSigning) assertBootstrapTarget(env);
   const [metadata, apiKey, grant] = await Promise.all([
     collectDeployMetadata(), readVizierCredential(), readDeploymentGrant()
@@ -411,7 +439,8 @@ async function main() {
         throw new Error('Snapshot asset changed after the Vizier decision.');
       }
       if (initializeSigning) console.log(JSON.stringify(await initializeCardSigning(env)));
-      const exitCode = await executeWranglerDeploy(receiptId, digest, env, metadata.snapshotSha256);
+      const deploy = (configPath) => executeWranglerDeploy(receiptId, digest, env, metadata.snapshotSha256, configPath);
+      const exitCode = preserveCronTriggers ? await withPreservedCronConfig(deploy) : await deploy();
       if (exitCode === 0 && initializeSigning) {
         // Wait briefly for deployment propagation; every successful run must
         // verify the actual served signature against the actual served JWKS.
@@ -435,6 +464,7 @@ async function main() {
       status: result.status,
       decision: result.decision,
       receipt_id: result.receiptId,
+      cron_triggers: preserveCronTriggers ? "preserve" : "apply_config",
       ...(metadata.snapshotSha256 ? { snapshot_asset_sha256: metadata.snapshotSha256 } : {}),
       reason_codes: result.reasonCodes,
       ...(result.status === "stopped" ? {} : { exit_code: result.exitCode, authority_provenance: "principal_signed" })

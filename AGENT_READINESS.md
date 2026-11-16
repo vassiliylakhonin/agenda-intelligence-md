@@ -14,7 +14,7 @@ Read plainly: most published agents fail at declaration and liveness hygiene lon
 
 ## Stance
 
-- **MCP-first.** Ship the MCP surface first; it is the practical integration standard today. Keep the A2A endpoint a thin wrapper over the same service layer (this repo's layering rule in [AGENTS.md](AGENTS.md)).
+- **MCP-first.** Ship the MCP surface first; it is the practical integration standard today. Keep the A2A endpoint a thin wrapper over the same service layer (the service-layer architecture documented in [docs/vertical-workers.md](docs/vertical-workers.md)).
 - **A2A-later, but declared properly.** If you publish an A2A card, publish it well: signed, attributed, security-declared. A half-declared card is indexed as noise.
 - **Payment-safe.** No payment surface on the card until limits, caps, and permission scope are declared next to it. An agent wallet without declared limits is a liability, not a feature.
 - **Human-escalated.** The card text states the autonomy boundary and the human-review path explicitly. Downstream agents cannot infer restraint; it must be declared.
