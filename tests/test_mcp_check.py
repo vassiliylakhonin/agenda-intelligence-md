@@ -45,12 +45,12 @@ def test_http_credentials_and_insecure_remote_are_refused():
 
 
 def test_schema_failures_and_duplicate_names_cannot_pass():
-    tool = SimpleNamespace(name="example", inputSchema={"type": "object"}, outputSchema={"type": "object"})
+    tool = SimpleNamespace(name="example", input_schema={"type": "object"}, output_schema={"type": "object"})
     validate_catalog([tool])
     with pytest.raises(ValueError):
         validate_catalog([tool, tool])
     broken = copy.deepcopy(tool)
-    broken.inputSchema = {"type": "invented-type"}
+    broken.input_schema = {"type": "invented-type"}
     with pytest.raises(Exception):
         validate_catalog([broken])
 
@@ -59,7 +59,7 @@ def test_schema_failures_and_duplicate_names_cannot_pass():
 def test_official_sdk_discovers_real_stdio_server_and_executes_opted_in_example():
     report = check_mcp(CONFIG)
     assert report["status"] == "passed"
-    assert report["client_version"] == "1.30.0"
+    assert report["client_version"] == "2.3.0"
     assert any(row["check"] == "unknown_method_error" and row["code"] == -32601 for row in report["checks"])
     assert any(row["check"] == "example" and row["tool"] == "list_signals" for row in report["checks"])
 

@@ -9,8 +9,10 @@ from pathlib import Path
 import pytest
 
 pytest.importorskip("mcp")
+import httpx2  # noqa: E402
+
 from mcp import ClientSession  # noqa: E402
-from mcp.client.streamable_http import streamablehttp_client  # noqa: E402
+from mcp.client.streamable_http import streamable_http_client  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILES = (
@@ -46,30 +48,31 @@ def test_official_mcp_client_can_check_and_execute_each_profile_without_http_ada
         port = json.loads(line)["port"]
 
         async def check():
-            for profile in PROFILES:
-                async with streamablehttp_client(
-                    f"http://127.0.0.1:{port}/{profile}/mcp/agent",
-                    headers={"X-Client-Id": "agenda-owner-native-sdk-test"},
-                    terminate_on_close=False,
-                ) as (read, write, _):
-                    async with ClientSession(read, write) as session:
-                        await session.initialize()
-                        tools = (await session.list_tools()).tools
-                        trial = next(tool for tool in tools if tool.name == "free_trial")
-                        status = await session.call_tool("free_trial_status", {})
-                        assert not status.isError
-                        before = status.structuredContent["availability"]["remaining_attempts"]
-                        assert before == (5 if profile == "agent_output_verification" else 2)
-                        invalid = await session.call_tool("free_trial", {})
-                        assert invalid.isError and invalid.structuredContent is None
-                        example = trial.meta["com.agenda/readiness"]["example_arguments"]
-                        result = await session.call_tool("free_trial", example)
-                        assert not result.isError
-                        assert result.structuredContent["trial"]["agent_profile"] == profile
-                        assert result.structuredContent["trial"]["payment_required"] is False
-                        assert result.structuredContent["trial"]["completion_recorded"] is True
-                        after = await session.call_tool("free_trial_status", {})
-                        assert after.structuredContent["availability"]["remaining_attempts"] == before - 1
+            async with httpx2.AsyncClient(headers={"X-Client-Id": "agenda-owner-native-sdk-test"}) as client:
+                for profile in PROFILES:
+                    async with streamable_http_client(
+                        f"http://127.0.0.1:{port}/{profile}/mcp/agent",
+                        http_client=client,
+                        terminate_on_close=False,
+                    ) as (read, write):
+                        async with ClientSession(read, write) as session:
+                            await session.initialize()
+                            tools = (await session.list_tools()).tools
+                            trial = next(tool for tool in tools if tool.name == "free_trial")
+                            status = await session.call_tool("free_trial_status", {})
+                            assert not status.is_error
+                            before = status.structured_content["availability"]["remaining_attempts"]
+                            assert before == (5 if profile == "agent_output_verification" else 2)
+                            invalid = await session.call_tool("free_trial", {})
+                            assert invalid.is_error and invalid.structured_content is None
+                            example = trial.meta["com.agenda/readiness"]["example_arguments"]
+                            result = await session.call_tool("free_trial", example)
+                            assert not result.is_error
+                            assert result.structured_content["trial"]["agent_profile"] == profile
+                            assert result.structured_content["trial"]["payment_required"] is False
+                            assert result.structured_content["trial"]["completion_recorded"] is True
+                            after = await session.call_tool("free_trial_status", {})
+                            assert after.structured_content["availability"]["remaining_attempts"] == before - 1
 
         asyncio.run(check())
     finally:

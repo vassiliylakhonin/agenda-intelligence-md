@@ -13,7 +13,7 @@ pytest.importorskip("mcp")
 
 
 @contextmanager
-def merchant_server(*, public_by_mistake=False, observed=None):
+def merchant_server(*, public_by_mistake=False, observed=None, redirect=False, paginated=False):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):
             pass
@@ -40,9 +40,16 @@ def merchant_server(*, public_by_mistake=False, observed=None):
         def do_POST(self):
             if observed is not None:
                 observed.append(
-                    {"client_id": self.headers.get("X-Client-Id"), "user_agent": self.headers.get("User-Agent")}
+                    {
+                        "path": self.path,
+                        "client_id": self.headers.get("X-Client-Id"),
+                        "user_agent": self.headers.get("User-Agent"),
+                    }
                 )
             request = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            if redirect and self.path == "/mcp":
+                self.reply(307, extra={"Location": origin + "/redirected"})
+                return
             if not public_by_mistake and self.headers.get("Authorization") != "Bearer sandbox-credential":
                 self.reply(
                     401,
@@ -64,6 +71,11 @@ def merchant_server(*, public_by_mistake=False, observed=None):
                     "protocolVersion": "2025-11-25",
                     "capabilities": {"tools": {}},
                     "serverInfo": {"name": "owner-sandbox", "version": "1"},
+                }
+            elif method == "tools/list" and paginated and request.get("params", {}).get("cursor") != "next":
+                response["result"] = {
+                    "tools": [{"name": "first_page", "inputSchema": {"type": "object"}}],
+                    "nextCursor": "next",
                 }
             elif method == "tools/list":
                 response["result"] = {
@@ -116,9 +128,13 @@ def merchant_server(*, public_by_mistake=False, observed=None):
 
 def test_official_http_client_auth_schema_and_example(monkeypatch):
     monkeypatch.setenv("MCP_SANDBOX_TOKEN", "sandbox-credential")
-    with merchant_server() as config:
+    with merchant_server(paginated=True) as config:
         report = check_mcp(config)
     assert report["status"] == "passed"
+    assert next(row["tools"] for row in report["checks"] if row["check"] == "discovery_and_schemas") == [
+        "first_page",
+        "echo",
+    ]
     assert report["checks"][-1]["output_schema_checked"] is True
     assert report["checks"][0]["scope"] == "401/challenge/metadata and supplied bearer only"
 
@@ -128,6 +144,16 @@ def test_required_auth_catches_accidentally_public_endpoint(monkeypatch):
     with merchant_server(public_by_mistake=True) as config:
         with pytest.raises(Exception, match="401"):
             check_mcp(config)
+
+
+def test_official_http_client_refuses_same_origin_redirect():
+    observed = []
+    with merchant_server(public_by_mistake=True, redirect=True, observed=observed) as config:
+        config.update(auth="none")
+        config.pop("token_env")
+        with pytest.raises(Exception):
+            check_mcp(config)
+    assert [row["path"] for row in observed] == ["/mcp"]
 
 
 def test_public_checker_does_not_claim_to_be_the_service_owner():
