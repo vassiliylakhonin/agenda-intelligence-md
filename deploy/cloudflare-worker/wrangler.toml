@@ -517,3 +517,39 @@ migrations_dir = "migrations"
 
 [triggers]
 crons = ["17 * * * *"]
+
+# PAYMENT_LEDGER is shared across the fleet. The root Worker prunes it and
+# the research database, so profile Workers do not need their own schedules.
+
+[env.middle-corridor-deal-risk-gate.triggers]
+crons = []
+
+[env.cis-secondary-sanctions.triggers]
+crons = []
+
+[env.agentic-interaction-trust.triggers]
+crons = []
+
+[env.agent-output-verification.triggers]
+crons = []
+
+[env.gulf-maritime-exposure.triggers]
+crons = []
+
+[env.kazakhstan-market-entry-readiness.triggers]
+crons = []
+
+[env.corridor-sanctions-assistant.triggers]
+crons = []
+
+[env.critical-minerals-due-diligence.triggers]
+crons = []
+
+[env.dual-use-technology-export.triggers]
+crons = []
+
+[env.agent-financial-guard.triggers]
+crons = []
+
+[env.m2m-escrow-arbiter.triggers]
+crons = []
