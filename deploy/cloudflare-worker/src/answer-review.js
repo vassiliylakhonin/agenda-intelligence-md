@@ -7,6 +7,12 @@ export const ANSWER_REVIEW_URI = 'ui://agenda/answer-review.html';
 export const ANSWER_REVIEW_MIME = 'text/html;profile=mcp-app';
 export const isAnswerReviewTool = name => [ANSWER_REVIEW_TOOL, ANSWER_REVIEW_OPEN_TOOL].includes(name);
 const normalize = text => text.normalize('NFC').replace(/\s+/gu, ' ').trim();
+function escapedOpeningBracket(text, index) {
+  let count = 0;
+  for (let position = index - 1; text[position] === '\\'; position--) count++;
+  return count % 2 === 1;
+}
+
 const ACTIONS = {
   missing_citation: 'Add a [source-id] reference to the supplied source text, or remove the unsupported line.',
   unknown_source: 'Supply the actual source text under this ID, or correct the reference. Do not invent evidence.',
@@ -56,20 +62,21 @@ export function reviewAnswer(input) {
     const line = offset + 1;
     // Link destinations are inert labels. Never fetch them or treat their URL
     // as source identity: the label must still resolve to supplied source text.
-    const references = [...text.matchAll(/\[([A-Za-z0-9][A-Za-z0-9_-]{0,63})\](?:\(https?:\/\/[^\s<>()\[\]]{1,2048}\))?/gu)];
+    const markers = [...text.matchAll(/\[([A-Za-z0-9][A-Za-z0-9_-]{0,63})\](?:\(https?:\/\/[^\s<>()\[\]]{1,2048}\))?/gu)];
+    const references = markers.filter(marker => !escapedOpeningBracket(text, marker.index));
     const citation_ids = [...new Set(references.map(match => match[1]))];
     if (!citation_ids.length) add(line, 'missing_citation');
     for (const id of citation_ids) {
       used.add(id);
       if (!sources.has(id)) add(line, 'unknown_source', id);
     }
-    // Keep offsets for adjacent-quote attribution while removing destinations
-    // from quote parsing. Complex/unsafe links remain visible failures.
+    // Remove both citations and escaped literals from the residual bracket check.
+    // Keep offsets for adjacent-quote attribution and hide simple link destinations.
     let residue = text, quoteText = text;
-    for (const ref of [...references].reverse()) {
-      const end = ref.index + ref[0].length;
-      residue = residue.slice(0,ref.index) + residue.slice(end);
-      quoteText = quoteText.slice(0,ref.index) + ' '.repeat(ref[0].length) + quoteText.slice(end);
+    for (const marker of markers.reverse()) {
+      const end = marker.index + marker[0].length;
+      residue = residue.slice(0,marker.index) + residue.slice(end);
+      quoteText = quoteText.slice(0,marker.index) + ' '.repeat(marker[0].length) + quoteText.slice(end);
     }
     if (/[\[\]]/u.test(residue) || references.some(ref => /^\s*\(/u.test(text.slice(ref.index+ref[0].length)))) add(line,'unsupported_citation_syntax');
     // Numeric context check: canonical units/scales/dates/signs, matched only

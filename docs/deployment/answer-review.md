@@ -12,7 +12,9 @@ Connect to Output Verification `/mcp/output-verification`. Discover tools, call
 
 This example is synthetic. Replace it with authorized text. Each nonempty line
 is a review unit. References use `[source-id]` or simple `[source-id](https://URL)` Markdown
-links. Straight or paired typographic double quotes immediately precede their citation. Quote comparison is case-sensitive after NFC
+links. An odd number of consecutive backslashes before an opening bracket escapes
+a source-shaped marker. An even number leaves it as a reference.
+Straight or paired typographic double quotes immediately precede their citation. Quote comparison is case-sensitive after NFC
 and whitespace normalization. Footnotes, nested/incomplete brackets, mixed/unclosed quotes, non-HTTP(S) or
 complex links (titles, spaces, nested parentheses) and unattributed quotes produce findings.
 The link label must match a supplied source ID; a URL never supplies evidence. No URLs are fetched. Limits:
