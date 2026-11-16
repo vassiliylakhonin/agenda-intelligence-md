@@ -99,7 +99,6 @@ def validate_catalog(tools: list[Any]) -> None:
 
 async def _check(config: dict) -> dict:
     import httpx2  # type: ignore[import-not-found]
-
     from mcp import (  # type: ignore[import-not-found]
         ClientSession,
         MCPError,

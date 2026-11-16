@@ -10,7 +10,6 @@ import pytest
 
 pytest.importorskip("mcp")
 import httpx2  # noqa: E402
-
 from mcp import ClientSession  # noqa: E402
 from mcp.client.streamable_http import streamable_http_client  # noqa: E402
 
