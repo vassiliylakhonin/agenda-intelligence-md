@@ -106,3 +106,64 @@ def test_health_uses_actual_operation_admission_without_changing_identity(monkey
 def test_free_routing_health_rejects_success_status_with_unsafe_or_missing_result(monkeypatch, failure):
     with pytest.raises(AssertionError):
         run_fixture(monkeypatch, "agenda", failure=failure)
+
+
+def test_ov_free_first_health_checks_status_without_consuming_and_keeps_paid_proof(monkeypatch):
+    proof = load_proof()
+    seen = []
+
+    def fetch(request, **kwargs):
+        path = urlparse(request.full_url).path
+        if path == "/health":
+            return Response({"profile": "agent_output_verification"})
+        if path == "/.well-known/x402":
+            return Response(
+                {
+                    "offers": [
+                        {"tool": name, "payment_required": True}
+                        for name in ["agent_output_verification", "pre_action_check"]
+                    ],
+                    "x_agenda_access": {"billing_mode": "pay_per_call", "authentication": "none"},
+                }
+            )
+        body = json.loads(request.data)
+        if body["method"] == "tools/list":
+            return Response(
+                {
+                    "result": {
+                        "tools": [
+                            {
+                                "name": "agent_output_verification",
+                                "_meta": {
+                                    "com.agenda/readiness": {
+                                        "free_first": {
+                                            "admission": "free_trial",
+                                            "automatic_payment": False,
+                                            "attempts_per_network": 5,
+                                            "daily_service_limit": 1000,
+                                        }
+                                    }
+                                },
+                            },
+                            {
+                                "name": "pre_action_check",
+                                "_meta": {
+                                    "com.agenda/readiness": {"example_arguments": {"claims": [], "evidence": []}}
+                                },
+                            },
+                        ]
+                    }
+                }
+            )
+        name = body["params"]["name"]
+        seen.append(name)
+        if name == "free_trial_status":
+            return Response(
+                {"result": {"isError": False, "structuredContent": {"availability": {"attempt_consumed": False}}}}
+            )
+        assert name == "pre_action_check", "Periodic health must not consume a free-first attempt"
+        return Response({"error": "payment required"}, 402)
+
+    monkeypatch.setattr(proof.urllib.request, "urlopen", fetch)
+    proof.check_worker("agent-output-verification-a2a")
+    assert seen == ["free_trial_status", "pre_action_check"]

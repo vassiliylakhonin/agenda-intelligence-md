@@ -38,10 +38,36 @@ def check_worker(name: str) -> None:
         discovery = request_json(origin, "/mcp", {"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
         tools = discovery["result"]["tools"]
         paid_names = {offer["tool"] for offer in manifest.get("offers", []) if offer.get("payment_required") is True}
+        free_first = next(
+            (t for t in tools if t.get("_meta", {}).get("com.agenda/readiness", {}).get("free_first")), None
+        )
+        if free_first:
+            assert free_first["name"] == "agent_output_verification", "Only OV canonical operation is free-first"
+            terms = free_first["_meta"]["com.agenda/readiness"]["free_first"]
+            assert terms.get("admission") == "free_trial" and terms.get("automatic_payment") is False
+            assert terms.get("attempts_per_network") == 5 and terms.get("daily_service_limit") == 1000
+            status = request_json(
+                origin,
+                "/mcp",
+                {
+                    "jsonrpc": "2.0",
+                    "id": "trial-status",
+                    "method": "tools/call",
+                    "params": {"name": "free_trial_status", "arguments": {}},
+                },
+            )["result"]
+            assert status.get("isError") is False, "Trial status must be readable without evaluation"
+            assert status["structuredContent"]["availability"]["attempt_consumed"] is False
         # Prefer an unpaid admission proof, including HS screening on the mixed
         # Assistant host. A model export is excluded because it has a free preview.
         tool = next(
-            (t for t in tools if t["name"] in paid_names - {"decision_verify", "corridor_bankability_screen"}), None
+            (
+                t
+                for t in tools
+                if t["name"] in paid_names - {"decision_verify", "corridor_bankability_screen"}
+                and not t.get("_meta", {}).get("com.agenda/readiness", {}).get("free_first")
+            ),
+            None,
         )
         free_routing = tool is None
         if free_routing:
