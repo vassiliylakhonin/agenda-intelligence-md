@@ -1449,6 +1449,14 @@ function toolContractsForProfile(profile, request, env) {
   if (!tools.length) return null;
   return {
     contract_version: VERSION,
+    a2a_examples: tools.filter(tool => tool._meta?.['com.agenda/readiness']?.example_arguments &&
+      !isFreeRoutingTool(profile,tool.name) && !isMcpTrialTool(tool.name) && !isAnswerReviewTool(tool.name) &&
+      ![INPUT_VALIDATION_TOOL, 'fleet_directory', 'decision_policies_list', 'strategic_risk_memo_quality_gate'].includes(tool.name))
+      .map(tool => ({tool:tool.name, synthetic:true,
+        request:{jsonrpc:'2.0',id:'example',method:'SendMessage',params:{capability:tool.name,
+          message:{messageId:'example-message',role:'ROLE_USER',parts:[
+            {data:tool._meta['com.agenda/readiness'].example_arguments,mediaType:'application/json'}]}}},
+        note:'Input shape only. Authentication, trial and payment terms are operation-specific. Keep original evidence; do not automatically evaluate or pay.'})),
     note: "These are MCP tool schemas, not A2A envelope schemas. free_trial and free_trial_status are MCP tool names. For a native A2A trial use x_agenda_intelligence.a2a_free_trial and its opt-in message metadata; HTTP/MCP/A2A share one allowance. For ordinary A2A SendMessage use x_agenda_intelligence.a2a_send_message_example; structured gate fields go directly in message.parts[0].data with mediaType application/json. Text-only routing profiles use message.parts[0].text; ordinary prose does not replace a gate's required structured evidence.",
     tools: tools.map((tool) => ({
       name: tool.name,
@@ -3453,7 +3461,7 @@ function screenDualUseHsCodeArtifactText(response) {
 }
 
 async function a2aResultForScreenDualUseHsCode(params, request, env = {}) {
-  const structured = params.request && typeof params.request === "object" ? params.request : params;
+  const structured = a2aOperationInput(params);
   const rawHs = structured.hs_code || structured.code || "";
   if (!rawHs || typeof rawHs !== "string" || !rawHs.trim()) {
     return {
@@ -6496,7 +6504,7 @@ async function isBankabilityDossierPaid(request, env = {}) {
 }
 
 async function a2aResultForCorridorBankability(params, request, env = {}) {
-  let reqObj = params.request || params || {};
+  let reqObj = a2aOperationInput(params) || {};
   if (!reqObj.project_name || !reqObj.corridor_leg || reqObj.capex_usd_m === undefined) {
     reqObj = extractBankabilityParameters(reqObj, params.prompt || params.text || params.query || "");
   }
@@ -6657,7 +6665,7 @@ function decisionVerifyErrors(value) {
 }
 
 async function a2aResultForDecisionVerify(params, request, env = {}) {
-  const structured = params && typeof params === "object" ? params.request : null;
+  const structured = a2aOperationInput(params);
   const errors = decisionVerifyErrors(structured);
   if (errors.length) {
     return invalidRequestResult(
@@ -15869,6 +15877,18 @@ function isFreeRoutingCall(profile, params, name = null) {
   return !structuredDealRiskRequestFromParams(params);
 }
 
+// Preserve legacy wrapper precedence; A2A JSON parts are data, never instructions.
+// Special operations use this same reader for admission and execution.
+function a2aOperationInput(params) {
+  if (params?.request) return params.request;
+  for (const part of params?.message?.parts || []) {
+    if (part?.data && typeof part.data === 'object' && !Array.isArray(part.data)) return part.data;
+    const parsed = tryParseJsonObject(part?.text);
+    if (parsed) return parsed;
+  }
+  return params;
+}
+
 // Resolve the same operation/validators as the dispatcher before reserving money.
 function paidOperation(request, body, profile) {
   const path = new URL(request.url).pathname;
@@ -15908,14 +15928,14 @@ function paidOperation(request, body, profile) {
       (profile === 'agent_output_verification' && params.capability === 'decision_policies_list') ||
       (profile === 'corridor_sanctions_assistant' && name === 'corridor_sanctions_assistant' && !extractText(params).trim()))) return { free: true };
   if ((protocolCall && ["agenda", "kazakhstan"].includes(profile) && params.capability === "corridor_bankability_screen") || path === "/v1/corridor-bankability/screen") {
-    return { minimum: evaluationAmount(profile,'corridor_bankability_screen'), profile, errors: validateBankabilityRequest(params.request || params), validationCategory: 'schema_validation_failed' };
+    return { minimum: evaluationAmount(profile,'corridor_bankability_screen'), profile, errors: validateBankabilityRequest(protocolCall ? a2aOperationInput(params) : params.request || params), validationCategory: 'schema_validation_failed' };
   }
   if (protocolCall && isFreeRoutingCall(profile,params,path.startsWith('/mcp') ? name : null)) {
     if (!extractText(params).trim()) return {errors:['Supply routing input'],validationCategory:'missing_input'};
     return {free:true,routing:true};
   }
   if (protocolCall && profile === 'corridor_sanctions_assistant' && params.capability === 'screen_dual_use_hs_code') {
-    const checked=validatePublishedInput(profile,{tool:'screen_dual_use_hs_code',input:params.request || params},false);
+    const checked=validatePublishedInput(profile,{tool:'screen_dual_use_hs_code',input:a2aOperationInput(params)},false);
     return {minimum:evaluationAmount(profile,'screen_dual_use_hs_code'),profile,
       errors:checked.body.valid ? [] : ['Supply the published HS-code input.'],validationCategory:'schema_validation_failed'};
   }
@@ -15926,7 +15946,7 @@ function paidOperation(request, body, profile) {
       dual_use_technology_export: '/v1/dual-use/screen', agent_financial_guard: '/v1/agent-financial/pre-sign-check', m2m_escrow_arbiter: '/v1/m2m-escrow/evaluate-dispute' };
     route = DIRECT_V1_ROUTES[paths[profile]];
     if (profile === 'agent_output_verification' && params.capability === 'decision_check') route = DIRECT_V1_ROUTES['/v1/agent-output/pre-action-check'];
-    if (profile === 'agent_output_verification' && params.capability === 'decision_verify') return { minimum: evaluationAmount(profile,'decision_verify'), profile, errors: decisionVerifyErrors(params.request || params), validationCategory: 'schema_validation_failed' };
+    if (profile === 'agent_output_verification' && params.capability === 'decision_verify') return { minimum: evaluationAmount(profile,'decision_verify'), profile, errors: decisionVerifyErrors(a2aOperationInput(params)), validationCategory: 'schema_validation_failed' };
     if (profile === 'cis_secondary_sanctions' && params.capability === 'cis_secondary_sanctions_batch') route = DIRECT_V1_ROUTES['/v1/cis-secondary-sanctions/exposure/batch'];
   }
   if (path.startsWith('/v1/evidence-packet/')) route = DIRECT_V1_ROUTES['/v1/agent-output/verification'];
@@ -16021,8 +16041,12 @@ function paidRequestHint(request, body, profile, env) {
     if (named && namedExample) {
       const envelope = structuredClone(example.request);
       envelope.params = { capability: named.name, message: { ...envelope.params.message, parts: [{ data: namedExample, mediaType: 'application/json' }] } };
-      return { transport: 'a2a', capability: named.name, required_fields: toolInputRequiredFields(named), example_request: envelope, headers: example.headers, expected: example.expected,
-        instruction: 'Use the matching A2A version and the structured example for the named capability; replace illustrative values with supplied evidence. A valid unpaid request on a paid deployment returns HTTP 402 without evaluation.' };
+      return { transport: 'a2a', capability: named.name, required_fields: toolInputRequiredFields(named), example_request: envelope, headers: example.headers, expected: {
+          ...(env.BILLING_MODE === 'pay_per_call' ? {http_status_without_payment: evaluationAmount(profile,named.name) === 25 ? 200 : 402} : {}),
+          note: 'Synthetic input shape only. Admission, authentication and payment are checked separately for this operation. No evaluation or authorization is promised.',
+          evaluation_performed_by_example: false
+        },
+        instruction: 'Use the matching A2A version and the structured example for the named capability; replace illustrative values with supplied evidence. Paid evaluations require separate admission; a valid unpaid request normally returns HTTP 402. A bankability request may return its existing free preview instead.' };
     }
     // A capability-less caller still gets the refusal bound to the profile's
     // default paid tool and its required fields, when the card example is that
@@ -16032,7 +16056,7 @@ function paidRequestHint(request, body, profile, env) {
     const defaultTool = a2aGuide ? mcpToolsForProfile(profile)[0] : null;
     return { transport: 'a2a', ...(defaultTool ? { capability: defaultTool.name, required_fields: toolInputRequiredFields(defaultTool) } : {}),
       example_request: example.request, headers: example.headers, expected: example.expected,
-      instruction: 'Use the matching A2A version and structured example; replace illustrative values with supplied evidence. A valid unpaid request on a paid deployment returns HTTP 402 without evaluation.' };
+      instruction: 'Use the matching A2A version and structured example; replace illustrative values with supplied evidence. Paid evaluations require separate admission; a valid unpaid request normally returns HTTP 402. A bankability request may return its existing free preview instead.' };
   }
   return guide ? { transport: 'rest', schema: route?.schema || guide.schema, required_fields: guide.required,
     example_request: guide.example, instruction: 'Use the canonical schema and replace illustrative values with supplied evidence.' }
@@ -16439,12 +16463,14 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
     if (wantsPayment || standardProof !== undefined || env.BILLING_MODE === 'pay_per_call' || bearerTokenFromRequest(request).startsWith('agy_pro_')) {
       emit('payment_rejected', 'invalid_paid_request', 400);
       const paidHint = paidRequestHint(request, body, profile, env);
+      paidHint.documentation = new URL('/.well-known/agent-contract.json', request.url).href;
+      paidHint.example_is_synthetic = true;
       return reply(jsonResponse({ code: 'invalid_paid_request', errors: operation.errors,
         validation: { category: operation.validationCategory, error_count: operation.errors.length },
         // Field-level repair guidance the validator already computed; never
         // echoes caller input values, only published field names and fixes.
         ...(operation.remediation ? { remediation: operation.remediation } : {}),
-        ...(['schema_validation_failed', 'missing_structured_request', 'missing_input', 'invalid_request_object'].includes(operation.validationCategory)
+        ...(['schema_validation_failed', 'missing_structured_request', 'missing_input', 'invalid_request_object', 'invalid_message', 'invalid_jsonrpc'].includes(operation.validationCategory)
           ? { free_recheck: { mcp_tool: INPUT_VALIDATION_TOOL, endpoint: INPUT_VALIDATION_PATH,
               evaluation_performed: false, attempt_consumed: false, payment_required: false,
               instruction: 'Repair the input using remediation and request_hint, then re-check it free with the validate_input MCP tool or POST ' + INPUT_VALIDATION_PATH + ' before any payment; no evaluation, payment or trial attempt is consumed.' } }
