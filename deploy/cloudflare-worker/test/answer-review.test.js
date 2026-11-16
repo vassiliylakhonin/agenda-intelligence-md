@@ -100,6 +100,21 @@ test('unsupported syntax and source instructions remain visible data',()=>{
   assert.equal(reviewAnswer({...input,answer:'"THREE WAREHOUSES" [s1]'}).route,'revise');
   assert.equal(reviewAnswer({...input,answer:'"three  warehouses" [s1]'}).route,'human_review');
 });
+
+test('only an odd run of Markdown backslashes makes a source-shaped marker literal', () => {
+  for (const count of [0, 1, 2, 3]) {
+    const marker = '\\'.repeat(count) + '[unknown-source]';
+    const review = reviewAnswer({...input, answer: input.answer + '. Literal placeholder: ' + marker});
+    const literal = count % 2 === 1;
+    assert.equal(review.route, literal ? 'human_review' : 'revise', marker);
+    assert.deepEqual(review.units[0].citation_ids, literal ? ['s1'] : ['s1', 'unknown-source'], marker);
+    assert.deepEqual(review.findings.map(finding => finding.code), literal ? [] : ['unknown_source'], marker);
+  }
+  const escapedOnly = reviewAnswer({...input, answer: 'The report lists three warehouses. \\[s1]'});
+  assert.deepEqual(escapedOnly.units[0].citation_ids, []);
+  assert.deepEqual(escapedOnly.findings.map(finding => finding.code), ['missing_citation']);
+});
+
 test('bounds and duplicate source IDs are rejected before evaluation',()=>{
   for(const value of [{...input,tool:'another'}, {...input,sources:[...input.sources,...input.sources]},
     {...input,answer:'x'.repeat(20001)}, {...input,answer:Array(201).fill('Claim [s1]').join('\n')},
