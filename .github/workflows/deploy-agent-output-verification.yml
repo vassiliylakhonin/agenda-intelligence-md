@@ -12,6 +12,11 @@ on:
       - deploy/cloudflare-worker/src/**
       - deploy/cloudflare-worker/wrangler.toml
   workflow_dispatch:
+    inputs:
+      apply_cron_triggers:
+        description: Apply configured Cron Triggers during this deployment
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -102,6 +107,7 @@ jobs:
 
       - name: Verify with Vizier and deploy
         env:
+          PRESERVE_CRON_TRIGGERS: ${{ !inputs.apply_cron_triggers && 'true' || 'false' }}
           VIZIER_API_KEY: ${{ secrets.VIZIER_API_KEY }}
           VIZIER_DEPLOY_GRANT_FILE: ${{ runner.temp }}/vizier-deploy-grant.jws
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

@@ -27,6 +27,10 @@ on:
         description: One-time CIS asset migration from pinned verified main watchdog artifact (expires after 72h)
         type: boolean
         default: false
+      apply_cron_triggers:
+        description: Apply configured Cron Triggers during this deployment
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -215,6 +219,7 @@ jobs:
           fi
       - name: Require matching Vizier ALLOW before this deployment
         env:
+          PRESERVE_CRON_TRIGGERS: ${{ !inputs.apply_cron_triggers && 'true' || 'false' }}
           INITIALIZE_AGENT_CARD_SIGNING: ${{ inputs.initialize_card_signing }}
           VIZIER_API_KEY: ${{ secrets.VIZIER_API_KEY }}
           VIZIER_DEPLOY_GRANT_FILE: ${{ runner.temp }}/vizier-deploy-grant.jws
