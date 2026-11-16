@@ -8,11 +8,10 @@ import json
 import os
 import sys
 import urllib.parse
-import warnings
 from contextlib import AsyncExitStack
 from importlib.metadata import version
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 from jsonschema import Draft202012Validator
 from referencing import Registry
@@ -89,9 +88,9 @@ def validate_catalog(tools: list[Any]) -> None:
     if len(set(names)) != len(names):
         raise ValueError("Duplicate tool names")
     for tool in tools:
-        if not 1 <= len(tool.name) <= 128 or tool.inputSchema.get("type") != "object":
+        if not 1 <= len(tool.name) <= 128 or tool.input_schema.get("type") != "object":
             raise ValueError("Invalid tool name or inputSchema root")
-        for schema in (tool.inputSchema, tool.outputSchema):
+        for schema in (tool.input_schema, tool.output_schema):
             if schema is not None:
                 if len(json.dumps(schema)) > 262144:
                     raise ValueError("Tool schema exceeds 256 KiB")
@@ -99,9 +98,10 @@ def validate_catalog(tools: list[Any]) -> None:
 
 
 async def _check(config: dict) -> dict:
-    import httpx  # type: ignore[import-not-found]
+    import httpx2  # type: ignore[import-not-found]
     from mcp import (  # type: ignore[import-not-found]
         ClientSession,
+        MCPError,
         StdioServerParameters,
         types,
     )
@@ -125,7 +125,7 @@ async def _check(config: dict) -> dict:
             raise ValueError("Invalid bearer credential")
         headers["Authorization"] = "Bearer " + token
 
-    class BoundedStream(httpx.AsyncByteStream):
+    class BoundedStream(httpx2.AsyncByteStream):
         def __init__(self, stream):
             self.stream = stream
 
@@ -140,12 +140,16 @@ async def _check(config: dict) -> dict:
         async def aclose(self):
             await self.stream.aclose()
 
-    class BoundedTransport(httpx.AsyncBaseTransport):
+    class BoundedTransport(httpx2.AsyncBaseTransport):
         def __init__(self):
-            self.inner = httpx.AsyncHTTPTransport()
+            self.inner = httpx2.AsyncHTTPTransport()
 
         async def handle_async_request(self, request):
             response = await self.inner.handle_async_request(request)
+            # The SDK's transport can follow same-origin redirects itself.
+            if response.is_redirect:
+                await response.aclose()
+                raise ValueError("Unexpected redirect from MCP endpoint")
             if response.headers.get("content-encoding", "identity") != "identity":
                 await response.aclose()
                 raise ValueError("Unexpected compressed response; bounded checker requests identity encoding")
@@ -162,7 +166,7 @@ async def _check(config: dict) -> dict:
             checks.append({"check": "authorization", "status": "passed", "scope": "local process access only"})
         else:
             client = await stack.enter_async_context(
-                httpx.AsyncClient(headers=headers, timeout=15, follow_redirects=False, transport=BoundedTransport())
+                httpx2.AsyncClient(headers=headers, timeout=15, follow_redirects=False, transport=BoundedTransport())
             )
             if config["auth"] == "required":
                 body = {
@@ -213,8 +217,8 @@ async def _check(config: dict) -> dict:
                 )
             else:
                 checks.append({"check": "authorization", "status": "passed", "scope": "explicitly public endpoint"})
-            read, write, _ = await stack.enter_async_context(
-                streamable_http_client(config["url"], http_client=client, terminate_on_close=True)
+            read, write = await stack.enter_async_context(
+                streamable_http_client(config["url"], http_client=client, max_sse_event_size=MAX_BYTES)
             )
         session = await stack.enter_async_context(ClientSession(read, write))
         initialized = await session.initialize()
@@ -222,17 +226,18 @@ async def _check(config: dict) -> dict:
             {
                 "check": "initialize",
                 "status": "passed",
-                "protocol": initialized.protocolVersion,
-                "server": initialized.serverInfo.model_dump(),
+                "protocol": initialized.protocol_version,
+                "server": initialized.server_info.model_dump(by_alias=True, mode="json"),
             }
         )
-        tools: list[Any] = []
+        tools: list[types.Tool] = []
         cursor = None
         cursors: set[str] = set()
         for _ in range(10):
-            page = await session.list_tools(cursor=cursor)
+            params = types.PaginatedRequestParams(cursor=cursor) if cursor else None
+            page = await session.list_tools(params=params)
             tools.extend(page.tools)
-            cursor = page.nextCursor
+            cursor = page.next_cursor
             if not cursor:
                 break
             if cursor in cursors:
@@ -242,18 +247,11 @@ async def _check(config: dict) -> dict:
             raise ValueError("Tool pagination exceeds ten pages")
         validate_catalog(tools)
         checks.append({"check": "discovery_and_schemas", "status": "passed", "tools": [tool.name for tool in tools]})
-        # This deliberately invalid diagnostic is outside ClientRequest's union.
-        # Confine the typing escape to its payload, not the SDK/session itself.
-        unsupported = cast(Any, types.Request(method="agenda/unsupported-check", params={}))
-        unknown = types.ClientRequest.model_construct(root=unsupported)
+        unsupported = types.Request[dict[str, Any], str](method="agenda/unsupported-check", params={})
         try:
-            # This one constant probe intentionally falls outside the SDK's
-            # supported request union. Do not hide warnings from other calls.
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", message="Pydantic serializer warnings:", category=UserWarning)
-                await session.send_request(unknown, types.EmptyResult)
-        except Exception as exc:
-            if getattr(getattr(exc, "error", None), "code", None) != -32601:
+            await session.send_request(unsupported, types.EmptyResult)
+        except MCPError as exc:
+            if exc.code != -32601:
                 raise ValueError("Unknown method did not return JSON-RPC -32601") from exc
         else:
             raise ValueError("Unknown method was reported as successful")
@@ -273,21 +271,21 @@ async def _check(config: dict) -> dict:
                 tool = catalog.get(example["tool"])
                 if tool is None:
                     raise ValueError("Example names an undiscovered tool")
-                Draft202012Validator(tool.inputSchema, registry=Registry()).validate(example["arguments"])
+                Draft202012Validator(tool.input_schema, registry=Registry()).validate(example["arguments"])
                 result = await session.call_tool(tool.name, example["arguments"])
-                if result.isError != example["expected_is_error"]:
+                if result.is_error != example["expected_is_error"]:
                     raise ValueError("Example isError differs from expected result")
-                if tool.outputSchema is not None and not result.isError:
-                    if result.structuredContent is None:
+                if tool.output_schema is not None and not result.is_error:
+                    if result.structured_content is None:
                         raise ValueError("Tool outputSchema requires structuredContent")
-                    Draft202012Validator(tool.outputSchema, registry=Registry()).validate(result.structuredContent)
+                    Draft202012Validator(tool.output_schema, registry=Registry()).validate(result.structured_content)
                 checks.append(
                     {
                         "check": "example",
                         "status": "passed",
                         "tool": tool.name,
-                        "is_error": result.isError,
-                        "output_schema_checked": tool.outputSchema is not None and not result.isError,
+                        "is_error": result.is_error,
+                        "output_schema_checked": tool.output_schema is not None and not result.is_error,
                     }
                 )
     return {

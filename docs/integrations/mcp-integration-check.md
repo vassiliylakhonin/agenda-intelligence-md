@@ -1,7 +1,7 @@
 # MCP Integration Check
 
 A bounded pre-release check for MCP service developers, using the official
-Python MCP SDK 1.30.0. Python 3.10+ is required for this optional extra:
+Python MCP SDK. Python 3.10+ is required for this optional extra:
 
 ```sh
 python -m venv .venv
