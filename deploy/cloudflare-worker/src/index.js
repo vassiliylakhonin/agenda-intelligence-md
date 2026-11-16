@@ -14768,34 +14768,35 @@ function capabilityRequestContract(origin) {
 }
 
 async function checkCapabilityRequestRateLimit(request, env) {
-  const kv = env?.AGENDA_USAGE;
-  if (!kv) return { limited: false };
+  const db = env?.PAYMENT_LEDGER;
+  if (!db || typeof db.prepare !== "function") return { unavailable: true };
   try {
-    const day = new Date().toISOString().slice(0, 10).replaceAll("-", "");
-    const dayKey = `rate:capability-request:day:${day}`;
-    const daily = Number.parseInt((await kv.get(dayKey)) || "0", 10) || 0;
-    if (daily >= CAPABILITY_REQUEST_DAILY_LIMIT) {
-      const midnight = new Date();
-      midnight.setUTCHours(24, 0, 0, 0);
-      return { limited: true, reason: "daily_fleet_cap", retryAfter: Math.max(60, Math.ceil((midnight - Date.now()) / 1000)) };
-    }
     const ip = clientIpFromRequest(request);
     const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip));
     const token = [...new Uint8Array(digest)]
       .slice(0, 12)
       .map((byte) => byte.toString(16).padStart(2, "0"))
       .join("");
-    const hour = new Date().toISOString().slice(0, 13);
-    const hourKey = `rate:capability-request:${token}:${hour}`;
-    const current = Number.parseInt((await kv.get(hourKey)) || "0", 10) || 0;
-    if (current >= CAPABILITY_REQUEST_RATE_LIMIT_PER_HOUR) {
+    const now = new Date();
+    const day = now.toISOString().slice(0, 10).replaceAll("-", "");
+    const hour = now.toISOString().slice(0, 13);
+    const requestId = crypto.randomUUID();
+    const result = await db.prepare(
+      "INSERT INTO capability_request_rate_reservations (request_id, client_hash, hour_bucket, day_bucket, created_at) VALUES (?1, ?2, ?3, ?4, ?5)"
+    ).bind(requestId, token, hour, day, now.getTime()).run();
+    if (result?.success === false) throw new Error(result.error || "D1 limiter write failed");
+    return { limited: false };
+  } catch (error) {
+    const message = String(error?.message || error);
+    if (message.includes("daily_fleet_cap")) {
+      const midnight = new Date();
+      midnight.setUTCHours(24, 0, 0, 0);
+      return { limited: true, reason: "daily_fleet_cap", retryAfter: Math.max(60, Math.ceil((midnight - Date.now()) / 1000)) };
+    }
+    if (message.includes("hourly_address_limit")) {
       return { limited: true, reason: "hourly_address_limit", retryAfter: 3600 };
     }
-    await kv.put(hourKey, String(current + 1), { expirationTtl: 7200 });
-    await kv.put(dayKey, String(daily + 1), { expirationTtl: 172800 });
-    return { limited: false };
-  } catch (_error) {
-    return { limited: false };
+    return { unavailable: true };
   }
 }
 
@@ -14871,6 +14872,9 @@ async function handleCapabilityRequest(request, env, ctx) {
     return jsonResponse({ code: "capability_request_storage_unavailable", error: "Request storage is unavailable" }, 503, headers);
   }
   const rate = await checkCapabilityRequestRateLimit(request, env);
+  if (rate.unavailable) {
+    return jsonResponse({ code: "capability_request_limiter_unavailable", error: "Request limiter is unavailable" }, 503, headers);
+  }
   if (rate.limited) {
     return jsonResponse(
       { code: "capability_request_rate_limited", error: "Too many capability requests. Try again later.", limit_reason: rate.reason },
