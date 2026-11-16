@@ -5,9 +5,11 @@ import test from "node:test";
 import {
   createDeployRequest as unsignedDeployRequest,
   envFromArgv,
+  omitCronTriggers,
   readVizierCredential,
   requestHash,
   runGatedDeploy,
+  withPreservedCronConfig,
   workerTargetFor
 } from "../scripts/vizier-gated-deploy.js";
 import { snapshotAssetDigest } from "../scripts/vizier-gated-deploy.js";
@@ -18,6 +20,32 @@ import { createHash } from 'node:crypto';
 import { deployedEnvironments, fleetEnvironments } from "../scripts/deploy-all.js";
 
 const TEST_GRANT = "test-owner-grant";
+
+test("deploy config omits both inherited and profile cron settings", () => {
+  const profile = '[env.verification]\nname = "verification"\n';
+  const bindings = '[[env.verification.kv_namespaces]]\nbinding = "STATS"\nid = "test"\n';
+  const source = [
+    'name = "root"\n',
+    '[triggers]\ncrons = [\n  "17 * * * *",\n]\n',
+    profile,
+    '[env.verification.triggers]\ncrons = []\n',
+    bindings
+  ].join("");
+  assert.equal(omitCronTriggers(source), 'name = "root"\n' + profile + bindings);
+});
+
+test("temporary deploy config preserves the source and is removed on failure", async () => {
+  const source = new URL("../wrangler.toml", import.meta.url);
+  const original = await readFile(source, "utf8");
+  let path;
+  await assert.rejects(withPreservedCronConfig(async (configPath) => {
+    path = configPath;
+    assert.equal(await readFile(configPath, "utf8"), omitCronTriggers(original));
+    throw new Error("simulated Wrangler failure");
+  }), /simulated Wrangler failure/);
+  await assert.rejects(readFile(path, "utf8"), { code: "ENOENT" });
+  assert.equal(await readFile(source, "utf8"), original);
+});
 
 test('CIS asset bytes change the Vizier request hash and other targets need no asset', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'agenda-snapshot-'));
