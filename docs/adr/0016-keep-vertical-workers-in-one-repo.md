@@ -42,6 +42,6 @@ Re-open this ADR if any worker acquires: its own paying customer with a distinct
 
 ## References
 
-- [AGENTS.md](../../AGENTS.md) — "Vertical workers inside this repo" + the spin-off rule this ADR resolves.
+- Historical project guidance: the vertical-worker section and spin-off rule that this ADR resolves.
 - [ADR 0014](0014-per-profile-live-retrieval.md) — per-profile live retrieval (the one per-worker dependency, deferred).
 - [ADR 0015](0015-evidence-gap-flagging-vs-substantive-analysis.md) — structural-triage boundary shared by all three workers.

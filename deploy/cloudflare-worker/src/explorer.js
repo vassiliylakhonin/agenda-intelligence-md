@@ -13,16 +13,16 @@ export function handleExplorerRequest(request, env = {}) {
   <title>M2M Escrow Dispute Explorer • Agenda Intelligence</title>
   <style>
     :root {
-      --bg: #090d16;
-      --card-bg: #111827;
-      --card-border: #1e293b;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
-      --accent: #38bdf8;
-      --accent-hover: #0ea5e9;
-      --good: #10b981;
-      --bad: #ef4444;
-      --warn: #f59e0b;
+      --bg: #f3f5f9;
+      --card-bg: #ffffff;
+      --card-border: #dfe6ee;
+      --text: #17202b;
+      --muted: #536173;
+      --accent: #0284c7;
+      --accent-hover: #0369a1;
+      --good: #0d9668;
+      --bad: #dc2626;
+      --warn: #b45309;
       --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -44,7 +44,7 @@ export function handleExplorerRequest(request, env = {}) {
       flex-wrap: wrap;
       gap: 12px;
     }
-    .logo { font-size: 20px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .logo { font-size: 20px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
     .badge-live {
       background: rgba(16, 185, 129, 0.15);
       color: var(--good);
@@ -61,16 +61,16 @@ export function handleExplorerRequest(request, env = {}) {
       border: 1px solid var(--card-border);
       border-radius: 10px;
       padding: 20px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 2px 8px rgba(15, 23, 42, 0.05);
     }
     .card-title { font-size: 16px; font-weight: 600; margin-bottom: 14px; color: var(--accent); display: flex; justify-content: space-between; align-items: center; }
     label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
     input, select, textarea {
       width: 100%;
-      background: #0b1120;
-      border: 1px solid #334155;
+      background: #ffffff;
+      border: 1px solid #cfd8e3;
       border-radius: 6px;
-      color: #fff;
+      color: var(--text);
       padding: 10px 12px;
       font-size: 13px;
       font-family: var(--font-mono);
@@ -81,7 +81,7 @@ export function handleExplorerRequest(request, env = {}) {
     input:focus, select:focus, textarea:focus { border-color: var(--accent); }
     .btn {
       background: var(--accent);
-      color: #04121e;
+      color: #ffffff;
       font-weight: 600;
       border: none;
       padding: 10px 18px;
@@ -94,14 +94,14 @@ export function handleExplorerRequest(request, env = {}) {
     .btn:hover { background: var(--accent-hover); }
     .btn:active { transform: scale(0.99); }
     .btn-secondary {
-      background: #1e293b;
-      color: #f1f5f9;
-      border: 1px solid #334155;
+      background: #ffffff;
+      color: var(--text);
+      border: 1px solid #cfd8e3;
     }
-    .btn-secondary:hover { background: #334155; }
+    .btn-secondary:hover { background: #f0f4f8; }
     .status-box {
-      background: #0b1120;
-      border: 1px solid #334155;
+      background: #f6f8fb;
+      border: 1px solid #dfe6ee;
       border-radius: 6px;
       padding: 14px;
       font-family: var(--font-mono);
@@ -120,12 +120,12 @@ export function handleExplorerRequest(request, env = {}) {
       text-align: center;
     }
     .payout-item {
-      background: #0b1120;
-      border: 1px solid #334155;
+      background: #f6f8fb;
+      border: 1px solid #dfe6ee;
       padding: 10px;
       border-radius: 6px;
     }
-    .payout-val { font-size: 16px; font-weight: 700; color: #fff; margin-top: 4px; }
+    .payout-val { font-size: 16px; font-weight: 700; color: var(--text); margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -215,7 +215,7 @@ export function handleExplorerRequest(request, env = {}) {
     <!-- Bottom Action Banner -->
     <div class="card" style="margin-top:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
       <div>
-        <h4 style="font-size:14px; color:#fff;">Evidence Evaluation Only — No Transfers</h4>
+        <h4 style="font-size:14px; color:var(--text);">Evidence Evaluation Only — No Transfers</h4>
         <p style="font-size:12px; color:var(--muted); margin-top:2px;">
           USDC Token Contract: <code style="color:var(--accent);">${BASE_USDC_CONTRACT}</code> (USDC Base) &bull; Service Payment Recipient: <code style="color:var(--accent);">${BASE_USDC_WALLET}</code>
         </p>

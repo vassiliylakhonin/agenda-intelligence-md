@@ -10264,12 +10264,20 @@ test("landing conversion: each profile has a usable console, v1 curl, honest pri
     ["cis-secondary-sanctions-a2a", "cis_secondary_sanctions"],
     ["agent-financial-guard-a2a", "agent_financial_guard"],
     ["m2m-escrow-arbiter-a2a", "m2m_escrow_arbiter"],
-    ["agent-output-verification-a2a", "agent_output_verification"]
+    ["agent-output-verification-a2a", "agent_output_verification"],
+    ["agentic-interaction-trust-a2a", "agentic_interaction_trust"],
+    ["gulf-maritime-exposure-a2a", "gulf_maritime_exposure"],
+    ["kazakhstan-market-entry-readiness-a2a", "market_entry_readiness"],
+    ["critical-minerals-due-diligence-a2a", "critical_minerals_due_diligence"],
+    ["dual-use-technology-export-a2a", "dual_use_technology_export"],
+    ["corridor-sanctions-assistant-a2a", "corridor_sanctions_assistant"]
   ]) {
     const origin = `https://${host}.example.workers.dev`;
     const html = landingHtml(new Request(`${origin}/`), { AGENT_PROFILE: profile });
     assert.ok(html.includes(`<link rel="canonical" href="${origin}/">`));
     assert.ok(html.includes(`<meta property="og:url" content="${origin}/">`));
+    assert.ok(html.includes("Missing a tool? POST what you need to /v1/request-capability on any of my workers - free, and I read requests daily and build what's asked."), `${host}: no capability-request CTA`);
+    assert.ok(html.includes('href="/v1/request-capability"'), `${host}: no capability contract link`);
     assert.ok(html.includes(`href="${origin}/.well-known/agent-card.json"`));
     assert.match(html, /onclick="showWorkedExample\(\)"/);
     assert.match(html, /-H &#39;A2A-Version: 1\.0&#39;/);

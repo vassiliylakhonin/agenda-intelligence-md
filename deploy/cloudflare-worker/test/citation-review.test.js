@@ -211,7 +211,7 @@ test('five public-document owner tasks run through the bundled form, real trial 
       claim:'The reservation table does not contain source excerpts or raw IP.',before:'It stores all source excerpts.',after:'request text, source excerpts, wallet or raw IP',gap:true},
     {file:'docs/integrations/rag-output.md',source:'No wallet, API key,\nmodel call, remote retrieval or account is required.',
       claim:'The local adapter can run without a model call.',before:'',after:'model call, remote retrieval or account is required.',gap:true},
-    {file:'AGENTS.md',source:'- a factuality verifier — schemas enforce structure, not truth.',
+    {file:'docs/agenstry/conformance-checklist.md',source:'- `factual_verification: false` — schemas enforce structure, not truth.',
       claim:'Schema validation proves that every claim is true.',before:'schemas enforce structure, not truth',after:'schemas enforce structure, not truth',
       corrected:'Schema validation enforces structure rather than factual truth.',gap:false},
   ];

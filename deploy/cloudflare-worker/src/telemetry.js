@@ -1151,6 +1151,7 @@ return {
   buildUsageEvent,
   traceIdFromRequest,
   callerHash,
+  callerKind,
   logUsageEvent,
   logPaymentEvent,
   funnelStepForPath,

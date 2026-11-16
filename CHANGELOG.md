@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Capability-request inbox on all fleet workers (2026-11-15)
+
+- Add `POST /v1/request-capability` to every fleet worker: a free, unauthenticated endpoint where a discovering agent runtime can leave a structured request ({capability, details, callback_url, contact, agent}) for a capability the fleet does not yet offer. GET returns the exact contract, limits and an example. Requests are validated (types, sizes, HTTPS-only callback), honeypot- and payment-header-guarded, rate-limited (5 per address per hour, 100 per day fleet-wide), stored in the shared usage KV with a 90-day TTL, and surfaced to the operator through the token-protected `/stats` section `capability_requests` and the daily telemetry collection. Owner verification traffic (`owner_test=1`, `X-Client-Id: agenda-owner-*` / `instinct-owner-*`) is validated but never stored or counted. Advertised in the agent-card `x_agenda_intelligence.capability_request` extension, `llms.txt` and the OpenAPI document. No version bump; pricing, admission and evaluation behavior unchanged.
+
 ### Self-correcting input-validation errors on the paid path (2026-11-13)
 
 - Refused paid requests (`invalid_paid_request`, HTTP 400) now carry an additive `self_correction` object: the failed field or condition, the required fields, the expected request location, and a minimal valid example plus ready-to-send `wire_request` for the addressed tool. A2A requests that name a `capability` get that tool's example in `request_hint`. Deterministic, no LLM; no caller value is echoed. Acceptance, routing, status codes, payment checks and validation rules are unchanged.

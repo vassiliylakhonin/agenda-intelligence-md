@@ -235,6 +235,11 @@ const AGENSTRY_VERIFICATION_PATHS = new Set([
   "/agenstry-verification.txt"
 ]);
 const CIS_REVIEW_INTAKE_PATH = "/intake/cis-review";
+const CAPABILITY_REQUEST_PATH = "/v1/request-capability";
+const CAPABILITY_REQUEST_MAX_BYTES = 8 * 1024;
+const CAPABILITY_REQUEST_RETENTION_SECONDS = 90 * 24 * 60 * 60;
+const CAPABILITY_REQUEST_RATE_LIMIT_PER_HOUR = 5;
+const CAPABILITY_REQUEST_DAILY_LIMIT = 100;
 // The intake form used to be hosted off-Worker and its origin was allow-listed
 // here. That host was never published, so no browser can present it; only local
 // development origins remain. Add a real origin here when a form is hosted again.
@@ -742,6 +747,37 @@ function originFromRequest(request) {
   return `${url.protocol}//${url.host}`;
 }
 
+function freeTrialRequestExample(profile, origin) {
+  const trial = trialProfile(profile);
+  if (!trial || !WORKED_EXAMPLES[profile]) return null;
+  return {
+    tool: trial.tool,
+    method: "POST",
+    endpoint: `${origin}${trialPath(profile)}`,
+    content_type: "application/json",
+    request_body: workerTrialAdapter(profile).example,
+    schema_url: `${origin}${trialPath(profile)}`,
+    example_is_synthetic: true,
+    instruction: "This synthetic sample passes the published input schema. Replace fictional values with your own authorized evidence; use dated source material where required. Schema validity does not verify facts or authorize action, and results may flag evidence gaps. Configured access, trial limits and human review still apply."
+  };
+}
+
+function llmsTextForProfile(profile, origin) {
+  const example = freeTrialRequestExample(profile, origin);
+  if (!example) return LLMS_TXT;
+  const profileName = profileDiscovery(profile).canonical_product_name;
+  const section = [
+    "## Minimal free-trial request example",
+    `Profile: ${profileName} (${profile}). Tool: ${example.tool}.`,
+    `Send this JSON body to POST ${example.endpoint} with Content-Type: application/json. GET the same endpoint for its input schema.`,
+    "This synthetic sample passes the published input schema, but it is not evidence. Replace fictional values with your own authorized evidence; use dated source material where required. A valid input shape does not verify facts or authorize action, and results may flag evidence gaps. Configured access, trial limits and human review still apply.",
+    "```json",
+    JSON.stringify(example.request_body, null, 2),
+    "```"
+  ].join("\n\n");
+  return LLMS_TXT.replace("## Connect an agent", `${section}\n\n## Connect an agent`);
+}
+
 function didIdentifierFromOrigin(origin) {
   return `did:web:${new URL(origin).host}`;
 }
@@ -1218,6 +1254,16 @@ function agentCard(request, env = {}) {
           "Use a stable non-personal integration label so aggregate stats can group repeat calls; do not send a person's name, email, token, or secret."
       },
       fleet_directory: `${origin}/.well-known/fleet.json`,
+      capability_request: {
+        endpoint: `${origin}${CAPABILITY_REQUEST_PATH}`,
+        method: "POST",
+        price: "free",
+        authentication: "none",
+        summary:
+          "Missing a capability this deployment does not offer? Leave a structured request describing what you need. " +
+          "Free, unauthenticated and rate-limited; GET the endpoint for the exact contract. " +
+          "Requests are reviewed by the operator on a daily collection cycle; no response is guaranteed."
+      },
       ai_catalog: `${origin}/.well-known/ai-catalog.json`,
       oauth_protected_resource: `${origin}/.well-known/oauth-protected-resource`,
       repository: REPOSITORY_URL,
@@ -1323,6 +1369,7 @@ function agentCard(request, env = {}) {
   shaped.x_agenda_intelligence.service_limits = REMEDIATION_PROFILES[profile]?.service_limits||[];
   shaped.x_agenda_intelligence.diagnostics = {field:"remediation",contract_version:"worker-remediation.v1",input_preflight:"/v1/validate-input",network_reset_policy:"campaign_no_scheduled_reset"};
   if (trial) {
+    shaped.x_agenda_intelligence.free_trial_request_example = freeTrialRequestExample(profile, origin);
     shaped.x_agenda_intelligence.a2a_free_trial = a2aTrialDiscovery(workerTrialAdapter(profile).example);
     shaped.capabilities = {...shaped.capabilities,extensions:[...(shaped.capabilities?.extensions || []),
       {uri:A2A_TRIAL_URI,description:'Opt-in free evaluation or allowance status through message metadata; HTTP/MCP/A2A share one allowance.',required:false,
@@ -2133,6 +2180,52 @@ function openApiDocument(request, env = {}) {
               description: "Health information.",
               content: { "application/json": { schema: { $ref: "#/components/schemas/HealthInfo" } } }
             }
+          }
+        }
+      },
+      "/v1/request-capability": {
+        get: {
+          tags: ["discovery"],
+          summary: "Capability-request contract",
+          description: "Returns the exact request contract for leaving a structured capability request with this deployment. Free and unauthenticated.",
+          responses: {
+            200: {
+              description: "Capability-request contract, limits and example.",
+              content: { "application/json": { schema: { type: "object", additionalProperties: true } } }
+            }
+          }
+        },
+        post: {
+          tags: ["discovery"],
+          summary: "Request a missing capability",
+          description: "Leave a structured request for a capability this deployment does not yet offer. Free, unauthenticated, rate-limited (5 per address per hour, 100 per day fleet-wide). Reviewed by the operator on a daily collection cycle; no response is guaranteed. Payment headers are rejected.",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["capability"],
+                  properties: {
+                    capability: { type: "string", minLength: 3, maxLength: 2000 },
+                    details: { type: "string", maxLength: 4000 },
+                    callback_url: { type: "string", maxLength: 500, description: "Optional HTTPS webhook." },
+                    contact: { type: "string", maxLength: 254 },
+                    agent: { type: "string", maxLength: 200 }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: { description: "Validated owner-verification traffic; never stored." },
+            201: { description: "Request stored for operator review.", content: { "application/json": { schema: { type: "object", additionalProperties: true } } } },
+            202: { description: "Accepted without storage (honeypot)." },
+            400: { description: "Invalid JSON or payment headers present." },
+            413: { description: "Request exceeds the 8 KiB body limit." },
+            422: { description: "Validation failed; fields lists the problems." },
+            429: { description: "Rate limit exceeded.", headers: { "Retry-After": { schema: { type: "integer" } } } },
+            503: { description: "Request storage unavailable." }
           }
         }
       },
@@ -11887,6 +11980,7 @@ const {
   logArchiveFeedback,
   logPaymentEvent,
   callerHash,
+  callerKind,
   callOutcome,
   dateKeyFromRequest,
   isStatsAuthorized,
@@ -14394,6 +14488,7 @@ async function handleStats(request, env) {
 
   const stats = await usageStats(env, date);
   stats.trial_completions = await trialCompletionStats(env, date);
+  stats.capability_requests = await capabilityRequestsForDate(env, date);
   return jsonResponse(stats, stats.configured ? 200 : 503);
 }
 
@@ -14624,6 +14719,237 @@ async function handleCisReviewIntakeList(request, env) {
   return jsonResponse({ count: records.length, records }, 200, headers);
 }
 
+// Free, unauthenticated capability-request inbox. Discovering agent runtimes
+// often find a catalog close to what they need but have no way to say what is
+// missing; this endpoint lets them leave a structured request the operator
+// reviews on the daily telemetry collection cycle. It is deliberately cheap
+// to ignore: no payment, no auth, small body, per-address and daily caps, and
+// owner verification traffic (owner_test=1 / X-Client-Id agenda-owner-* or
+// instinct-owner-*) is validated but never stored, so it cannot pollute the
+// operator's request list.
+function capabilityRequestContract(origin) {
+  return {
+    endpoint: `${origin}${CAPABILITY_REQUEST_PATH}`,
+    method: "POST",
+    price: "free",
+    authentication: "none",
+    description:
+      "Leave a structured request for a capability this deployment does not yet offer. " +
+      "The operator reviews requests on a daily collection cycle and may build or expose the requested capability. " +
+      "No response is guaranteed; a callback_url is used only if the operator chooses to respond.",
+    request_body: {
+      type: "object",
+      required: ["capability"],
+      properties: {
+        capability: { type: "string", minLength: 3, maxLength: 2000, description: "What you need: the missing capability, tool, check, data or integration." },
+        details: { type: "string", maxLength: 4000, description: "Optional context: constraints, expected inputs/outputs, volume or deadline." },
+        callback_url: { type: "string", maxLength: 500, description: "Optional HTTPS webhook the operator may POST to if this capability becomes available." },
+        contact: { type: "string", maxLength: 254, description: "Optional free-form contact (email or handle). Do not send secrets." },
+        agent: { type: "string", maxLength: 200, description: "Optional self-declared agent or runtime name." }
+      },
+      additionalProperties: true
+    },
+    example_request: {
+      capability: "Batch variant of the corridor sanctions screen accepting up to 50 counterparties per call.",
+      details: "The single-entity screen works; a batch mode is needed for nightly portfolio sweeps.",
+      callback_url: "https://agent.example.com/hooks/agenda-capability",
+      agent: "example-runtime/1.0"
+    },
+    limits: {
+      requests_per_hour_per_address: CAPABILITY_REQUEST_RATE_LIMIT_PER_HOUR,
+      requests_per_day_fleet: CAPABILITY_REQUEST_DAILY_LIMIT,
+      max_body_bytes: CAPABILITY_REQUEST_MAX_BYTES,
+      retention_days: 90
+    },
+    privacy:
+      "Stored with the receiving worker profile, your user-agent and a caller classification in the operator's private telemetry vault. " +
+      "Do not include personal data, secrets or payment material. Payment headers are rejected."
+  };
+}
+
+async function checkCapabilityRequestRateLimit(request, env) {
+  const db = env?.PAYMENT_LEDGER;
+  if (!db || typeof db.prepare !== "function") return { unavailable: true };
+  try {
+    const ip = clientIpFromRequest(request);
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip));
+    const token = [...new Uint8Array(digest)]
+      .slice(0, 12)
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+    const now = new Date();
+    const day = now.toISOString().slice(0, 10).replaceAll("-", "");
+    const hour = now.toISOString().slice(0, 13);
+    const requestId = crypto.randomUUID();
+    const result = await db.prepare(
+      "INSERT INTO capability_request_rate_reservations (request_id, client_hash, hour_bucket, day_bucket, created_at) VALUES (?1, ?2, ?3, ?4, ?5)"
+    ).bind(requestId, token, hour, day, now.getTime()).run();
+    if (result?.success === false) throw new Error(result.error || "D1 limiter write failed");
+    return { limited: false };
+  } catch (error) {
+    const message = String(error?.message || error);
+    if (message.includes("daily_fleet_cap")) {
+      const midnight = new Date();
+      midnight.setUTCHours(24, 0, 0, 0);
+      return { limited: true, reason: "daily_fleet_cap", retryAfter: Math.max(60, Math.ceil((midnight - Date.now()) / 1000)) };
+    }
+    if (message.includes("hourly_address_limit")) {
+      return { limited: true, reason: "hourly_address_limit", retryAfter: 3600 };
+    }
+    return { unavailable: true };
+  }
+}
+
+async function handleCapabilityRequest(request, env, ctx) {
+  const headers = { "cache-control": "no-store" };
+  if (request.method === "GET") {
+    return jsonResponse(capabilityRequestContract(originFromRequest(request)), 200, headers);
+  }
+  if (request.method !== "POST") {
+    return jsonResponse({ error: "Use GET or POST." }, 405, { allow: "GET, POST, OPTIONS", ...headers });
+  }
+  if (["x-payment-tx", "x-payment-signature", "payment-signature", "x-payment"].some((name) => request.headers.has(name))) {
+    return jsonResponse(
+      { code: "payment_not_applicable", error: "Capability requests are free; do not send payment material." },
+      400,
+      headers
+    );
+  }
+  const contentLength = Number(request.headers.get("content-length") || 0);
+  if (contentLength > CAPABILITY_REQUEST_MAX_BYTES) {
+    return jsonResponse({ code: "capability_request_too_large", error: "Request is too large" }, 413, headers);
+  }
+  let payload;
+  try {
+    payload = await readBoundedJson(request, CAPABILITY_REQUEST_MAX_BYTES);
+  } catch (error) {
+    const status = error.status === 413 ? 413 : 400;
+    return jsonResponse(
+      { code: status === 413 ? "capability_request_too_large" : "invalid_capability_request_json", error: "Request must be a valid JSON object" },
+      status,
+      headers
+    );
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return jsonResponse({ code: "invalid_capability_request", error: "Request must be a JSON object" }, 400, headers);
+  }
+  const requestId = crypto.randomUUID();
+  if (normalizedIntakeText(payload.website, 200)) {
+    return jsonResponse({ received: true, request_id: requestId }, 202, headers);
+  }
+  const errors = [];
+  const capability = normalizedIntakeText(payload.capability, 2000);
+  if (payload.capability !== undefined && typeof payload.capability !== "string") errors.push("capability must be a string");
+  if (capability.length < 3) errors.push("capability is required (3-2000 characters)");
+  for (const [field, max] of [["details", 4000], ["contact", 254], ["agent", 200], ["callback_url", 500]]) {
+    if (payload[field] !== undefined && typeof payload[field] !== "string") errors.push(`${field} must be a string of at most ${max} characters`);
+  }
+  const details = normalizedIntakeText(payload.details, 4000);
+  const contact = normalizedIntakeText(payload.contact, 254);
+  const agent = normalizedIntakeText(payload.agent, 200);
+  const callbackUrl = normalizedIntakeText(payload.callback_url, 500);
+  if (callbackUrl) {
+    let valid = false;
+    try {
+      valid = new URL(callbackUrl).protocol === "https:";
+    } catch (_error) {
+      valid = false;
+    }
+    if (!valid) errors.push("callback_url must be an https URL");
+  }
+  if (errors.length) {
+    return jsonResponse({ code: "invalid_capability_request", error: "Invalid capability request", fields: errors }, 422, headers);
+  }
+  const kind = callerKind(request);
+  if (kind === "owner_synthetic") {
+    return jsonResponse(
+      { received: true, stored: false, classification: "owner_synthetic", note: "Owner verification traffic is validated but never stored or counted." },
+      200,
+      headers
+    );
+  }
+  if (!env.AGENDA_USAGE || typeof env.AGENDA_USAGE.put !== "function") {
+    return jsonResponse({ code: "capability_request_storage_unavailable", error: "Request storage is unavailable" }, 503, headers);
+  }
+  const rate = await checkCapabilityRequestRateLimit(request, env);
+  if (rate.unavailable) {
+    return jsonResponse({ code: "capability_request_limiter_unavailable", error: "Request limiter is unavailable" }, 503, headers);
+  }
+  if (rate.limited) {
+    return jsonResponse(
+      { code: "capability_request_rate_limited", error: "Too many capability requests. Try again later.", limit_reason: rate.reason },
+      429,
+      { "retry-after": String(rate.retryAfter), ...headers }
+    );
+  }
+  const receivedAt = new Date().toISOString();
+  const retentionUntil = new Date(Date.now() + CAPABILITY_REQUEST_RETENTION_SECONDS * 1000).toISOString();
+  const dayKey = receivedAt.slice(0, 10).replaceAll("-", "");
+  const record = {
+    schema_version: "1.0",
+    request_id: requestId,
+    received_at: receivedAt,
+    retention_until: retentionUntil,
+    profile: agentProfile(request, env),
+    capability,
+    details: details || null,
+    callback_url: callbackUrl || null,
+    contact: contact || null,
+    agent: agent || null,
+    user_agent: (request.headers.get("user-agent") || "").slice(0, 300) || null,
+    caller_kind: kind,
+    country: request.cf?.country || null
+  };
+  await env.AGENDA_USAGE.put(`capability-request:${dayKey}:${requestId}`, JSON.stringify(record), {
+    expirationTtl: CAPABILITY_REQUEST_RETENTION_SECONDS
+  });
+  try {
+    await logFunnelEvent(request, "capability_request", env);
+  } catch (_error) {
+    // Observability must never block intake.
+  }
+  return jsonResponse(
+    {
+      received: true,
+      request_id: requestId,
+      stored: true,
+      retention_until: retentionUntil,
+      review: "Requests are reviewed by the operator on a daily collection cycle. No response is guaranteed."
+    },
+    201,
+    headers
+  );
+}
+
+async function capabilityRequestsForDate(env, date) {
+  const kv = env?.AGENDA_USAGE;
+  if (!kv || typeof kv.list !== "function") {
+    return { contract_version: 1, status: "unavailable", count: 0, records: [] };
+  }
+  try {
+    const dayKey = date.replaceAll("-", "");
+    const listed = await kv.list({ prefix: `capability-request:${dayKey}:`, limit: 1000 });
+    const records = (
+      await Promise.all(
+        listed.keys.map(async ({ name }) => {
+          const value = await kv.get(name);
+          if (!value) return null;
+          try {
+            return JSON.parse(value);
+          } catch (_error) {
+            return null;
+          }
+        })
+      )
+    )
+      .filter(Boolean)
+      .sort((left, right) => String(left.received_at).localeCompare(String(right.received_at)));
+    return { contract_version: 1, status: "complete", count: records.length, records };
+  } catch (_error) {
+    return { contract_version: 1, status: "error", count: 0, records: [] };
+  }
+}
+
 function healthInfo(request, env) {
   const card = agentCard(request, env);
   const origin = originFromRequest(request);
@@ -14759,10 +15085,10 @@ function robotsTxt(request, env = {}) {
 }
 
 function sitemapXml(request, env) {
-  const origin = originFromRequest(request);
-  const paths = agentProfile(request, env) === 'agenda'
-    ? ['/', '/trust', '/privacy', '/terms', '/sample-dossier', '/supplier-desk', '/supplier-review', '/document-archive', '/archive-review']
-    : ['/'];
+  const origin = publicSiteOrigin(request, env);
+  // Every profile serves these shared public trust and evidence pages. Keep
+  // the product sitemap useful to search crawlers instead of listing only `/`.
+  const paths = ['/', '/trust', '/privacy', '/terms', '/sample-dossier', '/supplier-desk', '/supplier-review', '/document-archive', '/archive-review'];
   const urls = paths.map((path) => `  <url><loc>${origin}${path}</loc></url>`).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
 }
@@ -15282,13 +15608,13 @@ function directRouteHtml(endpoint, route, request, env) {
 <title>${title}</title>
 <style>
   :root {
-    --bg: #0f172a;
-    --card: #1e293b;
-    --border: #334155;
-    --text: #f8fafc;
-    --muted: #94a3b8;
-    --accent: #38bdf8;
-    --good: #34d399;
+    --bg: #f3f5f9;
+    --card: #ffffff;
+    --border: #dfe6ee;
+    --text: #17202b;
+    --muted: #536173;
+    --accent: #0284c7;
+    --good: #0d9668;
     --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
@@ -15315,32 +15641,32 @@ function directRouteHtml(endpoint, route, request, env) {
     background: var(--card); border: 1px solid var(--border);
     border-radius: 8px; padding: 20px; margin-bottom: 20px;
   }
-  h1 { font-size: 24px; margin: 0 0 8px; color: #fff; }
+  h1 { font-size: 24px; margin: 0 0 8px; color: var(--text); }
   h2 { font-size: 17px; margin: 0 0 12px; color: var(--accent); }
   p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
-  code { font-family: var(--font-mono); font-size: 13px; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; color: #e2e8f0; }
+  code { font-family: var(--font-mono); font-size: 13px; background: rgba(15,23,42,0.06); padding: 2px 6px; border-radius: 4px; color: #1f2937; }
   pre {
-    background: #0b1120; border: 1px solid var(--border); border-radius: 6px;
+    background: #f6f8fb; border: 1px solid var(--border); border-radius: 6px;
     padding: 14px; overflow-x: auto; font-family: var(--font-mono); font-size: 13px;
-    color: #e2e8f0; margin: 0 0 14px; line-height: 1.5;
+    color: #1f2937; margin: 0 0 14px; line-height: 1.5;
   }
   textarea {
-    width: 100%; height: 180px; background: #0b1120; border: 1px solid var(--border);
-    border-radius: 6px; color: #e2e8f0; font-family: var(--font-mono); font-size: 13px;
+    width: 100%; height: 180px; background: #ffffff; border: 1px solid var(--border);
+    border-radius: 6px; color: #1f2937; font-family: var(--font-mono); font-size: 13px;
     padding: 12px; resize: vertical; margin-bottom: 12px; outline: none;
   }
   textarea:focus { border-color: var(--accent); }
   button {
-    background: var(--accent); color: #0f172a; border: none; padding: 10px 20px;
+    background: var(--accent); color: #ffffff; border: none; padding: 10px 20px;
     border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;
     transition: opacity 0.15s;
   }
   button:hover { opacity: 0.9; }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
   #resultBox {
-    display: none; margin-top: 14px; background: #0b1120; border: 1px solid var(--border);
+    display: none; margin-top: 14px; background: #f6f8fb; border: 1px solid var(--border);
     border-radius: 6px; padding: 14px; font-family: var(--font-mono); font-size: 13px;
     white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow-y: auto;
   }
@@ -16237,6 +16563,10 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
     return handleCisReviewIntakeList(request, env);
   }
 
+  if (url.pathname === CAPABILITY_REQUEST_PATH && ["GET", "POST"].includes(request.method)) {
+    return handleCapabilityRequest(request, env, ctx);
+  }
+
   if (request.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
@@ -16284,7 +16614,7 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
   }
 
   if (request.method === "GET" && (url.pathname === "/llms.txt" || url.pathname === "/.well-known/llms.txt")) {
-    return new Response(LLMS_TXT, {
+    return new Response(llmsTextForProfile(agentProfile(request, env), originFromRequest(request)), {
       status: 200,
       headers: {
         "content-type": "text/plain; charset=utf-8",
@@ -16906,6 +17236,10 @@ export {
   funnelStepForPath,
   handleCisReviewIntake,
   handleCisReviewIntakeList,
+  handleCapabilityRequest,
+  capabilityRequestsForDate,
+  capabilityRequestContract,
+  CAPABILITY_REQUEST_PATH,
   DIRECT_V1_ROUTES,
   directRouteHtml,
   directRouteJson,

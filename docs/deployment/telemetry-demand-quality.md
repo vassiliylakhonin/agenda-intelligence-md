@@ -139,7 +139,12 @@ to the payment binding and is retained on replay.
 
 The REST test console propagates `?owner_test=1` as the existing owner-manual
 header, reuses the response trace while correcting input, and clears it after
-success. This browser trace is page-local, with no cookie or persistent store.
+success. The bankability console does the same for every screen request,
+including the free screen it auto-runs on page load: a browser visit to
+`/corridor-bankability?owner_test=1` labels that automatic request
+`X-Client-Id: agenda-owner-manual`, so UI verification stops consuming
+"external" previews. This browser trace is page-local, with no cookie or
+persistent store.
 Shared telemetry headers are sent only to the same origin. Named
 `owner-feedback-synthetic/` and `Agenda-Fleet-Site-Verification/` clients are
 consistently excluded as owner synthetic tests. Labels are spoofable purpose

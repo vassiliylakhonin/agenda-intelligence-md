@@ -55,6 +55,6 @@ These are legitimate future presence flags under the same boundary; they are not
 
 ## References
 
-- [AGENTS.md](../../AGENTS.md) — honesty rules (no fabricated determinations), vertical-worker definition.
+- Historical project guidance: no fabricated determinations; vertical workers are evidence-triage tools.
 - [ADR 0006](0006-factual-verification-is-post-v1-layer.md) — factual verification is a deliberately separate, post-v1 layer; this ADR keeps the workers on the correct side of that line.
 - [ADR 0007](0007-source-plan-coverage-is-diagnostic-before-v1.md) — source-coverage is diagnostic, not a pass/fail gate; the structural-score basis here is consistent with that.
