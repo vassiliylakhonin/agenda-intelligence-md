@@ -51,6 +51,8 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           VIZIER_API_KEY: ${{ secrets.VIZIER_API_KEY }}
           VIZIER_DEPLOY_GRANT_FILE: ${{ runner.temp }}/vizier-deploy-grant.jws
+          # Free plan allows 5 cron triggers per account; never re-apply the config cron here.
+          PRESERVE_CRON_TRIGGERS: 'true'
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Dedicated Pages publisher credential is missing.' >&2; exit 1; }
           python -u scripts/publish_sanctions_index.py --publish-prepared
