@@ -70,7 +70,7 @@ export async function outputTrialAvailability(request, env, profile) {
   const now = new Date().toISOString();
   const state = await env.PAYMENT_LEDGER.prepare(`SELECT
     (SELECT COUNT(*) FROM output_verification_trials WHERE client_hash = ?1) AS network_used,
-    (SELECT COUNT(*) FROM output_verification_trials WHERE reserved_day = ?2) AS daily_used`)
+    ((SELECT COUNT(*) FROM output_verification_trials WHERE reserved_day = ?2) + (SELECT COUNT(*) FROM trial_technical_refunds WHERE reserved_day = ?2)) AS daily_used`)
     .bind(client, now.slice(0, 10)).first();
   if (!state || ![state.network_used, state.daily_used].every(n => Number.isSafeInteger(n) && n >= 0)) {
     throw new Error('trial_store_unavailable');
@@ -97,14 +97,14 @@ export async function reserveOutputTrial(request, env, attempt = crypto.randomUU
     env.PAYMENT_LEDGER.prepare(`SELECT CASE
       WHEN (SELECT COUNT(*) FROM output_verification_trials WHERE client_hash = ?1) >= ?3
         THEN 'network_allowance_exhausted'
-      WHEN (SELECT COUNT(*) FROM output_verification_trials WHERE reserved_day = ?2) >= ?4
+      WHEN ((SELECT COUNT(*) FROM output_verification_trials WHERE reserved_day = ?2) + (SELECT COUNT(*) FROM trial_technical_refunds WHERE reserved_day = ?2)) >= ?4
         THEN 'daily_capacity_exhausted'
       ELSE NULL END AS limit_reason`).bind(client, now.slice(0, 10), trialAttemptLimit(profile), OUTPUT_TRIAL_DAILY_LIMIT),
     env.PAYMENT_LEDGER.prepare(`
     INSERT INTO output_verification_trials(reservation_id, client_hash, reserved_day, reserved_at)
     SELECT ?1, ?2, ?3, ?4
     WHERE (SELECT COUNT(*) FROM output_verification_trials WHERE client_hash = ?2) < ?5
-      AND (SELECT COUNT(*) FROM output_verification_trials WHERE reserved_day = ?3) < ?6
+      AND ((SELECT COUNT(*) FROM output_verification_trials WHERE reserved_day = ?3) + (SELECT COUNT(*) FROM trial_technical_refunds WHERE reserved_day = ?3)) < ?6
     RETURNING reservation_id
   `).bind(attempt, client, now.slice(0, 10), now,
     trialAttemptLimit(profile), OUTPUT_TRIAL_DAILY_LIMIT)

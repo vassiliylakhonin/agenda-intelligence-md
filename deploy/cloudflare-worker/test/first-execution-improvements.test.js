@@ -78,7 +78,7 @@ test('technical failure races preserve campaign/fleet caps with bounded refunds'
  assert.equal(await count(env,'trial_technical_refunds'),2);assert.ok(await count(env,'output_verification_trials')<=5);
  assert.ok(result.every(r=>[429,503].includes(r.status)));
  const day=new Date().toISOString().slice(0,10),now=new Date().toISOString();
- for(let i=2;i<100;i++)await env.PAYMENT_LEDGER.prepare('INSERT INTO trial_technical_refunds VALUES (?1,?2,?3,?4)').bind('seed-'+i,'seed-'+i,day,now).run();
+ for(let i=2;i<100;i++)await env.PAYMENT_LEDGER.prepare('INSERT INTO trial_technical_refunds (attempt_id,client_hash,refunded_day,refunded_at,reserved_day) VALUES (?1,?2,?3,?4,?3)').bind('seed-'+i,'seed-'+i,day,now).run();
  const r=await direct(env,{fail:true,ip:'192.0.2.100'});assert.equal((await r.json()).technical_refund,false);
  assert.equal(await count(env,'trial_technical_refunds'),100);
 });
@@ -94,3 +94,13 @@ test('completion-storage failure refunds, same key retries and then recovers wit
  assert.deepEqual((await (await rpc(env,'agent_output_verification',input,key)).json()).result.structuredContent,success.result.structuredContent);
  assert.equal(await count(env,'output_verification_trials'),1);
 }));
+
+test('technical refunds restore product allowance but never expand hard fleet daily work cap',async()=>{
+ const env=envFor(),day=new Date().toISOString().slice(0,10),now=new Date().toISOString();
+ await env.PAYMENT_LEDGER.prepare(`WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i+1 FROM n WHERE i<999)
+   INSERT INTO output_verification_trials SELECT 'seed-'||i,'seed-'||i,?1,?2 FROM n`).bind(day,now).run();
+ const failed=await direct(env,{fail:true});assert.equal((await failed.json()).technical_refund,true);
+ const next=await direct(env);assert.equal(next.status,429);
+ assert.equal((await next.json()).trial.limit_reason,'daily_capacity_exhausted');
+ assert.equal(await count(env,'output_verification_trials'),999);
+});

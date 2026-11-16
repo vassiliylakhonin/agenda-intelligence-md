@@ -40,8 +40,8 @@ export async function abandonTrialRecovery(env,recovery,attempt) {
 export async function refundTechnicalTrial(env,client,attempt,recovery) {
   const now = new Date().toISOString();
   const statements = [env.PAYMENT_LEDGER.prepare(`INSERT OR IGNORE INTO trial_technical_refunds
-    (attempt_id,client_hash,refunded_day,refunded_at)
-    SELECT ?1,?2,?3,?4 WHERE EXISTS (SELECT 1 FROM output_verification_trials WHERE reservation_id=?1 AND client_hash=?2)
+    (attempt_id,client_hash,refunded_day,reserved_day,refunded_at)
+    SELECT ?1,?2,?3,(SELECT reserved_day FROM output_verification_trials WHERE reservation_id=?1),?4 WHERE EXISTS (SELECT 1 FROM output_verification_trials WHERE reservation_id=?1 AND client_hash=?2)
     AND NOT EXISTS (SELECT 1 FROM trial_completion_receipts WHERE attempt_id=?1)
     AND (SELECT COUNT(*) FROM trial_technical_refunds WHERE client_hash=?2) < ?5
     AND (SELECT COUNT(*) FROM trial_technical_refunds WHERE refunded_day=?3) < ?6 RETURNING attempt_id`)
