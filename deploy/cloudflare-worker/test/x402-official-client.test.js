@@ -279,7 +279,7 @@ test("official native MCP payment completes the published operation for all twel
     const env = {
         ...environment(),
         AGENT_PROFILE: profile,
-        WORKER_FREE_TRIAL: "1",
+        WORKER_FREE_TRIAL: profile === "agent_output_verification" ? "0" : "1",
         OPENSANCTIONS_DISABLED: "1",
       },
       network = mockNetwork(),
@@ -287,7 +287,7 @@ test("official native MCP payment completes the published operation for all twel
     globalThis.fetch = network.fetch;
     try {
       const terms = await (
-        await handleRequest(new Request("https://example.test/v1/trial"), env)
+        await handleRequest(new Request("https://example.test/v1/trial"), {...env,WORKER_FREE_TRIAL:"1"})
       ).json();
       let calls = 0;
       const wireClient = {

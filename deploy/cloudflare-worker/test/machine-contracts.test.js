@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {handleRequest} from '../src/index.js';
 const origin='https://example.test';
-const env={AGENT_PROFILE:'agent_output_verification',BILLING_MODE:'pay_per_call',X402_STANDARD:'1',OUTPUT_VERIFICATION_TRIAL:'1',VIZIER_DISABLED:'1'};
+const env={AGENT_PROFILE:'agent_output_verification',BILLING_MODE:'pay_per_call',X402_STANDARD:'1',OUTPUT_VERIFICATION_TRIAL:'0',VIZIER_DISABLED:'1'};
 test('published payment manifest declares the standard enabled by the actual runtime',async()=>{
   const response=await handleRequest(new Request(origin+'/.well-known/x402'),env);
   const manifest=await response.json();

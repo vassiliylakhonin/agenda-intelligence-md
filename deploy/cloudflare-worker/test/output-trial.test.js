@@ -95,8 +95,10 @@ test('disabled and other profiles never serve trials and paid evaluation remains
     if (path.endsWith('verification')) assert.equal((await post(env,evidence,{},path)).status,402);
   }
   const call={jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'agent_output_verification',arguments:evidence}};
-  assert.equal((await post(env,call,{},'/mcp')).status,402);
-  assert.equal((await stored(env)).count,0);
+  const freeFirst=await post(env,call,{},'/mcp');
+  assert.equal(freeFirst.status,200);
+  assert.equal((await freeFirst.json()).result.structuredContent.trial.admission,'free_trial');
+  assert.equal((await stored(env)).count,1);
 }));
 
 test('free telemetry records preview and usage, never paid completion or input content', async () => {

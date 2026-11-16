@@ -38,10 +38,14 @@ test('each fleet card and llms.txt publishes its schema-valid free-trial request
 
       const llmsResponse = await handleRequest(new Request(`${origin}/llms.txt`), env);
       const llms = await llmsResponse.text();
-      assert.ok(llms.includes('## Minimal free-trial request example'), `${profile}: llms section`);
-      assert.ok(llms.includes(`Tool: ${trial.tool}.`), `${profile}: llms tool`);
-      assert.ok(llms.includes(JSON.stringify(example.request_body, null, 2)), `${profile}: llms request body`);
-      assert.ok(llms.includes('This synthetic sample passes the published input schema'), `${profile}: llms caveat`);
+      const first = llms.split('\n').slice(0,15).join('\n');
+      const tool = profile === 'agent_output_verification' ? 'review_answer' : ['agenda','corridor_sanctions_assistant'].includes(profile) ? trial.tool : 'free_trial';
+      assert.ok(first.includes(tool),profile);
+      assert.ok(first.includes('curl'),profile);
+      assert.ok(first.includes('not evidence'),profile);
+      const call=JSON.parse(llms.split('```json\n')[1].split('\n```')[0]);
+      assert.equal(validatePublishedInput(profile,{tool,input:call.params.arguments},true).body.valid,true,profile);
+
     }
   } finally {
     console.log = originalLog;

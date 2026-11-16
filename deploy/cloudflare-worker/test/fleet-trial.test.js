@@ -134,7 +134,7 @@ test('free CIS screening never calls the paid OpenSanctions fallback', async () 
   } finally {globalThis.fetch=old;}
 }));
 
-test('evaluator refusal consumes its reservation and never records a successful free result', async () => {
+test('technical evaluator failure returns its reservation and never records a successful free result', async () => {
   const env=envFor('agent_financial_guard'),terms=await quiet(()=>termsFor(env));
   const route=DIRECT_V1_ROUTES[TRIAL_PROFILES.agent_financial_guard.route];
   const run=route.run,old=console.log,events=[];
@@ -144,7 +144,7 @@ test('evaluator refusal consumes its reservation and never records a successful 
     const response=await call(env,'/v1/trial',terms.example_request);
     assert.equal(response.status,503);
     assert.equal((await response.json()).code,'trial_evaluation_failed');
-    assert.equal(await count(env.PAYMENT_LEDGER),1);
+    assert.equal(await count(env.PAYMENT_LEDGER),0);
     assert.ok(events.some(e=>e.stage==='preview_failed' && e.reason==='trial_evaluation_failed'));
     assert.ok(!events.some(e=>e.stage==='preview_completed' || e.stage==='execution_completed'));
   } finally {route.run=run;console.log=old;}

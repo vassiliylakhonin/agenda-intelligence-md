@@ -62,7 +62,7 @@ test('receipt storage failure cannot produce an unrecorded successful trial resp
     assert.equal(response.status,503);
     const body=await response.json();
     assert.equal(body.code,'trial_recording_unavailable');
-    assert.equal(body.trial.attempt_consumed,true);
+    assert.equal(body.trial.attempt_consumed,false);
     assert.equal(events.find(e=>e?.stage==='preview_failed').failure_family,'execution');
     assert.ok(!JSON.stringify(body).includes('private storage detail'));
     assert.ok(!events.some(e=>e?.stage==='preview_completed' || e?.stage==='payment_verified'));

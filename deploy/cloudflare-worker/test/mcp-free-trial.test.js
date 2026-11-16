@@ -154,7 +154,7 @@ test('concurrent REST and MCP trials share the last daily slot and expose retry 
   assert.equal(refused.trial.attempt_consumed,false);
 }));
 
-test('a completion-recording failure is an MCP tool error after consuming its reservation',()=>quiet(async()=>{
+test('a completion-recording failure is an MCP tool error after returning its reservation',()=>quiet(async()=>{
   const env=environment('agenda');
   const prepare=env.PAYMENT_LEDGER.prepare;
   env.PAYMENT_LEDGER.prepare=sql=>{
@@ -165,6 +165,6 @@ test('a completion-recording failure is an MCP tool error after consuming its re
   assert.equal(result.result.isError,true);
   assert.equal(result.result.structuredContent,undefined);
   assert.equal(details(result).code,'trial_recording_unavailable');
-  assert.equal(details(result).trial.attempt_consumed,true);
-  assert.equal(await count(env),1);
+  assert.equal(details(result).trial.attempt_consumed,false);
+  assert.equal(await count(env),0);
 }));

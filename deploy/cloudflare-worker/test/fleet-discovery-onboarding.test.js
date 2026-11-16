@@ -48,8 +48,8 @@ test('MCP clients learn the trial body format, selected tool and correct docs', 
     headers:{'content-type':'application/json'},
     body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list'})}), env);
   const tools = (await response.json()).result.tools;
-  assert.match(tools[0].description, /GET that URL for input_schema and example_request/);
-  assert.match(tools[0].description, /not an MCP\/A2A envelope/);
+  assert.ok(tools[0]._meta['com.agenda/readiness'].resources.access.endsWith('/.well-known/x402'));
+  assert.match(tools[0].description, /free_trial/);
   const server = await (await handleRequest(new Request(origin+'/.well-known/mcp/server-card.json'),env)).json();
   assert.ok(server.description.startsWith(PROFILE_TASKS.dual_use_technology_export));
   assert.equal(server.onboarding.first_evaluation.tool, 'dual_use_technology_export');

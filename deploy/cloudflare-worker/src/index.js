@@ -1,3 +1,4 @@
+import { mineralPreparationPlan } from './mineral-preparation.js';
 import {buildRemediation,inputRemediation,unknownInputFindings,REMEDIATION_PROFILES} from './remediation.js';
 import {INPUT_VALIDATION_TOOL,INPUT_VALIDATION_PATH,INPUT_VALIDATION_MAX_BYTES,validationTool,validatePublishedInput} from './input-validation.js';
 import {machineContract,machineOffers,profilePaymentManifest,publicToolSchema,toolSchemaUrl,evaluationAmount} from './machine-contracts.js';
@@ -660,7 +661,7 @@ function jsonResponse(body, status = 200, extraHeaders = {}) {
       "content-type": "application/json; charset=utf-8",
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "GET, POST, OPTIONS",
-      "access-control-allow-headers": "content-type, x-client-id, authorization, x-production-key, x-payment-tx, x-payment-signature, x-payment-trace-id, x-task-token, mcp-protocol-version, a2a-version, mcp-method, mcp-name",
+      "access-control-allow-headers": "content-type, idempotency-key, x-client-id, authorization, x-production-key, x-payment-tx, x-payment-signature, x-payment-trace-id, x-task-token, mcp-protocol-version, a2a-version, mcp-method, mcp-name",
       ...extraHeaders
     }
   });
@@ -766,16 +767,27 @@ function llmsTextForProfile(profile, origin) {
   const example = freeTrialRequestExample(profile, origin);
   if (!example) return LLMS_TXT;
   const profileName = profileDiscovery(profile).canonical_product_name;
+  const tool = profile === 'agent_output_verification' ? 'review_answer' : routingToolForProfile(profile) || 'free_trial';
+  const args = profile === 'agent_output_verification'
+    ? {answer:'The report lists "three warehouses" [s1]',sources:[{source_id:'s1',text:'The report lists three warehouses.'}]}
+    : routingToolForProfile(profile) ? {text:'What evidence do I need for a mineral offtake decision?'} : example.request_body;
+  const call = JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/call',params:{name:tool,arguments:args}});
   const section = [
-    "## Minimal free-trial request example",
-    `Profile: ${profileName} (${profile}). Tool: ${example.tool}.`,
-    `Send this JSON body to POST ${example.endpoint} with Content-Type: application/json. GET the same endpoint for its input schema.`,
-    "This synthetic sample passes the published input schema, but it is not evidence. Replace fictional values with your own authorized evidence; use dated source material where required. A valid input shape does not verify facts or authorize action, and results may flag evidence gaps. Configured access, trial limits and human review still apply.",
-    "```json",
-    JSON.stringify(example.request_body, null, 2),
-    "```"
-  ].join("\n\n");
-  return LLMS_TXT.replace("## Connect an agent", `${section}\n\n## Connect an agent`);
+    `# ${profileName}`,
+    PROFILE_TASKS[profile],
+    `Native MCP: POST ${origin}/mcp/agent (Content-Type: application/json).`,
+    `First call: ${tool}. Synthetic shape only: replace with authorized input; templates are not evidence.`,
+    '```json', call, '```',
+    routingToolForProfile(profile) ? 'Free orientation: no trial attempt. Configured authentication and hourly limits apply.'
+      : `Campaign allowance: ${profile === 'agent_output_verification' ? 5 : 2} attempts per network/product, no daily reset; shared fleet cap 1000/day. Check free_trial_status before evaluating.`,
+    profile === 'agent_output_verification' ? 'Result: citation/quote findings for human review, not semantic support or factual truth.'
+      : 'Result: missing evidence and next review steps, not clearance or permission to act.',
+    'No automatic payment or paid continuation. Missing evidence stays missing.',
+    'Optional ready-to-run curl for the same native MCP call:',
+    `curl '${origin}/mcp/agent' -H 'Content-Type: application/json' --data '${call.replaceAll("'", "'\\''")}'`,
+    '', '## Discovery, access and fleet reference', LLMS_TXT
+  ].join("\n");
+  return section;
 }
 
 function didIdentifierFromOrigin(origin) {
@@ -11929,7 +11941,7 @@ function triageForText(text, modules, profile = "agenda", structuredRequest = nu
       ? "middle_corridor_deal_risk_contract"
       : classifyIntentForProfile(text, profile);
   return {
-    ...(profile === "agenda" ? {orientation: strategicOrientation(text)} : {}),
+    ...(profile === "agenda" ? {orientation: strategicOrientation(text), ...(mineralPreparationPlan(text) ? {evidence_preparation:mineralPreparationPlan(text)} : {})} : {}),
     intent,
     modules,
     signal_screen: signalScreenForText(text, modules, intent),
@@ -13471,6 +13483,17 @@ async function handleMcpJsonRpc(payload, request, env = {}, ctx = {}) {
       return respond(id,await mcpTrialResult(await executeWorkerTrial(request,env,ctx,profile,()=>args,adapter,
         answerReviewTerms(outputTrialTerms(profile)),ANSWER_REVIEW_TOOL)));
     }
+    if (isOvFreeFirst(profile,env,request,payload)) {
+      if (!['string','number'].includes(typeof payload.id) || (typeof payload.id === 'number' && !Number.isFinite(payload.id)))
+        return jsonRpcError(null,-32600,'Trial calls require a string or number request id');
+      const args = params.arguments ?? {};
+      const unknown = mcpUnknownFields(profile,name,args);
+      if (unknown.length) return respond(id,mcpToolResult({code:'invalid_input',evaluation_performed:false,attempt_consumed:false},true));
+      const raw = mcpUsesLegacyRequestWrapper(profile,args,name) ? args.request : args;
+      const response = await executeWorkerTrial(request,env,ctx,profile,()=>raw,undefined,undefined,name);
+      if (!response.ok) return respond(id,await mcpTrialResult(response));
+      return respond(id,mcpToolResult(await response.json()));
+    }
     if (isMcpTrialTool(name) && outputTrialEnabled(profile, env)) {
       // Stateful calls require a correlatable request id; notifications and
       // malformed envelopes must not consume a campaign attempt.
@@ -13778,6 +13801,12 @@ function hostedMcpTools(profile, request, env) {
       shared_by_free_trial:true
     }};
   }
+  if (profile === 'agent_output_verification' && outputTrialEnabled(profile,env)) {
+    const canonical = tools.find(tool=>tool.name === 'agent_output_verification');
+    canonical.outputSchema = {...canonical.outputSchema,properties:{...canonical.outputSchema.properties,trial:{type:'object'}}};
+    canonical._meta['com.agenda/readiness'].free_first = {admission:'free_trial',attempts_per_network:5,
+      daily_service_limit:1000,automatic_payment:false,shared_allowance:true};
+  }
   tools.push(validationTool(profile,outputTrialEnabled(profile,env),hostedAccess(profile,env,origin)));
   if (profile==='agent_output_verification' && outputTrialEnabled(profile,env)) tools.push(...answerReviewTools(PUBLIC_SCHEMAS));
   return outputTrialEnabled(profile,env)
@@ -13821,6 +13850,15 @@ function x402Document(request, env) {
   };
 }
 
+// Narrow experiment: only the canonical OV evidence operation, MCP only.
+// Explicit payment/Pro requests keep their existing path; exhaustion never pays.
+function isOvFreeFirst(profile, env, request, body) {
+  return profile === 'agent_output_verification' && env.BILLING_MODE === 'pay_per_call' && outputTrialEnabled(profile,env) &&
+    body?.jsonrpc === '2.0' && body.method === 'tools/call' && body.params?.name === 'agent_output_verification' &&
+    !['x-payment-tx','x-payment-signature','payment-signature','x-payment'].some(key=>request.headers.has(key)) &&
+    !bearerTokenFromRequest(request).startsWith('agy_pro_') && body.params?._meta?.['x402/payment'] === undefined;
+}
+
 async function handleMcpPost(request, env, ctx) {
   let payload;
   try {
@@ -13850,7 +13888,7 @@ async function handleMcpPost(request, env, ctx) {
       const result = await handleMcpJsonRpc(payload, request, env, ctx);
       return jsonResponse(result, mcpHttpStatus(request, payload, result), {"cache-control":"no-store"});
     }
-    if (isMcpTrialTool(payload.params?.name) || isAnswerReviewTool(payload.params?.name) || payload.params?.name === INPUT_VALIDATION_TOOL) {
+    if (isOvFreeFirst(profile,env,request,payload) || isMcpTrialTool(payload.params?.name) || isAnswerReviewTool(payload.params?.name) || payload.params?.name === INPUT_VALIDATION_TOOL) {
       // Native trials use their own atomic campaign quota, not paid admission
       // or the hourly sandbox upgrade path. Never cache network-specific state.
       const result=await handleMcpJsonRpc(payload, request, env, ctx);
@@ -16345,6 +16383,7 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
   }
   if ((path === '/message/send' || path === '/') && catalogOperation(body, profile)) return handleCatalogReadCommand(body, request, env);
   if ((path === '/message/send' || path === '/') && isA2ATrial(body)) return handleA2ATrial(body,request,env,ctx);
+  if (path.startsWith('/mcp') && isOvFreeFirst(profile,env,request,body)) return execute();
   const metaProof = path.startsWith('/mcp') && body?.method === 'tools/call' ? body.params?._meta?.['x402/payment'] : undefined;
   let standardProof;
   let standardError;
@@ -16573,7 +16612,7 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
       headers: {
         "access-control-allow-origin": "*",
         "access-control-allow-methods": "GET, POST, OPTIONS",
-        "access-control-allow-headers": "content-type, x-client-id, authorization, mcp-method, mcp-name, x-payment-tx, x-payment-signature, payment-signature, x-payment-trace-id, x-production-key, mcp-protocol-version, a2a-version, x-trace-id, x-task-token"
+        "access-control-allow-headers": "content-type, idempotency-key, x-client-id, authorization, mcp-method, mcp-name, x-payment-tx, x-payment-signature, payment-signature, x-payment-trace-id, x-production-key, mcp-protocol-version, a2a-version, x-trace-id, x-task-token"
       }
     });
   }
@@ -17215,6 +17254,7 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
 export default {
   fetch: handleRequest,
   async scheduled(_event, env) {
+    if (env.PAYMENT_LEDGER) await env.PAYMENT_LEDGER.prepare("UPDATE trial_result_recovery SET response_ciphertext = NULL WHERE created_at <= ?1 AND response_ciphertext IS NOT NULL").bind(new Date(Date.now()-86400000).toISOString()).run();
     if (env.PAYMENT_LEDGER) await env.PAYMENT_LEDGER.prepare("UPDATE paid_executions SET response_ciphertext = NULL WHERE response_expires_ms <= ?1 AND response_ciphertext IS NOT NULL").bind(Date.now()).run();
   }
 };

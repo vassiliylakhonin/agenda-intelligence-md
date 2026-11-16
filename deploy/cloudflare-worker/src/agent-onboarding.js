@@ -43,6 +43,7 @@ export function agentOnboarding(profile, env, origin) {
     ...(trial ? {
       first_evaluation: {
         tool: trial.tool,
+        ...(profile === 'agent_output_verification' ? {canonical_free_first:{tool:'agent_output_verification',admission:'free_trial',shared_allowance:true,automatic_payment:false}} : {}),
         mcp: { endpoint:`${origin}/mcp/agent`, tool:trial.mcp_tool, status_tool:trial.mcp_status_tool,
           arguments_format:'Use the free_trial inputSchema from tools/list. No HTTP adapter or payment is required.' },
         ...(profile==='agent_output_verification' ? {simple_answer_review:{mcp_tool:'review_answer',optional_form_tool:'open_answer_review',
@@ -60,7 +61,7 @@ export function agentOnboarding(profile, env, origin) {
         allowance_check_consumes_attempt: false
       }
     } : {}),
-    ...(profile === 'critical_minerals_due_diligence' ? {evidence_loop:{
+    ...(profile === 'critical_minerals_due_diligence' ? {preparation:{router_tool:'strategic_risk_triage',router_endpoint:'https://agenda-intelligence.agendamcp.dpdns.org/mcp/agent',input:{text:'What evidence do I need for a mineral offtake decision?'},evaluation_performed:false,trial_attempt_consumed:false},evidence_loop:{
       result_pointer:'/dossier_review/evidence_workflow',
       evidence_requests:'Use evidence_requests for source-level issues, the responsible owner, a request draft and a blank source_template. Obtain actual authorized documents yourself; templates are not evidence.',
       updated_submission:'Keep the same decision scope. Put the previous request, without its own previous_submission, in optional previous_submission and submit the updated current fields through the same evaluation tool. Both inputs are rechecked; this is caller-supplied comparison, not verified history.',

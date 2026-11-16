@@ -15,13 +15,13 @@ async function example(){
 }
 
 test('plugin endpoint exposes unpaid admission as a tool error without evaluation',async()=>{
-  const {response,body}=await call('tools/call',{name:'agent_output_verification',arguments:await example()});
+  const {response,body}=await call('tools/call',{name:'agent_output_verification',arguments:await example()},'/mcp/output-verification',{WORKER_FREE_TRIAL:'0'});
   assert.equal(response.status,200);
   assert.equal(body.result.isError,true);
   const refusal=JSON.parse(body.result.content[0].text);
   assert.equal(refusal.admission_status,402);
   assert.equal(refusal.evaluated,false);
-  assert.match(refusal.next_step,/free_trial/);
+  assert.match(refusal.next_step,/free input preflight/);
   assert.ok(!body.result.structuredContent);
 });
 
@@ -40,7 +40,7 @@ test('legacy initialization selects a supported version instead of echoing an un
 
 test('production x402 v2 plugin admission remains an MCP tool error with no evaluation',async()=>{
   const {response,body}=await call('tools/call',{name:'agent_output_verification',arguments:await example()},
-    '/mcp/output-verification',{X402_STANDARD:'1'});
+    '/mcp/output-verification',{X402_STANDARD:'1',WORKER_FREE_TRIAL:'0'});
   assert.equal(response.status,200);
   assert.equal(body.result.isError,true);
   assert.equal(body.result._meta['com.agenda/admission'].admission_status,402);

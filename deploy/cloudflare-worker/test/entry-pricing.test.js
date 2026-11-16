@@ -21,7 +21,7 @@ const required=response=>JSON.parse(Buffer.from(response.headers.get('payment-re
 
 test('all twelve primary operations enforce their published price across MCP and A2A',()=>quiet(async()=>{
   for(const profile of Object.keys(WORKED_EXAMPLES)) {
-    const env=environment(profile),card=agentCard(new Request(origin),env);
+    const env={...environment(profile),WORKER_FREE_TRIAL:profile==='agent_output_verification'?'0':'1'},card=agentCard(new Request(origin),env);
     const contract=await(await handleRequest(new Request(origin+'/.well-known/agent-contract.json'),env)).json();
     const offer=contract.offers[0],expected=freeProfiles.has(profile)?0:profile==='m2m_escrow_arbiter'?0.05:0.01;
     assert.equal(offer.price_usdc,expected,profile);
@@ -35,6 +35,7 @@ test('all twelve primary operations enforce their published price across MCP and
       if(expected)assert.equal(required(response),String(expected*1000000));
       else assert.equal(response.headers.get('payment-required'),null);
     }
+    if (profile==='agent_output_verification') continue; // Paid path with experiment disabled; enabled path covered separately.
     const terms=await(await handleRequest(new Request(origin+(profile==='agent_output_verification'?'/v1/agent-output/trial':'/v1/trial')),env)).json();
     assert.equal(terms.paid_price_usdc,expected,profile);
   }

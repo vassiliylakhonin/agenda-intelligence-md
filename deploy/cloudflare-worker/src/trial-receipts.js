@@ -7,16 +7,26 @@ export function trialOriginGroup(event) {
   return ['external', 'unsigned_external'].includes(event.caller_kind) ? 'external_candidate' : 'unknown_origin';
 }
 
-export async function recordTrialCompletion(env, attempt, profile, group) {
+export async function recordTrialCompletion(env, attempt, profile, group, recovery = null, ciphertext = null) {
   if (!env.PAYMENT_LEDGER?.prepare || !trialProfile(profile) || !GROUPS.includes(group) ||
       !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(attempt || '')) throw new Error('trial_receipt_store_unavailable');
   const now = new Date().toISOString();
-  const row = await env.PAYMENT_LEDGER.prepare(`
+  const statement = env.PAYMENT_LEDGER.prepare(`
     INSERT INTO trial_completion_receipts(attempt_id, agent_profile, completed_day, completed_at, origin_group)
     SELECT ?1, ?2, ?3, ?4, ?5
     WHERE EXISTS (SELECT 1 FROM output_verification_trials WHERE reservation_id = ?1)
     RETURNING attempt_id
-  `).bind(attempt, profile, now.slice(0,10), now, group).first();
+  `).bind(attempt, profile, now.slice(0,10), now, group);
+  let row;
+  if (recovery?.keyHash) {
+    const results = await env.PAYMENT_LEDGER.batch([statement,
+      env.PAYMENT_LEDGER.prepare(`UPDATE trial_result_recovery SET response_ciphertext=?1
+        WHERE client_hash=?2 AND key_hash=?3 AND attempt_id=?4 AND response_ciphertext IS NULL
+        RETURNING attempt_id`).bind(ciphertext,recovery.client,recovery.keyHash,attempt)]);
+    row = results[0]?.results?.[0];
+    if (!results.every(result=>result.success === true) || results[1]?.results?.[0]?.attempt_id !== attempt)
+      throw new Error('trial_receipt_store_unavailable');
+  } else row = await statement.first();
   if (!row) throw new Error('trial_receipt_store_unavailable');
 }
 

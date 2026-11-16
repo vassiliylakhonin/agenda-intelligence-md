@@ -22,7 +22,7 @@ test('invalid A2A, REST and MCP inputs expose executable free discovery without 
     VIZIER_DISABLED:'1',PAYMENT_LEDGER:memoryD1()};
   for (const path of ['/message/send','/v1/agent-output/verification','/mcp/agent']) {
     for (const body of ['{"private-marker"',JSON.stringify({jsonrpc:'2.0',id:'bad',method:path.startsWith('/mcp')?'tools/call':'SendMessage',
-      params:{name:'agent_output_verification',arguments:{private:'private-marker'},message:{role:'ROLE_USER',parts:[{text:'private-marker'}]}}})]) {
+      params:{name:'pre_action_check',arguments:{private:'private-marker'},message:{role:'ROLE_USER',parts:[{text:'private-marker'}]}}})]) {
       const response=await handleRequest(new Request(origin+path+'?private-query',{method:'POST',headers,body}),env);
       assert.equal(response.status,400);
       const payload=await response.json(),hint=hintOf(payload);
@@ -45,7 +45,7 @@ test('invalid A2A, REST and MCP inputs expose executable free discovery without 
 
 test('all product payment admissions advertise only their configured trial and preserve the x402 challenge',async()=>silent(async()=>{
   for (const [profile,example] of Object.entries(WORKED_EXAMPLES)) {
-    if (routingToolForProfile(profile)) continue; // Free routing has no payment admission (entry-pricing tests).
+    if (routingToolForProfile(profile) || profile==='agent_output_verification') continue; // Free routing has no payment admission (entry-pricing tests).
     for (const standard of ['0','1']) {
       const env={AGENT_PROFILE:profile,WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call',VIZIER_DISABLED:'1',
         X402_STANDARD:standard,PAYMENT_LEDGER:memoryD1()};
@@ -76,10 +76,10 @@ test('retained integration preserves free-entry guidance in both payment shapes 
   for (const standard of ['0','1']) {
     const env={AGENT_PROFILE:'agent_output_verification',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call',X402_STANDARD:standard};
     const options={endpoint:origin+'/mcp/agent',headers,fetchImpl:(url,init)=>handleRequest(new Request(url,init),env)};
-    const example=WORKED_EXAMPLES.agent_output_verification;
+    const example={...WORKED_EXAMPLES.agent_output_verification,tool:'pre_action_check'};
     const result=await createHostedMcpCall(example.tool,example.request,options).evaluate();
     assert.equal(result.evaluated,false);
-    assert.equal(result.firstCall.free_trial.tool,example.tool);
+    assert.equal(result.firstCall.free_trial.tool,'agent_output_verification');
     await assert.rejects(createHostedMcpCall(example.tool,{},options).evaluate(),error=>
       error.status===400 && error.firstCall.automatic_retry===false);
   }

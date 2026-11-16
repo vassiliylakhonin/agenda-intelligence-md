@@ -1,3 +1,4 @@
+import { beginTrialRecovery, abandonTrialRecovery, refundTechnicalTrial, sealTrialResult } from './trial-recovery.js';
 import {technicalRemediation,REMEDIATION_PROFILES} from './remediation.js';
 import { readBoundedJson } from './request-body.js';
 import { paymentTraceId, paymentTraceResponse } from './payment-trace.js';
@@ -43,7 +44,11 @@ export function outputTrialTerms(profile = 'agent_output_verification') {
     worked_example_url: '/?example=1#worked-example',
     evaluation_kind: config.kind || 'evidence_review', attempts_per_network: trialAttemptLimit(profile),
     daily_service_limit: OUTPUT_TRIAL_DAILY_LIMIT, payment_required: false,
-    network_reset_policy:"campaign_no_scheduled_reset",daily_capacity_reset_policy:"next_utc_midnight",
+    network_reset_policy:"campaign_no_scheduled_reset",
+    recovery:{header:'Idempotency-Key',format:'32-128 random ASCII letters/digits/_/- (use at least 128 random bits)',
+      ttl_seconds:86400,same_network_product_and_input:true,encrypted_result:true,automatic_retry:false,
+      technical_refund_network_cap:2,technical_refund_fleet_daily_cap:100,
+      scope:'Only technical evaluation or completion-storage failure can return an attempt, within the additional refund caps. Evidence gaps and adverse findings remain consumed. Keep the exact key private. Pending concurrent calls return 409; changed input returns 409. Expired keys return 410, never reexecute.'},daily_capacity_reset_policy:"next_utc_midnight",
     scope: `${trialAttemptLimit(profile)} attempts per network address per product for this trial campaign; shared networks share the allowance. Daily capacity is shared across all products.`,
     paid_endpoint: config.route || '/mcp', paid_transport: config.route ? 'rest' : 'mcp',
     paid_price_usdc: evaluationAmount(profile,config.tool) };
@@ -139,13 +144,34 @@ export async function handleOutputTrial(request, env, { validate, evaluate, emit
     return reply({ code: 'invalid_trial_request', errors: checked.errors, ...(checked.remediation?{remediation:checked.remediation}:{}), trial: terms }, 400);
   }
   log('request_validated', 'free_trial', null);
+  let recovery, client;
+  try {
+    client = await trialClientKey(request,env,profile);
+    recovery = await beginTrialRecovery(request,env,client,attempt,checked.value,terms.tool);
+    if (recovery?.error) return reply({code:recovery.error,attempt_consumed:false,automatic_payment:false},recovery.status);
+    if (recovery?.replayed) return paymentTraceResponse(respond(recovery.replayed,200,
+      {'cache-control':'no-store','x-trial-replayed':'1'}),trace,recovery.attempt);
+  } catch { return reply({code:'trial_unavailable',attempt_consumed:false},503); }
+  const releaseUnreserved = () => abandonTrialRecovery(env,recovery,attempt).catch(()=>{});
+  const technicalFailure = async code => {
+    let refunded = false;
+    try { refunded = await refundTechnicalTrial(env,client,attempt,recovery); } catch { /* Fail closed: never promise an unconfirmed refund. */ }
+    log('preview_failed',code,503);
+    return reply({code,remediation:technicalRemediation(profile,code),attempt_consumed:!refunded,
+      technical_refund:refunded,automatic_payment:false,
+      error:refunded ? 'Technical failure; the reserved attempt was returned. Retry explicitly with the same Idempotency-Key.'
+        : 'Technical failure. Refund is unavailable or its bounded allowance is exhausted; keep the same Idempotency-Key for result recovery. No payment was requested.',
+      trial:{...terms,attempt_consumed:!refunded,technical_refund:refunded}},503);
+  };
   let admission;
   try { admission = await reserveOutputTrial(request, env, attempt, profile); }
   catch {
+    await releaseUnreserved();
     log('preview_failed', 'trial_unavailable', 503);
     return reply({ code: 'trial_unavailable', remediation:technicalRemediation(profile,'trial_store_unavailable'), attempt_consumed:false, error: 'Free trial is temporarily unavailable. No payment was requested.', trial: terms }, 503);
   }
   if (!admission.reserved) {
+    await releaseUnreserved();
     const daily = admission.limit_reason === 'daily_capacity_exhausted';
     const retry = Math.max(1, Math.ceil((admission.reset_at - Date.now()) / 1000));
     log('preview_failed', 'trial_exhausted', 429, null, admission.limit_reason);
@@ -160,16 +186,15 @@ export async function handleOutputTrial(request, env, { validate, evaluate, emit
   try {
     result = await evaluate(checked.value);
   } catch {
-    log('preview_failed', 'trial_evaluation_failed', 503);
-    return reply({ code: 'trial_evaluation_failed', remediation:technicalRemediation(profile,'trial_evaluation_failed'), attempt_consumed:true, error: 'Evaluation could not complete. This reserved trial attempt was consumed; no payment was requested.', trial: {...terms,attempt_consumed:true} }, 503);
+    return technicalFailure('trial_evaluation_failed');
   }
-  try { await recordTrialCompletion(env, attempt, profile, originGroup(checked.value)); }
-  catch {
-    log('preview_failed', 'trial_recording_unavailable', 503);
-    return reply({ code: 'trial_recording_unavailable', remediation:technicalRemediation(profile,'trial_recording_unavailable'), attempt_consumed:true, error: 'The result could not be recorded reliably. This reserved attempt was consumed; no payment was requested.',
-      trial: { ...terms, attempt_consumed: true } }, 503);
-  }
+  const completed = { ...result, trial: { ...terms, admission:'free_trial', attempt_id:attempt,
+    attempt_consumed:true,completion_recorded:true,
+    note:'Free evaluation; not a paid execution. Human review is required.' } };
+  try { await recordTrialCompletion(env, attempt, profile, originGroup(checked.value),recovery,
+    recovery ? await sealTrialResult(completed,recovery) : null); }
+  catch { return technicalFailure('trial_recording_unavailable'); }
+
   log('preview_completed', 'free_trial', 200);
-  return reply({ ...result, trial: { ...terms, attempt_id:attempt, attempt_consumed: true, completion_recorded: true,
-    note: 'Free evaluation; not a paid execution. Human review is required.' } });
+  return reply(completed);
 }
