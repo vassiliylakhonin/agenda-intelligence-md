@@ -5,7 +5,7 @@ The pinned build dependencies are distributed only in the separately requested
 Cloudflare request handler. Library license comments remain in the generated
 bundle; complete licenses are in the pinned npm distributions.
 
-- `pdfjs-dist` 6.4.299 (Apache-2.0): legacy browser API and parser, byte-only
+- `pdfjs-dist` 6.5.438 (Apache-2.0): legacy browser API and parser, byte-only
   extraction inside a dedicated worker; no PDF rendering or scripting.
 - `fflate` 0.8.3 (MIT): bounded DOCX ZIP reading and current-source ZIP export.
 - `saxes` 6.0.0 (ISC): namespace-aware XML text, without DTDs or external entities.
