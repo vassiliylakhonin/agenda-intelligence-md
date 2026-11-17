@@ -4,10 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: Deploy all existing Workers or one selected Worker
+        description: Deploy all existing Workers, the seven reviewer-handoff Workers, or one selected Worker
         type: choice
         options:
           - all
+          - reviewer-handoffs
           - agenda-root
           - interaction-trust
           - middle-corridor
@@ -82,7 +83,21 @@ jobs:
           let fleet = process.env.INITIALIZE_AGENT_CARD_SIGNING === 'true'
             ? all.filter(({env}) => signingBootstrapEnvironments.includes(env)) : all;
           const target = process.env.DEPLOY_TARGET || 'all';
-          if (!['all', 'agenda-root', 'interaction-trust', 'middle-corridor', 'cis-secondary', 'gulf-maritime', 'market-entry', 'corridor-assistant', 'dual-use', 'financial-guard', 'escrow'].includes(target)) throw new Error('Unknown deploy target');
+          if (!['all', 'reviewer-handoffs', 'agenda-root', 'interaction-trust', 'middle-corridor', 'cis-secondary', 'gulf-maritime', 'market-entry', 'corridor-assistant', 'dual-use', 'financial-guard', 'escrow'].includes(target)) throw new Error('Unknown deploy target');
+          if (target === 'reviewer-handoffs') {
+            if (process.env.INITIALIZE_AGENT_CARD_SIGNING === 'true') throw new Error('Signing bootstrap requires all target');
+            const workers = new Map([
+              ['', 'agenda-intelligence-a2a'],
+              ['agentic-interaction-trust', 'agentic-interaction-trust-a2a'],
+              ['cis-secondary-sanctions', 'cis-secondary-sanctions-a2a'],
+              ['kazakhstan-market-entry-readiness', 'kazakhstan-market-entry-readiness-a2a'],
+              ['critical-minerals-due-diligence', 'critical-minerals-due-diligence-a2a'],
+              ['dual-use-technology-export', 'dual-use-technology-export-a2a'],
+              ['corridor-sanctions-assistant', 'corridor-sanctions-assistant-a2a']
+            ]);
+            fleet = all.filter(({env, workerName}) => workers.get(env) === workerName);
+            if (fleet.length !== workers.size) throw new Error('Expected exactly seven configured reviewer-handoff Workers');
+          }
           if (target === 'agenda-root') {
             if (process.env.INITIALIZE_AGENT_CARD_SIGNING === 'true') throw new Error('Signing bootstrap requires all target');
             fleet = all.filter(({env}) => env === '');

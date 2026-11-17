@@ -43,6 +43,15 @@ function landingHtml(request, env, externalClient = false) {
   const isAgentic = profile === "agentic_interaction_trust";
   const isFinancialGuard = profile === "agent_financial_guard";
   const isEscrowArbiter = profile === "m2m_escrow_arbiter";
+  const reviewerHandoff = {
+    agenda: ["strategic-risk-memo", "See the strategic-risk memo handoff"],
+    agentic_interaction_trust: ["external-agent-request", "See the platform team's agent-request handoff"],
+    cis_secondary_sanctions: ["counterparty-onboarding", "See the counterparty onboarding handoff"],
+    market_entry_readiness: ["kazakhstan-market-entry", "See the Kazakhstan committee handoff"],
+    critical_minerals_due_diligence: ["mineral-supplier-or-offtake", "See the mineral supplier evidence handoff"],
+    dual_use_technology_export: ["technology-export", "See the export-control review handoff"],
+    corridor_sanctions_assistant: ["trade-question", "See the handoff from a trade question to a specialist"]
+  }[profile];
   const routingTool = routingToolForProfile(profile);
   const freeTrial = !routingTool && outputTrialEnabled(profile, env);
   const trialTerms = freeTrial ? outputTrialTerms(profile) : null;
@@ -67,18 +76,18 @@ function landingHtml(request, env, externalClient = false) {
     : `<pre>${escapeHtml(JSON.stringify(value, null, 2))}</pre>`;
 
   const presentation = {
-    agenda: ["AI and Trade Evidence Review Tools | Agenda Intelligence", "Choose a review for an AI report, an agent action or a trade dossier. See the required documents and the tools that can review them.", null],
+    agenda: ["AI and Trade Evidence Review Tools | Agenda Intelligence", "Check a strategic-risk memo or find the specialist review for a pending trade or agent decision.", null],
     kazakhstan: ["Middle Corridor Shipment Document Review", "Find missing documents in a Kazakhstan and Middle Corridor shipment file before signature, dispatch or bank review.", "kazakhstan"],
-    agentic_interaction_trust: ["AI Agent Identity and Delegation Evidence Review", "Find missing identity, delegation and tool scope evidence before accepting another AI agent’s proposed action.", "agentic_interaction_trust"],
+    agentic_interaction_trust: ["AI Agent Identity and Delegation Evidence Review", "Give the tool owner a list of missing identity, delegation and action-scope evidence before an external agent request reaches execution.", "agentic_interaction_trust"],
     agent_output_verification: ["AI Report Citation Checker | Output Verification", "Check an AI report against supplied source text for missing references and mismatched quotes before human review.", "agent_output_verification"],
     agent_financial_guard: ["Wallet Transaction Review Before Signing | Agent Financial Guard", "Get a reject or human-review recommendation for a proposed transfer or token approval using the transaction fields and policy you supply.", "agent_financial_guard"],
     m2m_escrow_arbiter: ["Escrow Delivery Evidence Review for AI Agents", "Check a delivered artifact against an agreed hash and supported schema. Flag reported timing and evidence gaps for a human dispute reviewer.", "m2m_escrow_arbiter"],
-    cis_secondary_sanctions: ["CIS Counterparty Ownership and Sanctions Evidence Review", "Find missing ownership and secondary sanctions evidence before onboarding a CIS or Central Asia counterparty.", "cis_secondary_sanctions"],
+    cis_secondary_sanctions: ["CIS Counterparty Ownership and Sanctions Evidence Review", "Prepare a CIS, Caucasus or Central Asia counterparty file with ownership records, dated screening results and a checklist for compliance review.", "cis_secondary_sanctions"],
     gulf_maritime_exposure: ["Gulf Voyage and Vessel Document Review", "Identify missing vessel, voyage and insurance records for a Gulf or Red Sea shipping review.", "gulf_maritime_exposure"],
-    market_entry_readiness: ["Kazakhstan Market Entry Due Diligence Checklist", "Find missing partner, permit and project records before a Kazakhstan market entry decision.", "kazakhstan_market_entry_readiness"],
-    critical_minerals_due_diligence: ["Critical Minerals Supplier and Offtake Due Diligence", "Find missing origin, ownership and traceability documents before reviewing a mineral supplier or signing an offtake agreement.", "critical_minerals_due_diligence"],
-    dual_use_technology_export: ["Dual-Use Export Document Review for HS, ECCN and End Use", "Find missing classification, end-user and route evidence before sending a technology shipment file for export review.", "dual_use_technology_export"],
-    corridor_sanctions_assistant: ["Find a Trade Route or Sanctions Evidence Review", "Describe the route, shipment or counterparty question to find the relevant service and see what information it needs.", null]
+    market_entry_readiness: ["Kazakhstan Market Entry Due Diligence Checklist", "Prepare a Kazakhstan partner, permit and project file with missing documents and suggested owners for the team making the decision.", "kazakhstan_market_entry_readiness"],
+    critical_minerals_due_diligence: ["Critical Minerals Supplier and Offtake Due Diligence", "Turn origin, ownership and traceability gaps into supplier document requests and compare the updated file for the same decision.", "critical_minerals_due_diligence"],
+    dual_use_technology_export: ["Dual-Use Export Document Review for HS, ECCN and End Use", "Find gaps in supplied classification, end-user and route evidence before handing a technology shipment file to an export reviewer.", "dual_use_technology_export"],
+    corridor_sanctions_assistant: ["Find a Trade Route or Sanctions Evidence Review", "Describe a shipment or counterparty and the pending decision. Get a specialist review route and the evidence to gather before submitting.", null]
   }[profile] || [card.name, card.description, null];
   const tagline = presentation[1];
   const guide = GATE_REQUEST_GUIDES[presentation[2]];
@@ -265,6 +274,7 @@ button:hover { border-color:var(--accent); }
     <button type="button" class="primary-action" onclick="${exampleAction}" style="cursor:pointer">${featuredCase ? escapeHtml(featuredCase[0]) : 'Run a worked example'}</button>
     <a class="primary-action" href="#connect-mcp" onclick="document.getElementById('agent-integration').open = true">Connect MCP</a>
   </div>
+  ${reviewerHandoff ? `<p><a href="${REPOSITORY_URL}/blob/main/docs/deployment/reviewer-handoffs.md#${reviewerHandoff[0]}">${escapeHtml(reviewerHandoff[1])}</a>.</p>` : ''}
   <p class="access-summary" id="access-summary">${escapeHtml(priceLine)} <a href="/terms#access">Limits and payment terms</a> · <a href="/.well-known/x402">All operation prices</a></p>
   <div class="card" aria-label="Example result"><strong>Example, synthetic input:</strong> ${escapeHtml(featuredCase?.[1] || heroExample)}<br>
     ${fixtureVerdict
