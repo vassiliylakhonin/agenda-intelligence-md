@@ -7,13 +7,13 @@
 [![PyPI](https://img.shields.io/pypi/v/agenda-intelligence-md)](https://pypi.org/project/agenda-intelligence-md/)
 [![Python](https://img.shields.io/pypi/pyversions/agenda-intelligence-md)](https://pypi.org/project/agenda-intelligence-md/)
 [![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/LICENSE)
 
 A deterministic evidence-packet linter for claim-backed AI output. Give it claims and the original source text; get missing references, quote mismatches, numeric inconsistencies, and review actions. Use it in Python, RAG pipelines, agent workflows, or CI.
 
 **The core checker runs locally. No model API key, account, or network needed after installation.**
 
-[Try in your browser](https://output-verification.agendamcp.dpdns.org/#one-claim-review) · [First run](#first-run) · [RAG integration](#review-a-rag-answer) · [MCP](MCP.md) · [Documentation](#documentation)
+[Try in your browser](https://output-verification.agendamcp.dpdns.org/#one-claim-review) · [First run](#first-run) · [RAG integration](#review-a-rag-answer) · [MCP](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/MCP.md) · [Documentation](#documentation)
 
 ## See the problem it catches
 
@@ -31,7 +31,7 @@ These are synthetic examples. Both results keep `factuality_status=not_assessed`
 Requires **Python 3.9+**. Install the published package:
 
 ```bash
-python -m pip install "agenda-intelligence-md==1.25.0"
+python -m pip install "agenda-intelligence-md==1.26.0"
 agenda-intelligence --version
 ```
 
@@ -95,7 +95,7 @@ Claims + source excerpts → deterministic checks → findings → revise → re
 | Claim wording and numbers | Lexical support heuristics, unmatched numbers, and negation checks |
 | The assembled packet | Evidence gaps, per-claim findings, packet status, and reviewer actions |
 
-The checker returns `packet_complete`, `source_review_required`, or `packet_incomplete`. See the [request schema](schemas/v1/evidence-packet-request.schema.json), [response schema](schemas/v1/evidence-packet-response.schema.json), and [evaluation notes](docs/evaluation.md).
+The checker returns `packet_complete`, `source_review_required`, or `packet_incomplete`. See the [request schema](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/schemas/v1/evidence-packet-request.schema.json), [response schema](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/schemas/v1/evidence-packet-response.schema.json), and [evaluation notes](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/evaluation.md).
 
 ### What this is not
 
@@ -127,9 +127,9 @@ For CLI input, save `{"answer": "...", "sources": [...]}` as `answer.json`, then
 
 `agenda-intelligence review-answer answer.json --strict --format json`
 
-`--strict` exits nonzero when revision is required. See the [input contract and limitations](docs/integrations/rag-output.md) and the [runnable LangGraph repair loop](examples/langgraph-output-verification/README.md).
+`--strict` exits nonzero when revision is required. See the [input contract and limitations](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/integrations/rag-output.md) and the [runnable LangGraph repair loop](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/examples/langgraph-output-verification/README.md).
 
-Small, hand-labelled [diagnostics](evals/claim_checks/README.md) report misses and false positives as well as catches. [Exact source offsets, explicit opt-in arithmetic, named table cells, and PR summaries](docs/evidence-diagnostics.md) are available in the local package. No factuality or general hallucination-detection claim.
+Small, hand-labelled [diagnostics](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/evals/claim_checks/README.md) report misses and false positives as well as catches. [Exact source offsets, explicit opt-in arithmetic, named table cells, and PR summaries](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/evidence-diagnostics.md) are available in the local package. No factuality or general hallucination-detection claim.
 
 ## Use the CLI and CI
 
@@ -138,7 +138,7 @@ Save a packet with the same shape as the first Python example to `packet.json`:
 - `agenda-intelligence check packet.json` — print a readable report.
 - `agenda-intelligence check packet.json --format json --strict` — return JSON and enforce the packet status.
 
-The second command exits nonzero unless the packet is `packet_complete`, so it can be used in a CI job after installing the package. `--format sarif` is also available for evidence-packet findings. The repository includes a [GitHub Action](action.yml).
+The second command exits nonzero unless the packet is `packet_complete`, so it can be used in a CI job after installing the package. `--format sarif` is also available for evidence-packet findings. The repository includes a [GitHub Action](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/action.yml).
 
 To explore the bundled examples from a source checkout:
 
@@ -154,7 +154,7 @@ python3 -m venv .venv
 
 The first packet is complete. The original fictional RAG answer routes to revision; the revised answer routes to human review.
 
-For local document review and HTML reports, use the [file-review guide](docs/evidence-review.md) and [example manifest](examples/evidence-review/README.md).
+For local document review and HTML reports, use the [file-review guide](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/evidence-review.md) and [example manifest](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/examples/evidence-review/README.md).
 
 ## Interfaces
 
@@ -162,14 +162,14 @@ For local document review and HTML reports, use the [file-review guide](docs/evi
 
 | Your workflow | Start here |
 | --- | --- |
-| Python or command line | [Quickstart](docs/quickstart.md) · [service functions](src/agenda_intelligence/services.py) |
-| Local MCP over stdio | [MCP setup and tool catalog](MCP.md) |
-| Hosted MCP | [Hosted quickstart](docs/deployment/hosted-quickstart.md) |
-| Agent repair loops | [Integration guides](docs/integrations/README.md) |
-| HTTP or A2A | [HTTP API](docs/deployment/http-api.md) · [agent-native access](docs/deployment/agent-native-access.md) |
-| Protected agent actions | [Interaction Trust + Vizier gate](docs/integrations/action-bound-execution.md) |
+| Python or command line | [Quickstart](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/quickstart.md) · [service functions](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/src/agenda_intelligence/services.py) |
+| Local MCP over stdio | [MCP setup and tool catalog](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/MCP.md) |
+| Hosted MCP | [Hosted quickstart](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/deployment/hosted-quickstart.md) |
+| Agent repair loops | [Integration guides](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/integrations/README.md) |
+| HTTP or A2A | [HTTP API](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/deployment/http-api.md) · [agent-native access](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/deployment/agent-native-access.md) |
+| Protected agent actions | [Interaction Trust + Vizier gate](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/integrations/action-bound-execution.md) |
 
-The core checker is deterministic and stateless. Optional generation and document adapters have separate dependencies. The repository also retains the strategic-intelligence runtime and [vertical workers](docs/vertical-workers.md) as compatibility surfaces and examples built around evidence contracts.
+The core checker is deterministic and stateless. Optional generation and document adapters have separate dependencies. The repository also retains the strategic-intelligence runtime and [vertical workers](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/vertical-workers.md) as compatibility surfaces and examples built around evidence contracts.
 
 ### Hosted Output Verification
 
@@ -187,17 +187,17 @@ Local stdio and hosted profiles expose different tool catalogs. Always discover 
 
 The hosted [Document Archive Review](https://agendamcp.dpdns.org/document-archive) workflow helps prepare evidence checklists, assign missing-item owners, inspect extraction warnings and source locators, and export reviewer PDF or ZIP/JSON backups. It is separate from the local `review` command.
 
-See the [workspace guide](docs/use-cases/supplier-evidence-desk.md) and [service-engagement example](examples/service-engagement/README.md). Extraction does not authenticate documents; final coverage still needs human review.
+See the [workspace guide](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/use-cases/supplier-evidence-desk.md) and [service-engagement example](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/examples/service-engagement/README.md). Extraction does not authenticate documents; final coverage still needs human review.
 
 ## Documentation
 
 | Explore | Links |
 | --- | --- |
-| Examples | [Runnable examples](examples/README.md) · [Before / after](examples/before-after/README.md) · [EU AI Act](examples/source-backed/eu-ai-act.md) |
-| Contracts | [Schemas](schemas/v1/) · [Source policy](SOURCE_POLICY.md) |
-| Status and evidence | [Evaluation](docs/evaluation.md) · [Adoption record](ADOPTION.md) · [Roadmap](ROADMAP.md) |
-| Deeper reference | [AnalysisBank](analysis-bank/README.md) · [Vertical worker architecture](docs/vertical-workers.md) · [Local checks](docs/local-checks.md) |
-| Development | [Contributing](CONTRIBUTING.md) · [Local checks](docs/local-checks.md) |
+| Examples | [Runnable examples](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/examples/README.md) · [Before / after](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/examples/before-after/README.md) · [EU AI Act](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/examples/source-backed/eu-ai-act.md) |
+| Contracts | [Schemas](https://github.com/vassiliylakhonin/agenda-intelligence-md/tree/v1.26.0/schemas/v1/) · [Source policy](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/SOURCE_POLICY.md) |
+| Status and evidence | [Evaluation](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/evaluation.md) · [Adoption record](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/ADOPTION.md) · [Roadmap](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/ROADMAP.md) |
+| Deeper reference | [AnalysisBank](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/analysis-bank/README.md) · [Vertical worker architecture](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/vertical-workers.md) · [Local checks](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/local-checks.md) |
+| Development | [Contributing](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/CONTRIBUTING.md) · [Local checks](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/local-checks.md) |
 
 Core code lives in `src/`; runnable packets in `examples/`; guides in `docs/`; adapters in `clients/` and `integrations/`; deployment packages in `deploy/`.
 
@@ -205,8 +205,8 @@ Core code lives in `src/`; runnable packets in `examples/`; guides in `docs/`; a
 
 Found a missed mismatch or a valid claim that gets flagged? [Open an issue](https://github.com/vassiliylakhonin/agenda-intelligence-md/issues/new/choose) with a minimal, sanitized packet, the expected result, and the actual finding. Reproducible cases and integration examples are useful contributions.
 
-For usage questions and workflow ideas, use [Discussions](https://github.com/vassiliylakhonin/agenda-intelligence-md/discussions). Read [CONTRIBUTING.md](CONTRIBUTING.md) before a pull request. The standard local verification command is `make ci`; Worker, discovery, runtime, and validation-guard changes require `make verify-local`.
+For usage questions and workflow ideas, use [Discussions](https://github.com/vassiliylakhonin/agenda-intelligence-md/discussions). Read [CONTRIBUTING.md](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/CONTRIBUTING.md) before a pull request. The standard local verification command is `make ci`; Worker, discovery, runtime, and validation-guard changes require `make verify-local`.
 
 ## License
 
-[MIT](LICENSE). The bundled official ACP schema retains its [Apache-2.0 license](src/agenda_intelligence/data/protocols/acp/2026-04-17/LICENSE) and [NOTICE](src/agenda_intelligence/data/protocols/acp/2026-04-17/NOTICE).
+[MIT](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/LICENSE). The bundled official ACP schema retains its [Apache-2.0 license](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/src/agenda_intelligence/data/protocols/acp/2026-04-17/LICENSE) and [NOTICE](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/src/agenda_intelligence/data/protocols/acp/2026-04-17/NOTICE).

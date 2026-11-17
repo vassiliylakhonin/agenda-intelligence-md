@@ -1,10 +1,14 @@
 # CHANGELOG
 
-## Unreleased
+## 1.26.0 — 2026-11-17
+
+### Python packaging
+
+- Update the optional MCP client and PDF extraction dependencies. Publish the local evidence and numeric checks with synchronized package metadata and release-pinned documentation links.
 
 ### Capability-request inbox on all fleet workers (2026-11-15)
 
-- Add `POST /v1/request-capability` to every fleet worker: a free, unauthenticated endpoint where a discovering agent runtime can leave a structured request ({capability, details, callback_url, contact, agent}) for a capability the fleet does not yet offer. GET returns the exact contract, limits and an example. Requests are validated (types, sizes, HTTPS-only callback), honeypot- and payment-header-guarded, rate-limited (5 per address per hour, 100 per day fleet-wide), stored in the shared usage KV with a 90-day TTL, and surfaced to the operator through the token-protected `/stats` section `capability_requests` and the daily telemetry collection. Owner verification traffic (`owner_test=1`, `X-Client-Id: agenda-owner-*` / `instinct-owner-*`) is validated but never stored or counted. Advertised in the agent-card `x_agenda_intelligence.capability_request` extension, `llms.txt` and the OpenAPI document. No version bump; pricing, admission and evaluation behavior unchanged.
+- Add `POST /v1/request-capability` to every fleet worker: a free, unauthenticated endpoint where a discovering agent runtime can leave a structured request ({capability, details, callback_url, contact, agent}) for a capability the fleet does not yet offer. GET returns the exact contract, limits and an example. Requests are validated (types, sizes, HTTPS-only callback), honeypot- and payment-header-guarded, rate-limited (5 per address per hour, 100 per day fleet-wide), stored in the shared usage KV with a 90-day TTL, and surfaced to the operator through the token-protected `/stats` section `capability_requests` and the daily telemetry collection. Owner verification traffic (`owner_test=1`, `X-Client-Id: agenda-owner-*` / `instinct-owner-*`) is validated but never stored or counted. Advertised in the agent-card `x_agenda_intelligence.capability_request` extension, `llms.txt` and the OpenAPI document.
 
 ### Self-correcting input-validation errors on the paid path (2026-11-13)
 
@@ -14,7 +18,7 @@
 
 - Extend local Python numeric matching with grouped decimal variants, percent/ratio equivalence (`50%` / `0.5`), and bounded English/Russian quarter forms. Currency, units and distinct quarter/year values remain separate; no written-number or FX inference.
 - Extend explicit opt-in arithmetic declarations with product, quotient and percentage ratios, normalized source/result spellings, and exact successful `derived_verified: true` + formula fields. Keep the existing status for compatibility. No arbitrary operand search, implicit rounding, CAGR, semantic support or truth clearance; invalid/disabled proofs get no marker.
-- Check explicitly named row/column intersections in rectangular Markdown and standalone CSV/TSV. Packet diagnostics report the selected cell; mismatches cannot borrow neighboring values or be cleared by arithmetic. Preserve empty/quoted CSV cells on local ingestion. Add positive and negative tests, including conflicts and large exact operands. Hosted Worker, version, PyPI release and GTTA pin unchanged.
+- Check explicitly named row/column intersections in rectangular Markdown and standalone CSV/TSV. Packet diagnostics report the selected cell; mismatches cannot borrow neighboring values or be cleared by arithmetic. Preserve empty/quoted CSV cells on local ingestion. Add positive and negative tests, including conflicts and large exact operands.
 
 ### Closest-context numeric fix (2026-11-13)
 
