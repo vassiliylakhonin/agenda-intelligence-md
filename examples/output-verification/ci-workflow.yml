@@ -1,0 +1,31 @@
+name: RAG citation review
+
+# Run only after the trusted job that creates your local answer.json.
+# This manual trigger runs the bundled synthetic input as written.
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  citations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install checker
+        run: python -m pip install "agenda-intelligence-md==1.26.0"
+      - name: Check citations
+        run: |
+          python examples/output-verification/ci-review.py examples/output-verification/rag-answer.json > "$RUNNER_TEMP/citations.json"
+          if jq -e '.route == "revise"' "$RUNNER_TEMP/citations.json" >/dev/null; then
+            echo "::warning::Citation findings require human review."
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: citation-findings
+          path: ${{ runner.temp }}/citations.json
+          retention-days: 7
+          if-no-files-found: error

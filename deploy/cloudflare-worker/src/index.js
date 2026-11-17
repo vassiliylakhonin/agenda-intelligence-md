@@ -3573,8 +3573,9 @@ function applyM2MEscrowArbiterProfile(card, request) {
   card.name = "M2M Escrow Arbiter — Delivery Evidence Review";
   card.documentationUrl = discovery.documentation_url;
   card.description =
-    "External evidence review for agent-to-agent delivery disputes and proposed escrow allocations. " +
-    "Checks hashes, a bounded offline JSON Schema subset and SLO evidence. Unsupported schemas require human review; no settlement is executed or authorized. " +
+    "Delivery evidence checks for human review of agent-to-agent disputes. " +
+    "Compares the delivered artifact with the agreed hash and supported offline JSON Schema. " +
+    "Reported timing is unverified and the result is a hold recommendation. " +
     "For citation or quote checks on a delivered AI report, use Agent Output Verification " +
     "(https://output-verification.agendamcp.dpdns.org).";
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
@@ -3583,9 +3584,8 @@ function applyM2MEscrowArbiterProfile(card, request) {
       id: "m2m-escrow-arbitration-ruling",
       name: "M2M escrow evidence review",
       description:
-        "Bring the delivery terms, expected and delivered hashes, timestamps and supplied SLO evidence. " +
-        "Get evidence findings and a proposed allocation for human review. Only a bounded offline JSON Schema " +
-        "subset is supported; no payout is executed or authorized.",
+        "Bring the delivery terms, artifact, agreed hash, supported schema and reported timestamps. " +
+        "Get independent hash and schema findings and a hold recommendation for human review of delivery.",
       tags: ["escrow", "m2m", "a2a", "dispute", "delivery-evidence", "human-review"],
       examples: [
         "Compare a delivered artifact hash with the agreed SHA-256 and flag a mismatch for review.",

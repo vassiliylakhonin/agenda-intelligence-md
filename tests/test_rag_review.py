@@ -53,6 +53,49 @@ def test_original_and_revised_fixture_contract():
     assert original["human_review_required"] is revised["human_review_required"] is True
 
 
+def test_ci_review_reports_findings_without_input_content(tmp_path):
+    input_path = tmp_path / "generated.json"
+    input_path.write_text(
+        json.dumps(
+            {
+                "answer": '"PRIVATE_ANSWER" [internal:source] [internal:missing]',
+                "sources": [
+                    {
+                        "source_id": "internal:source",
+                        "text": "PRIVATE_EXCERPT.",
+                        "title": "PRIVATE_TITLE",
+                        "url": "https://internal.example/private",
+                    }
+                ],
+            }
+        )
+    )
+    command = [sys.executable, str(FIXTURES / "ci-review.py"), str(input_path)]
+    env = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
+
+    warning = subprocess.run(command, capture_output=True, text=True, check=True, env=env)
+    report = json.loads(warning.stdout)
+    assert report["route"] == "revise"
+    assert report["human_review_required"] is True
+    assert {"line": 1, "code": "quote_absent"} in report["findings"]
+    assert {"line": 1, "code": "missing_source"} in report["findings"]
+    assert all(set(finding) == {"line", "code"} for finding in report["findings"])
+    for private in ("PRIVATE_", "internal:", "https://"):
+        assert private not in warning.stdout + warning.stderr
+
+    strict = subprocess.run(command + ["--strict", "--include-source-ids"], capture_output=True, text=True, env=env)
+    assert strict.returncode == 1
+    assert {"line": 1, "code": "missing_source", "source_ids": ["internal:missing"]} in json.loads(strict.stdout)[
+        "findings"
+    ]
+    assert "PRIVATE_" not in strict.stdout + strict.stderr
+
+    input_path.write_text('{"PRIVATE_INVALID_JSON"')
+    invalid = subprocess.run(command, capture_output=True, text=True, env=env)
+    assert invalid.returncode == 2 and not invalid.stdout
+    assert "PRIVATE_" not in invalid.stderr
+
+
 def test_assembly_is_pure_and_preserves_core_result(monkeypatch):
     def no_network(*args, **kwargs):
         pytest.fail("local review must not open a network connection")

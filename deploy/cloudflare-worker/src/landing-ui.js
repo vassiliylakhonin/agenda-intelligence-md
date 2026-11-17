@@ -71,8 +71,8 @@ function landingHtml(request, env, externalClient = false) {
     kazakhstan: ["Middle Corridor Shipment Document Review", "Find missing documents in a Kazakhstan and Middle Corridor shipment file before signature, dispatch or bank review.", "kazakhstan"],
     agentic_interaction_trust: ["AI Agent Identity and Delegation Evidence Review", "Find missing identity, delegation and tool scope evidence before accepting another AI agent’s proposed action.", "agentic_interaction_trust"],
     agent_output_verification: ["AI Report Citation Checker | Output Verification", "Check an AI report against supplied source text for missing references and mismatched quotes before human review.", "agent_output_verification"],
-    agent_financial_guard: ["Wallet Transaction Review Before Signing | Agent Financial Guard", "Review a proposed agent wallet transfer or token approval against its declared intent and supplied policy before a human signs.", "agent_financial_guard"],
-    m2m_escrow_arbiter: ["Escrow Delivery Evidence Review for AI Agents", "Compare a delivered artifact with agreed hashes, supported schemas and delivery deadlines for human dispute review.", "m2m_escrow_arbiter"],
+    agent_financial_guard: ["Wallet Transaction Review Before Signing | Agent Financial Guard", "Get a reject or human-review recommendation for a proposed transfer or token approval using the transaction fields and policy you supply.", "agent_financial_guard"],
+    m2m_escrow_arbiter: ["Escrow Delivery Evidence Review for AI Agents", "Check a delivered artifact against an agreed hash and supported schema. Flag reported timing and evidence gaps for a human dispute reviewer.", "m2m_escrow_arbiter"],
     cis_secondary_sanctions: ["CIS Counterparty Ownership and Sanctions Evidence Review", "Find missing ownership and secondary sanctions evidence before onboarding a CIS or Central Asia counterparty.", "cis_secondary_sanctions"],
     gulf_maritime_exposure: ["Gulf Voyage and Vessel Document Review", "Identify missing vessel, voyage and insurance records for a Gulf or Red Sea shipping review.", "gulf_maritime_exposure"],
     market_entry_readiness: ["Kazakhstan Market Entry Due Diligence Checklist", "Find missing partner, permit and project records before a Kazakhstan market entry decision.", "kazakhstan_market_entry_readiness"],
@@ -289,6 +289,8 @@ button:hover { border-color:var(--accent); }
     ${isEscrowArbiter ? `<p>Have your own delivery evidence? Prepare the agreed hash and deadline, then review what was submitted.</p>
       <a class="primary-action primary-action-main" href="#${consoleId}">Check my delivery evidence</a>` : ''}
   </section>
+  ${profile === 'agent_output_verification' ? `<p>Review citations in your own CI. <a href="${REPOSITORY_URL}/blob/main/docs/integrations/rag-output.md#add-a-local-ci-check">Run the local check and generate a report without source or answer text</a>.</p>` : ''}
+  ${isKazakhstan || profile === 'gulf_maritime_exposure' ? `<p><a href="${REPOSITORY_URL}/blob/main/examples/kazakhstan-middle-corridor/reviewer-handoff.md">Open a sample shipment dossier and five-file pilot</a>.</p>` : ''}
   <nav><a href="https://agendamcp.dpdns.org/">All profiles</a> · <a href="https://vizier.agendamcp.dpdns.org/">Vizier authorization</a> · <a href="${origin}/trust">Trust &amp; limitations</a> · <a href="${origin}/privacy">Privacy</a></nav>
   <details id="agent-integration"><summary>Agent integration and connection details</summary>
   <section id="connect-mcp" class="card" aria-labelledby="connect-mcp-title">
@@ -395,7 +397,7 @@ button:hover { border-color:var(--accent); }
     </form>
     <div id="fin-result" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);"></div>
   </div>` : isEscrowArbiter && !freeTrial ? `
-  <h2>Escrow evidence simulator</h2>
+  <h2>Delivery evidence review</h2>
   <div class="card" style="border-left: 4px solid var(--accent); background: #ffffff;">
     <p style="font-size: 14px; color: var(--muted); margin-bottom: 12px;">
       Inspect reported delivery evidence. This demo does not supply artifact content or authenticated telemetry, so its scenarios require human review and authorize no payout.
@@ -463,7 +465,7 @@ button:hover { border-color:var(--accent); }
         <input id="escrow-claim" type="text" value="Seller claims dataset delivery; requesting review of the supplied evidence." style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px;" />
       </div>
       <div style="display: flex; gap: 12px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
-        <button id="escrow-btn" type="submit" style="background: var(--accent); color: #fff; border: none; padding: 9px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">⚖️ Run Edge Dispute Arbitration</button>
+        <button id="escrow-btn" type="submit" style="background: var(--accent); color: #fff; border: none; padding: 9px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">Review delivery evidence</button>
         <span id="escrow-status" style="font-size: 13px; color: var(--muted);">Synthetic evaluation; review data boundaries before submitting evidence.</span>
       </div>
     </form>
@@ -1173,7 +1175,7 @@ async function runEscrowArbitrationSimulation(e) {
     status.innerText = 'Arbitration error.';
   } finally {
     btn.disabled = false;
-    btn.innerText = '⚖️ Run Edge Dispute Arbitration';
+    btn.innerText = 'Review delivery evidence';
   }
 }
 

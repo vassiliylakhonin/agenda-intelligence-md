@@ -494,16 +494,16 @@ const agentFinancialGuardProfile = Object.freeze({
     "local denylist matching with explicit limits on current sanctions coverage",
     "flags known risky destinations and unconstrained infinite approvals",
     "compares caller-reported spending against declared limits; no ledger enforcement",
-    "adversarial prompt injection detection in autonomous payment triggers"
+    "flagging suspicious intent patterns before human review"
   ]),
   commercial_positioning:
     "Pre-sign evidence review for wallet-bearing agents. Checks local risk rules and intent; unverified spending history and current sanctions status require human review. No transaction authorization or clearance receipt is issued.",
   focus: frozenArray([
     "autonomous agent wallet safety",
     "local risk denylist matching",
-    "smart contract drainer prevention",
+    "unconstrained token approval warnings",
     "caller-reported spending assessment, not ledger enforcement",
-    "prompt injection defense in financial workflows"
+    "suspicious intent heuristics in financial workflows"
   ]),
   product_contract: productContract({
     request_schema: AGENT_FINANCIAL_GUARD_REQUEST_SCHEMA_URL,
@@ -520,22 +520,22 @@ const m2mEscrowArbiterProfile = Object.freeze({
   documentation_url: M2M_ESCROW_ARBITER_DOCS_URL,
   provider_same_as: SHARED_PROVIDER_SAME_AS,
   wrapper_scope:
-    "Deterministic delivery-evidence review and proposed escrow allocation for human review",
+    "Deterministic delivery-evidence checks for human dispute review",
   supported_contracts: frozenArray(["m2m_escrow_arbiter_contract"]),
   buyer_use_cases: frozenArray([
     "delivery-evidence review for Agent-to-Agent disputes",
     "cryptographic SHA-256 deliverable artifact verification against contract commitment",
     "JSON Schema compliance validation of delivered machine-readable datasets",
-    "withholds payout recommendations when delivery evidence is unverified",
+    "returns a hold recommendation while independent delivery evidence is missing",
     "explicit escalation when schema constraints or evidence cannot be verified"
   ]),
   commercial_positioning:
-    "Evaluates supplied delivery evidence, supported offline schemas and deadlines. Returns proposed allocations or human-review escalation; no automatic settlement or clearance attestation.",
+    "Checks artifact hashes and supported offline schemas, and flags reported timing for human review. Returns an evidence review and a hold recommendation.",
   focus: frozenArray([
-    "M2M escrow arbitration",
-    "agentic commerce dispute resolution",
+    "M2M escrow evidence review",
+    "human review of agentic commerce disputes",
     "SHA-256 deliverable integrity verification",
-    "pro-rata and all-or-nothing payout allocation",
+    "reported delivery time and deadline comparison",
     "human-review evidence gaps"
   ]),
   product_contract: productContract({
