@@ -9157,7 +9157,7 @@ test("GET /explorer returns M2M Escrow Web3 Explorer HTML", async () => {
   const html = await res.text();
   assert.ok(html.includes("M2M Escrow Dispute Explorer"));
   assert.ok(html.includes("Inspect Escrow Deal"));
-  assert.ok(html.includes("Live Arbiter Evaluation"));
+  assert.ok(html.includes("Review Supplied Evidence"));
 });
 
 test("POST /v1/settle activates signed tier_micro_check without consuming execution", async () => {

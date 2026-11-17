@@ -154,6 +154,8 @@ python3 -m venv .venv
 
 The first packet is complete. The original fictional RAG answer routes to revision; the revised answer routes to human review.
 
+For a private CI pilot, use the [local citation check and minimal report](docs/integrations/rag-output.md#add-a-local-ci-check).
+
 For local document review and HTML reports, use the [file-review guide](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/docs/evidence-review.md) and [example manifest](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/examples/evidence-review/README.md).
 
 ## Interfaces

@@ -169,7 +169,7 @@ export function handleExplorerRequest(request, env = {}) {
       <!-- Right Card: Live Dispute Arbiter Playground -->
       <div class="card">
         <div class="card-title">
-          <span>⚡ Live Arbiter Evaluation</span>
+          <span>Delivery Evidence Review</span>
           <span class="badge-live">v${VERSION}</span>
         </div>
 
@@ -190,16 +190,16 @@ export function handleExplorerRequest(request, env = {}) {
 
         <label>Caller-supplied Deadline (UTC, example only)</label>
         <input type="text" id="deadlineInput" placeholder="YYYY-MM-DDTHH:mm:ssZ">
-        <p>Example inputs are unverified. Payout figures are proposed allocations, not transfers.</p>
-        <button class="btn" id="btnEvaluate">Evaluate Dispute via Edge Arbiter</button>
+        <p>This example sends caller-reported data and an expected hash. The evaluator holds the case for human review.</p>
+        <button class="btn" id="btnEvaluate">Review Supplied Evidence</button>
 
         <div class="payout-grid" id="payoutGrid" style="display:none;">
           <div class="payout-item">
-            <span style="font-size:11px; color:var(--muted);">Seller Payout</span>
+            <span style="font-size:11px; color:var(--muted);">Seller Payout in Review Result</span>
             <div class="payout-val" id="valSeller" style="color:var(--good);">$0.00</div>
           </div>
           <div class="payout-item">
-            <span style="font-size:11px; color:var(--muted);">Buyer Refund</span>
+            <span style="font-size:11px; color:var(--muted);">Buyer Refund in Review Result</span>
             <div class="payout-val" id="valBuyer" style="color:var(--accent);">$0.00</div>
           </div>
           <div class="payout-item">
@@ -272,7 +272,7 @@ ${PAYMENT_CLIENT_SCRIPT}
     };
 
     btnEvaluate.onclick = async function() {
-      arbiterOutput.innerText = "Evaluating dispute via Cloudflare Edge arbiter...";
+      arbiterOutput.innerText = "Reviewing supplied delivery evidence...";
       payoutGrid.style.display = "none";
       var amount = Number(document.getElementById("amountUsdcInput").value.trim() || NaN);
       var valid = Number(document.getElementById("validItemsInput").value.trim() || NaN);

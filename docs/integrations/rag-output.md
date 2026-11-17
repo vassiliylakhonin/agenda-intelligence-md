@@ -26,7 +26,7 @@ Python 3.9 or later:
 
 ```sh
 python3 -m venv .venv
-.venv/bin/python -m pip install "agenda-intelligence-md==1.21.2"
+.venv/bin/python -m pip install "agenda-intelligence-md==1.26.0"
 ```
 
 Create `answer.json` with your answer and original retrieved chunk texts. This
@@ -70,6 +70,29 @@ Use `--out /private/path/review.md` to save a report, or `--format json` for the
 full packet, findings and line offsets. JSON output includes supplied source
 texts; store it as confidential input when appropriate. The library persists
 nothing and sends nothing. Your caller/tracing system controls its own storage.
+
+## Add a local CI check
+
+Copy [ci-review.py](../../examples/output-verification/ci-review.py) into your
+repository and run it on the JSON your retrieval and generation job already
+produces. The [GitHub workflow example](../../examples/output-verification/ci-workflow.yml)
+runs the synthetic input first. Install dependencies before processing client data.
+
+```sh
+python -m pip install "agenda-intelligence-md==1.26.0"
+python examples/output-verification/ci-review.py answer.json > citation-findings.json
+```
+
+The artifact contains the route, claim count, finding codes and answer line
+numbers. It omits source and answer text, quotes, URLs, numeric literals and
+source IDs. Add `--include-source-ids` only when IDs are safe to retain and share.
+Keep raw input and full reports in your private working storage. For confidential
+inputs, use a runner approved for that data and review artifact access and retention.
+
+The example defaults to report-only and returns exit 2 for invalid or unreadable
+input. During the first pilot, label actionable findings, false alarms and missed
+errors on the team's own answers. Enable `--strict` only after validating the
+rules and input format. It exits 1 on a `revise` route after writing the report.
 
 ## Input contract
 
