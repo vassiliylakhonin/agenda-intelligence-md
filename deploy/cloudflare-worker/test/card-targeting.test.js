@@ -29,3 +29,20 @@ test('shipment, policy-memo and AI-report discovery have distinct jobs', async (
   assert.match(output.description,/allow_relay is never issued/);
   assert.match(output.description,/mandatory human review/);
 });
+
+test('trade cards lead with distinct shipment, voyage and counterparty jobs', async () => {
+  const middleCorridor = await card('kazakhstan');
+  const gulf = await card('gulf_maritime_exposure');
+  const assistant = await card('corridor_sanctions_assistant');
+
+  assert.match(middleCorridor.description, /^Review a Kazakhstan or Trans-Caspian shipment file/);
+  assert.match(middleCorridor.description, /Show a shipment memo example/);
+  assert.ok(middleCorridor.skills[0].tags.includes('shipment-dossier'));
+  assert.match(gulf.description, /^Review a commercial vessel and voyage/);
+  assert.match(gulf.description, /IMO number/);
+  assert.ok(gulf.skills[0].tags.includes('pre-fixture'));
+  assert.match(assistant.description, /^Find the right evidence checklist/);
+  assert.ok(assistant.skills[0].tags.includes('trade-counterparty'));
+  const intents = assistant.x_agenda_intelligence.catalog_onboarding.evaluation_intents;
+  assert.ok(intents.some(item => item.skill_id === 'corridor-sanctions-orientation' && item.text.includes('re-export file')));
+});
