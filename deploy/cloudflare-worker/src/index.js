@@ -2894,7 +2894,7 @@ function applyAgentProfile(card, request, env = {}) {
   card.name = "Kazakhstan / Middle Corridor Deal Risk Gate";
   card.documentationUrl = discovery.documentation_url;
   card.description =
-    "A2A-compatible evidence-readiness gate for Kazakhstan-Caspian / Middle Corridor logistics, trade-finance, procurement, and marine cargo insurer handoff workflows. Bring route, cargo, counterparties, and dated sources; get structured deal-risk triage, missing source categories, evidence gaps, watch-next indicators, decision-readiness score, risk signal, human-review routing, and named sanctions-exposure flags: OFAC named-sector (EO 14024/14114) and newly-formed-counterparty red flags, EU re-export / circumvention-watch jurisdictions (incl. the 20th-package measures on Kyrgyzstan), dual-use cargo screened against the EU/US Common High Priority List, a domestic-legal vs foreign-sanctions exposure decomposition, and a vessel deceptive-shipping-practice checklist. Deterministic rule-based logic, no model in the decision path. Presence-flagging and evidence triage only, not a sanctions determination." +
+    "A2A evidence review for Kazakhstan-Caspian shipments, customs dossiers and trade-finance handoffs. Bring route, cargo, counterparties and dated sources and get missing document categories, exposure flags and the next human-review step. The structured result includes decision readiness, watch indicators, named-sector and newly formed counterparty flags, EU re-export and circumvention-watch jurisdictions, Common High Priority List references and vessel evidence gaps. Deterministic rule-based evidence triage with mandatory human review." +
     PROVIDER_FRONT_DOOR_POINTER;
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
@@ -2902,13 +2902,13 @@ function applyAgentProfile(card, request, env = {}) {
       id: "middle-corridor-deal-desk-triage",
       name: "Kazakhstan / Middle Corridor deal-risk gate",
       description:
-        "Turns a route, cargo, counterparty, and dated-source bundle into a structured deal-risk recommendation with risk signal, decision-readiness score, evidence gaps, and minimum source categories required before signature, shipment, or committee review.",
+        "Checks the route, cargo records, counterparties and dated sources for a Trans-Caspian shipment. Returns missing document categories, exposure flags and next review steps before contract signature, shipment or trade-finance review.",
       tags: [
-        "deal-desk",
+        "trans-caspian",
         "kazakhstan",
         "middle-corridor",
         "trade-risk",
-        "logistics-risk",
+        "shipment-dossier",
         "human-review",
         "free"
       ],
@@ -3604,26 +3604,23 @@ function applyCorridorSanctionsAssistantProfile(card, request) {
   card.name = "Corridor & Sanctions Risk Assistant";
   card.documentationUrl = discovery.documentation_url;
   card.description =
-    "Front door to the corridor and sanctions evidence-readiness gates. Ask about a specific Kazakhstan / Middle " +
-    "Corridor deal or a CIS / Caucasus / Central Asia counterparty; get a plain-language read on what due-diligence " +
-    "evidence a bank or compliance desk will still ask for, and a pointer to the structured gate that fits. " +
-    "For person-led work, email a one-line description of the route or counterparty and the next decision or review. " +
-    "Fit, scope, fee, and timing are confirmed before work starts. Orientation and routing only. The structured " +
-    "triage, scoring, and any screening happen in the named gates, and human review is required before any commercial action.";
+    "Route a Kazakhstan shipment, Central Asian export file or Caucasus trade counterparty to the matching evidence review. " +
+    "Bring a one-line description of the cargo, transit countries or trading entity and the pending decision. " +
+    "Get the specialist gate and a checklist of dated records to request before trade-finance or sanctions review. " +
+    "The assistant provides orientation and routing. Specialist gates handle structured review, and people make commercial decisions.";
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
       id: "corridor-sanctions-orientation",
-      name: "Corridor & sanctions deal orientation",
+      name: "Shipment and trade-counterparty evidence routing",
       description:
-        "Bring a one-line deal or counterparty (route, cargo, or entity + the decision pending). Get a plain-language " +
-        "read on the evidence gaps a bank or compliance desk will flag, which structured gate to run, and what " +
-        "to send for person-led work. Fit, scope, fee, and timing are confirmed before work starts.",
-      tags: ["corridor", "sanctions", "kazakhstan", "cis", "deal-risk", "evidence-readiness", "human-review", "free"],
+        "Describe a shipment route, cargo or trade counterparty and the pending review. Get the specialist endpoint " +
+        "and the shipment or counterparty records to gather for a bank or compliance handoff.",
+      tags: ["middle-corridor", "trade-sanctions", "kazakhstan", "trade-counterparty", "shipment-dossier", "evidence-routing", "human-review", "free"],
       examples: [
         "I'm shipping steel Kazakhstan->EU via the Middle Corridor next month — what will the bank ask for?",
         "Counterparty is a trading house in Georgia — where do I check secondary-sanctions exposure?",
-        "I have a live deal. What do you need to scope the review and quote it?"
+        "Route a Kyrgyzstan re-export file for trade-sanctions review and list the end-use records to gather."
       ],
       inputModes: ["application/json", "text/plain"],
       outputModes: ["application/json", "text/markdown"]
@@ -3666,12 +3663,11 @@ function applyGulfMaritimeProfile(card, request) {
   card.skills = [
     {
       id: "gulf-maritime-exposure",
-      name: "Gulf maritime exposure triage",
+      name: "Gulf vessel and voyage review before fixture",
       description:
-        "Turns a vessel/voyage, counterparties, exposure facets, and dated evidence into a structured maritime " +
-        "sanctions and chokepoint-disruption triage with decision-readiness score, evidence gaps, a chokepoint " +
-        "disruption watch, and mandatory human-review routing.",
-      tags: ["maritime", "sanctions", "hormuz", "red-sea", "dark-fleet", "evidence-readiness", "human-review", "free"],
+        "Checks a commercial voyage and its vessel IMO, route, counterparties and dated records for missing documents, " +
+        "maritime-sanctions evidence gaps and chokepoint questions before a human fixture review.",
+      tags: ["vessel-imo", "voyage-evidence", "maritime-sanctions", "hormuz", "red-sea", "pre-fixture", "human-review", "free"],
       examples: [
         "Should this Hormuz tanker transit be escalated before fixture?",
         "Triage a dark-fleet-indicator voyage with no confirmed P&I cover."
