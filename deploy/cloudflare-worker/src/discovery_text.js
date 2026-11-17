@@ -179,13 +179,14 @@ Hosted machine access: /.well-known/agent-contract.json links same-origin per-to
 - [Corridor Bankability Screen](https://agendamcp.dpdns.org/v1/corridor-bankability/screen): Deterministic Trans-Caspian corridor debt service coverage (DSCR), leverage covenants, Caspian Sea hydrology depth bottleneck, and sanctions exposure gate.
 
 ## Specialized Risk Gates
-- [Middle Corridor Deal Risk Gate](https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org): Cross-border logistics, sanctions screening, and trade route risk assessment.
-- [CIS Secondary Sanctions Exposure](https://cis-secondary-sanctions.agendamcp.dpdns.org): Secondary-sanctions exposure triage for EU/UK/OFAC compliance.
-- [Agentic Interaction Trust Gate](https://interaction-trust.agendamcp.dpdns.org): Pre-action trust evaluation for multi-agent autonomous interactions.
+- [Middle Corridor Deal Risk Gate](https://middle-corridor-deal-risk-gate.agendamcp.dpdns.org): Find missing shipment documents and source references before signature, dispatch or trade-finance review.
+- [CIS Secondary Sanctions Exposure](https://cis-secondary-sanctions.agendamcp.dpdns.org): Counterparty ownership and dated screening evidence triage for human compliance review. Configured list matches are potential name matches.
+- [Agentic Interaction Trust Gate](https://interaction-trust.agendamcp.dpdns.org): Find missing identity, delegation and action-scope evidence before a platform team accepts an external agent request.
 - [Gulf Maritime Exposure Gate](https://gulf-maritime-exposure.agendamcp.dpdns.org): Caller-supplied maritime and chokepoint evidence triage; no live vessel tracking.
-- [Kazakhstan Market Entry Readiness](https://kazakhstan-market-entry-readiness.agendamcp.dpdns.org): Regulatory, compliance, and counterparty readiness for market entry.
-- [Dual-Use Technology Export Gate](https://dual-use-technology-export.agendamcp.dpdns.org): Export control classification, ECCN mapping, and dual-use tech screening.
-- [Critical Minerals Due Diligence Gate](https://critical-minerals-due-diligence.agendamcp.dpdns.org): Mineral dossier readiness, source-quality gaps and human-review owner actions.
+- [Kazakhstan Market Entry Readiness](https://kazakhstan-market-entry-readiness.agendamcp.dpdns.org): Stage-specific partner, permits and operating-document gaps for a Kazakhstan project review.
+- [Dual-Use Technology Export Gate](https://dual-use-technology-export.agendamcp.dpdns.org): Review supplied classification, end-user and route evidence. HS reference membership gives a review lead. ECCN classification and licensing require a qualified reviewer.
+- [Critical Minerals Due Diligence Gate](https://critical-minerals-due-diligence.agendamcp.dpdns.org): Mineral supplier dossier gaps, scoped source excerpts and draft evidence requests for procurement and counsel.
+- [Corridor & Sanctions Risk Assistant](https://corridor-sanctions-assistant.agendamcp.dpdns.org): Turn one shipment or counterparty question into a specialist review route and intake checklist.
 - [Agent Output Verification Gate](https://output-verification.agendamcp.dpdns.org): Deterministic evidence verification and claim linter for LLM outputs.
 - [Pre-Action Check Gate](https://output-verification.agendamcp.dpdns.org): Stateless policy boundary pre-flight checks before agent execution.
 - [Agent Financial Guard Gate](https://agent-financial-guard.agendamcp.dpdns.org): Pre-sign review of supplied financial intent and local risk rules; no verified spending history or transaction authorization.
