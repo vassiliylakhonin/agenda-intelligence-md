@@ -55,15 +55,21 @@ def test_original_and_revised_fixture_contract():
 
 def test_ci_review_reports_findings_without_input_content(tmp_path):
     input_path = tmp_path / "generated.json"
-    input_path.write_text(json.dumps({
-        "answer": '"PRIVATE_ANSWER" [internal:source] [internal:missing]',
-        "sources": [{
-            "source_id": "internal:source",
-            "text": "PRIVATE_EXCERPT.",
-            "title": "PRIVATE_TITLE",
-            "url": "https://internal.example/private",
-        }],
-    }))
+    input_path.write_text(
+        json.dumps(
+            {
+                "answer": '"PRIVATE_ANSWER" [internal:source] [internal:missing]',
+                "sources": [
+                    {
+                        "source_id": "internal:source",
+                        "text": "PRIVATE_EXCERPT.",
+                        "title": "PRIVATE_TITLE",
+                        "url": "https://internal.example/private",
+                    }
+                ],
+            }
+        )
+    )
     command = [sys.executable, str(FIXTURES / "ci-review.py"), str(input_path)]
     env = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
 
@@ -79,9 +85,9 @@ def test_ci_review_reports_findings_without_input_content(tmp_path):
 
     strict = subprocess.run(command + ["--strict", "--include-source-ids"], capture_output=True, text=True, env=env)
     assert strict.returncode == 1
-    assert {"line": 1, "code": "missing_source", "source_ids": ["internal:missing"]} in json.loads(
-        strict.stdout
-    )["findings"]
+    assert {"line": 1, "code": "missing_source", "source_ids": ["internal:missing"]} in json.loads(strict.stdout)[
+        "findings"
+    ]
     assert "PRIVATE_" not in strict.stdout + strict.stderr
 
     input_path.write_text('{"PRIVATE_INVALID_JSON"')
