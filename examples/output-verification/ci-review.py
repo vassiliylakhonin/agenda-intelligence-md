@@ -1,28 +1,55 @@
 """Review a local RAG answer and emit a limited CI artifact."""
 
 import argparse
+import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 
-from agenda_intelligence import review_rag_answer
+from agenda_intelligence import __version__, review_rag_answer
+
+MAX_INPUT_BYTES = 16 * 1024 * 1024
+
+
+def read_bounded(path: Path) -> bytes:
+    with path.open("rb") as stream:
+        data = stream.read(MAX_INPUT_BYTES + 1)
+    if len(data) > MAX_INPUT_BYTES:
+        raise ValueError("Oversized input")
+    return data
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("input", type=Path, help="JSON with answer and retrieved sources")
+    parser.add_argument("input", type=Path, help="JSON with the answer and, in combined mode, sources")
+    parser.add_argument("--sources", type=Path, help="Separate JSON array captured by the retrieval job")
+    parser.add_argument("--sources-sha256", help="Expected SHA-256 of the source file, recorded before generation")
     parser.add_argument("--strict", action="store_true", help="Exit 1 after emitting findings")
     parser.add_argument("--include-source-ids", action="store_true", help="Include IDs when safe to share")
     args = parser.parse_args()
+    if (args.sources is None) != (args.sources_sha256 is None):
+        parser.error("--sources and --sources-sha256 must be supplied together")
+    if args.sources_sha256 is not None and not re.fullmatch(r"[0-9a-fA-F]{64}", args.sources_sha256):
+        parser.error("--sources-sha256 must contain 64 hexadecimal characters")
+
     try:
-        with args.input.open("rb") as stream:
-            data = stream.read(16 * 1024 * 1024 + 1)
-        if len(data) > 16 * 1024 * 1024:
-            raise ValueError("Oversized input")
-        request = json.loads(data.decode("utf-8"))
-        if not isinstance(request, dict) or set(request) != {"answer", "sources"}:
+        request = json.loads(read_bounded(args.input).decode("utf-8"))
+        expected_fields = {"answer"} if args.sources is not None else {"answer", "sources"}
+        if not isinstance(request, dict) or set(request) != expected_fields:
             raise ValueError("Unexpected input fields")
-        review = review_rag_answer(request["answer"], request["sources"])
+        source_snapshot = "not_checked"
+        if args.sources is not None:
+            source_bytes = read_bounded(args.sources)
+            if hashlib.sha256(source_bytes).hexdigest() != args.sources_sha256.lower():
+                print("Source snapshot differs from the recorded retrieval digest.", file=sys.stderr)
+                return 2
+            # Parse the same bytes that were hashed.
+            sources = json.loads(source_bytes.decode("utf-8"))
+            source_snapshot = "digest_matched"
+        else:
+            sources = request["sources"]
+        review = review_rag_answer(request["answer"], sources)
     except (OSError, ValueError):
         print("RAG review could not read or validate the input. Inspect it privately.", file=sys.stderr)
         return 2
@@ -42,6 +69,8 @@ def main():
     findings.sort(key=lambda finding: (finding["line"], finding["code"]))
     summary = {
         "contract": "rag-ci-findings.v1",
+        "checker_version": __version__,
+        "source_snapshot": source_snapshot,
         "route": review["route"],
         "claim_count": review["verification"]["claim_count"],
         "human_review_required": True,
