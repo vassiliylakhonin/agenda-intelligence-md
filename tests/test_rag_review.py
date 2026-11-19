@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
 import os
@@ -13,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from agenda_intelligence import RagReviewError, review_rag_answer
+from agenda_intelligence import RagReviewError, __version__, review_rag_answer
 from agenda_intelligence.rag_review import render_rag_review_markdown
 from agenda_intelligence.services import check_evidence_packet
 
@@ -76,6 +77,8 @@ def test_ci_review_reports_findings_without_input_content(tmp_path):
     warning = subprocess.run(command, capture_output=True, text=True, check=True, env=env)
     report = json.loads(warning.stdout)
     assert report["route"] == "revise"
+    assert report["checker_version"] == __version__
+    assert report["source_snapshot"] == "not_checked"
     assert report["human_review_required"] is True
     assert {"line": 1, "code": "quote_absent"} in report["findings"]
     assert {"line": 1, "code": "missing_source"} in report["findings"]
@@ -94,6 +97,51 @@ def test_ci_review_reports_findings_without_input_content(tmp_path):
     invalid = subprocess.run(command, capture_output=True, text=True, env=env)
     assert invalid.returncode == 2 and not invalid.stdout
     assert "PRIVATE_" not in invalid.stderr
+
+
+def test_ci_review_checks_retrieval_snapshot_across_revisions(tmp_path):
+    answer_path = tmp_path / "generated.json"
+    sources_path = tmp_path / "sources.json"
+    original = json.dumps([SOURCE]).encode()
+    sources_path.write_bytes(original)
+    digest = hashlib.sha256(original).hexdigest()
+    command = [
+        sys.executable,
+        str(FIXTURES / "ci-review.py"),
+        str(answer_path),
+        "--sources",
+        str(sources_path),
+        "--sources-sha256",
+        digest,
+        "--strict",
+    ]
+    env = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
+
+    def check(answer):
+        answer_path.write_text(json.dumps(answer))
+        return subprocess.run(command, capture_output=True, text=True, env=env)
+
+    changed_answer = {"answer": ANSWER.replace("120", "900")}
+    needs_revision = check(changed_answer)
+    assert needs_revision.returncode == 1
+    report = json.loads(needs_revision.stdout)
+    assert report["source_snapshot"] == "digest_matched"
+    assert {"line": 1, "code": "unmatched_numbers"} in report["findings"]
+    for private in (digest, SOURCE["text"], "[pilot]", "900"):
+        assert private not in needs_revision.stdout + needs_revision.stderr
+
+    revised = check({"answer": ANSWER})
+    assert revised.returncode == 0
+    assert json.loads(revised.stdout)["route"] == "human_review"
+
+    model_supplied_sources = check({**changed_answer, "sources": [SOURCE]})
+    assert model_supplied_sources.returncode == 2 and not model_supplied_sources.stdout
+
+    sources_path.write_text(json.dumps([{**SOURCE, "text": SOURCE["text"].replace("120", "900")}]))
+    changed_source = check(changed_answer)
+    assert changed_source.returncode == 2 and not changed_source.stdout
+    assert "differs from the recorded retrieval digest" in changed_source.stderr
+    assert digest not in changed_source.stderr
 
 
 def test_assembly_is_pure_and_preserves_core_result(monkeypatch):

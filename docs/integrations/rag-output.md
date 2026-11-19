@@ -74,20 +74,33 @@ nothing and sends nothing. Your caller/tracing system controls its own storage.
 ## Add a local CI check
 
 Copy [ci-review.py](../../examples/output-verification/ci-review.py) into your
-repository and run it on the JSON your retrieval and generation job already
-produces. The [GitHub workflow example](../../examples/output-verification/ci-workflow.yml)
-runs the synthetic input first. Install dependencies before processing client data.
+repository. In the retrieval step, save the original fragments as a JSON array
+in `sources.json` using the `sources` format below. Record the SHA-256 of the
+exact file bytes before generation and keep both the file and the digest under
+the retrieval job's control. Pass the digest to the review job through trusted
+CI metadata. The generation step writes only `{"answer": "..."}` to `answer.json`.
+The [GitHub workflow example](../../examples/output-verification/ci-workflow.yml)
+demonstrates the handoff with synthetic input.
 
 ```sh
 python -m pip install "agenda-intelligence-md==1.26.0"
-python examples/output-verification/ci-review.py answer.json > citation-findings.json
+python examples/output-verification/ci-review.py answer.json \
+  --sources sources.json --sources-sha256 "$SOURCES_SHA256" > citation-findings.json
 ```
 
-The artifact contains the route, claim count, finding codes and answer line
-numbers. It omits source and answer text, quotes, URLs, numeric literals and
-source IDs. Add `--include-source-ids` only when IDs are safe to retain and share.
-Keep raw input and full reports in your private working storage. For confidential
-inputs, use a runner approved for that data and review artifact access and retention.
+Reuse the same source file and digest when checking revisions to the answer.
+A mismatch exits 2 before review. `source_snapshot: digest_matched` means
+the checked bytes match the recorded digest. It provides integrity relative
+to that record. The source's authenticity and factuality still require review.
+The existing single-file invocation with `{"answer": "...", "sources": [...]}`
+remains available and reports `source_snapshot: not_checked`.
+
+The artifact contains the checker version, snapshot status, route, claim count,
+finding codes and answer line numbers. Source and answer text, digests, quotes,
+URLs, numeric literals from the input and source IDs stay out of the artifact.
+Add `--include-source-ids` only when IDs are safe to retain and share. Keep raw
+input and full reports in your private working storage. For confidential inputs,
+use an approved runner and review artifact access and retention.
 
 The example defaults to report-only and returns exit 2 for invalid or unreadable
 input. During the first pilot, label actionable findings, false alarms and missed
