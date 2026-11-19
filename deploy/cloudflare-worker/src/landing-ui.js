@@ -143,6 +143,10 @@ function landingHtml(request, env, externalClient = false) {
   const workedExample = WORKED_EXAMPLES[profile];
   const featuredCase = CATALOG_CASES[profile];
   const featuredFixture = FOCUSED_WORKED_EXAMPLES[profile];
+  const citationFirst = freeTrial && profile === 'agent_output_verification';
+  const openSavedExample = new URL(request.url).searchParams.get('source') === 'agenstry' && Boolean(workedExample);
+  const savedCorridorGate = profile === 'corridor_sanctions_assistant'
+    ? reviewSummary(workedExample.response)?.selectedGate : null;
   const primaryOffer = card.x_agenda_intelligence.onboarding?.primary_evaluation;
   const workflow = PRODUCT_WORKFLOWS[profile];
   const useMcp = !endpoint || profile === 'kazakhstan';
@@ -270,7 +274,9 @@ button:hover { border-color:var(--accent); }
     <p><strong>Next step:</strong> ${escapeHtml(workflow.next)}</p>
   </section>
   <div class="primary-actions">
-    <a class="primary-action primary-action-main" href="#${consoleId}">${routingTool ? 'Route my question free' : freeTrial ? 'Check my evidence free' : env.BILLING_MODE === "pay_per_call" ? "Evaluate with a signed payment" : "Open free base call"}</a>
+    ${citationFirst
+      ? '<a class="primary-action primary-action-main" href="#one-claim-review">See a citation check</a><a class="primary-action" href="#raw-answer">Try your own input</a>'
+      : `<a class="primary-action primary-action-main" href="#${consoleId}">${routingTool ? 'Route my question free' : freeTrial ? 'Check my evidence free' : env.BILLING_MODE === "pay_per_call" ? "Evaluate with a signed payment" : "Open free base call"}</a>`}
     <button type="button" class="primary-action" onclick="${exampleAction}" style="cursor:pointer">${featuredCase ? escapeHtml(featuredCase[0]) : 'Run a worked example'}</button>
     <a class="primary-action" href="#connect-mcp" onclick="document.getElementById('agent-integration').open = true">Connect MCP</a>
   </div>
@@ -280,13 +286,15 @@ button:hover { border-color:var(--accent); }
     ${fixtureVerdict
       ? `<strong>Example output:</strong> ${escapeHtml(sampleOutput.result.metadata.verdict_standard.reason_code)} · ${escapeHtml(sampleOutput.result.metadata.verdict_standard.next_permitted_action)} · Gap: ${escapeHtml(sampleOutput.result.metadata.verdict_standard.evidence_gaps[0])}`
       : `<small>Open the worked example to see its input and saved result.</small>`}</div>
-  <section id="worked-example" class="card" hidden>
+  <section id="worked-example" class="card"${openSavedExample ? '' : ' hidden'}>
     <h2>Free worked example</h2><p><strong>Precomputed synthetic fixture.</strong> No wallet, payment or trial attempt required. You can reopen it after your live allowance is exhausted. This saved example is not a live evaluation of your edited input or current sources.</p>
     ${featuredFixture ? `<h3>${escapeHtml(featuredCase[0])}</h3>
       ${reviewSummaryHtml(featuredFixture.response, escapeHtml)}
       <details><summary>Focused synthetic request and result</summary>${savedJson(featuredFixture, 'focused case')}</details>
       <h3>Full product walkthrough</h3>` : ''}
-    ${reviewSummaryHtml(workedExample?.response, escapeHtml)}
+    ${savedCorridorGate ? `${corridorPlanHtml(workedExample.response, escapeHtml)}
+      <p><a href="${escapeHtml(savedCorridorGate)}">Open the selected evidence-review gate</a></p>`
+      : reviewSummaryHtml(workedExample?.response, escapeHtml)}
     <details open><summary>Example request</summary><pre>${escapeHtml(JSON.stringify(workedExample?.request || {}, null, 2))}</pre></details>
     <details open><summary>Saved example result</summary>${savedJson(workedExample?.response || {}, 'result')}</details>
     ${profile === 'agent_financial_guard' && Array.isArray(workedExample?.scenarios) ? `<details><summary>Compare three synthetic pre-sign cases</summary><p>Saved fixtures only: no signing, payment or live checks. Review is always required.</p><ul>${workedExample.scenarios.map(item=>`<li>${escapeHtml(item.label)} — ${escapeHtml(item.verdict)}; ${escapeHtml(item.blocking_reasons.join(', '))}</li>`).join('')}</ul></details>` : ''}
@@ -297,7 +305,8 @@ button:hover { border-color:var(--accent); }
       <details><summary>Corrected request and full result</summary>${savedJson(workedExample.follow_up, 'follow-up request and result')}</details>
     </details>` : ''}
     ${isEscrowArbiter ? `<p>Have your own delivery evidence? Prepare the agreed hash and deadline, then review what was submitted.</p>
-      <a class="primary-action primary-action-main" href="#${consoleId}">Check my delivery evidence</a>` : ''}
+      <a class="primary-action primary-action-main" href="#${consoleId}">Check my delivery evidence</a>` : routingTool
+        ? `<p><a class="primary-action primary-action-main" href="#${consoleId}">Route my question free</a></p>` : ''}
   </section>
   ${profile === 'agent_output_verification' ? `<p>Review citations in your own CI. <a href="${REPOSITORY_URL}/blob/main/docs/integrations/rag-output.md#add-a-local-ci-check">Run the local check and generate a report without source or answer text</a>.</p>` : ''}
   ${isKazakhstan || profile === 'gulf_maritime_exposure' ? `<p><a href="${REPOSITORY_URL}/blob/main/examples/kazakhstan-middle-corridor/reviewer-handoff.md">Open a sample shipment dossier and five-file pilot</a>.</p>` : ''}
@@ -485,7 +494,7 @@ button:hover { border-color:var(--accent); }
   ${freeTrial && profile === 'cis_secondary_sanctions' ? cisWizardHtml(inputSchemaForProfile(profile), card.x_agenda_intelligence.required_before_review) : ''}
   ${freeTrial && profile === 'gulf_maritime_exposure' ? gulfWizardHtml(inputSchemaForProfile(profile), card.x_agenda_intelligence.required_before_review) : ''}
   ${freeTrial && profile === 'market_entry_readiness' ? marketEntryWizardHtml(inputSchemaForProfile(profile), card.x_agenda_intelligence.required_before_signature) : ''}
-  ${freeTrial && profile === 'agent_output_verification' ? citationReviewHtml(trialTerms.attempts_per_network, allowancePanel) : ''}
+  ${citationFirst ? citationReviewHtml(trialTerms.attempts_per_network, allowancePanel, escapeHtml) : ''}
   ${freeTrial && profile === 'agent_output_verification' ? reviewPanel : ''}
   ${profile === 'agent_output_verification' ? `<section class="card" id="numeric-consistency"><h2>Do the numbers agree?</h2>
     <p>For conflicting labeled values in a header, table or text, or an upside percentage that does not match the prices, use the separate opt-in <a href="https://vizier.agendamcp.dpdns.org/">Vizier numeric consistency preflight</a>. This page's citation and relay checks do not run it.</p>
@@ -654,7 +663,7 @@ function showWorkedExample() {
       headers:agendaTelemetryHeaders('/telemetry/worked-example', {'x-example-trace-id':window.agendaExampleTraceId})}).catch(function() {});
   }
 }
-${isEscrowArbiter ? `if (new URL(window.location.href).searchParams.get('source') === 'agenstry' && window.location.hash === '#worked-example') {
+${workedExample ? `if (window.location?.hash === '#worked-example' && new URL(window.location.href).searchParams.get('source') === 'agenstry') {
   showWorkedExample();
 }` : ''}
 var agendaTrialTraceId = null;

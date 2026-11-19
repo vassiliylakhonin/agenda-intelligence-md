@@ -1,4 +1,5 @@
 import {reviewAnswer} from './answer-review.js';
+import {CATALOG_CASES} from './catalog-cases.js';
 // Browser source is kept literal to survive Wrangler's keepNames bundling.
 // This prepares one caller-declared claim, never infers support or fetches a URL.
 export const CITATION_REVIEW_SCRIPT = String.raw`
@@ -102,6 +103,18 @@ function showCitationDemo(which) {
   document.getElementById('citation-demo-before').hidden=which!=='before';
   document.getElementById('citation-demo-after').hidden=which!=='after';
 }
+async function copyCitationDemoRequest() {
+  var command=document.getElementById('citation-demo-request');
+  var status=document.getElementById('citation-copy-status');
+  try {
+    await navigator.clipboard.writeText(command.value);
+    status.textContent='Request copied.';
+  } catch {
+    command.focus();
+    command.select();
+    status.textContent='Copy the selected request.';
+  }
+}
 async function runCitationReview(event) {
   event.preventDefault();
   var status = document.getElementById('citation-status');
@@ -134,10 +147,35 @@ async function runCitationReview(event) {
 }
 `;
 
-export function citationReviewHtml(attempts, allowancePanel) {
+export function citationReviewHtml(attempts, allowancePanel, escapeHtml) {
   const before=reviewAnswer({answer:'The report says "five warehouses" [s1]\nAnother claim [s2]',sources:[{source_id:'s1',text:'The report lists three warehouses.'}]});
   const after=reviewAnswer({answer:'The report says "three warehouses" [s1]\nAnother claim [s2]',sources:[{source_id:'s1',text:'The report lists three warehouses.'},{source_id:'s2',text:'Another claim.'}]});
+  const request = {
+    jsonrpc: '2.0', id: 'citation-example', method: 'SendMessage',
+    params: {message: {messageId: 'citation-example-1', role: 'ROLE_USER',
+      parts: [{text: CATALOG_CASES.agent_output_verification[0]}]}}
+  };
   return `<section id="one-claim-review" aria-label="Review one claim">
+    <section class="card" aria-label="Synthetic citation demonstration">
+      <h2>See a citation check</h2>
+      <p>Saved fictional example. Viewing it uses no trial attempt.</p>
+      <p><strong>Answer:</strong> The report says “five warehouses” [s1]. A second claim cites [s2].<br>
+      <strong>Supplied source [s1]:</strong> The report lists three warehouses.</p>
+      <div aria-live="polite">
+        <p id="citation-demo-before"><strong>Revise · ${before.findings.length} issues.</strong> The quote differs from [s1] and [s2] has no supplied source. Correct the quote and attach the missing excerpt.</p>
+        <p id="citation-demo-after" hidden><strong>Human review · ${after.findings.length} citation or quote issues.</strong> The corrected quote matches and both references have excerpts. A reviewer still checks meaning and factual accuracy.</p>
+      </div>
+      <p><button type="button" onclick="showCitationDemo('before')">Show before</button> <button type="button" onclick="showCitationDemo('after')">Show after correction</button></p>
+      <p><a href="#raw-answer">Try your own input</a></p>
+      <details>
+        <summary>Get a saved example over A2A</summary>
+        <p>POST this request to <code>/message/send</code> with <code>Content-Type: application/json</code> and <code>A2A-Version: 1.0</code>. The API example uses a fictional launch date and returns a saved JSON result.</p>
+        <label for="citation-demo-request">A2A request body</label>
+        <textarea id="citation-demo-request" rows="10" readonly style="width:100%;font-family:var(--mono)">${escapeHtml(JSON.stringify(request, null, 2))}</textarea>
+        <button type="button" onclick="copyCitationDemoRequest()">Copy API request</button>
+        <span id="citation-copy-status" role="status"></span>
+      </details>
+    </section>
     <h2>Review an AI answer before handoff</h2>
     <p>Paste the answer. Add the actual excerpt for [s1] if available. Other IDs stay unresolved; URLs are not fetched. This checks structure only, not truth or semantic support.</p>
     <p><small>For a quoted excerpt, put the citation directly after its closing quote: <code>&quot;exact source words&quot; [s1]</code>. Paste the matching source text below.</small></p>
@@ -150,11 +188,6 @@ export function citationReviewHtml(attempts, allowancePanel) {
       <p><small>The download contains the checked answer, supplied source text and result. Later edits are not included until checked. Nothing is uploaded by saving; keep the file private if the material is private.</small></p>
     </form>
     <p>Each explicit review uses one of ${attempts} shared network attempts. Corrections need another attempt; unchanged completed input is not resubmitted. Do not submit confidential material.</p>
-    <section aria-label="Synthetic citation demonstration"><h3>Try the synthetic before / after</h3><p>Saved example, no attempt used. It does not check your input.</p>
-      <button type="button" onclick="showCitationDemo('before')">Show before</button><button type="button" onclick="showCitationDemo('after')">Show after</button>
-      <p id="citation-demo-before" hidden>Before: ${before.findings.length} citation/quote issues — revise. Fictional answer quotes five warehouses; source says three, and [s2] is missing.</p>
-      <p id="citation-demo-after" hidden>After: ${after.findings.length} citation/quote issues — human review. Fictional quote and source references corrected. No truth verification or permission to act.</p>
-    </section>
     <h2>Check one claim before sharing an AI answer</h2>
     <p>Paste one assertion from your answer and the actual source excerpt. Add the exact quote you want checked, if any. Text and quotes are preserved as supplied. This checks citation structure and quote presence; a reviewer must decide whether the source supports the meaning.</p>
     ${allowancePanel}

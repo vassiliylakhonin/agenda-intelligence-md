@@ -1399,9 +1399,12 @@ function agentCard(request, env = {}) {
     : '';
   const focusedCase = CATALOG_CASES[profile];
   const focusedIntro = focusedCase ? `${focusedCase[1]} Try the saved example: "${focusedCase[0]}". It uses fictional inputs and shows the output before you submit your own material. ` : '';
-  const agenstryExampleUrl = profile === 'm2m_escrow_arbiter' ? `${origin}/?source=agenstry#worked-example` : null;
-  const taggedIntro = agenstryExampleUrl ? `Open the delivery example from Agenstry at ${agenstryExampleUrl}. ` : '';
-  shaped.description = `${PROFILE_TASKS[profile] || 'Review supplied evidence using the published contract.'} ${focusedIntro}${taggedIntro}${accessSummary}${flagshipPrice} Supplied-evidence review, not independent factual verification or clearance; mandatory human review before consequential action. Caller must invoke and enforce the result in its integration. ${shaped.description}`;
+  const agenstryExampleUrl = WORKED_EXAMPLES[profile] ? `${origin}/?source=agenstry#worked-example` : null;
+  const browserExampleUrl = profile === 'agent_output_verification' && trial
+    ? `${origin}/#one-claim-review` : agenstryExampleUrl;
+  const exampleLink = browserExampleUrl ? ` Open the free browser example at ${browserExampleUrl}` : '';
+  const scope = 'Supplied-evidence review, with mandatory human review before consequential action. Independent factual verification and clearance require separate checks. Caller must invoke and enforce the result in its integration.';
+  shaped.description = `${PROFILE_TASKS[profile] || 'Review supplied evidence using the published contract.'}${exampleLink}\n\n${focusedIntro}${accessSummary}${flagshipPrice}\n\n${scope}\n\n${shaped.description}`;
   shaped.x_agenda_intelligence.onboarding = agentOnboarding(profile, env, origin);
   if (profile === 'agenda' || profile === 'kazakhstan') {
     const memoExample = profile === 'kazakhstan' ? CORRIDOR_MEMO_EXAMPLE : MEMO_QUALITY_EXAMPLE;

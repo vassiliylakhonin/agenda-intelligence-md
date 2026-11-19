@@ -22,7 +22,7 @@ test('shipment, policy-memo and AI-report discovery have distinct jobs', async (
   assert.ok(!corridor.skills.some(skill => ['risk-memo-quality-gate','a2a-evidence-pack-linter'].includes(skill.id)));
   assert.ok(agenda.skills.some(skill => skill.id === 'agenda-validate-memo'));
   assert.match(agenda.skills.find(skill => skill.id === 'agenda-audit-claims').name,/Packaged policy-memo/);
-  assert.match(output.description,/^Citation check for AI reports:/);
+  assert.match(output.description,/^Check an AI answer against the source excerpts you supply/);
   const main = output.skills.find(skill => skill.id === 'agent-output-verification');
   assert.equal(main.name,'Citation check for AI reports');
   assert.equal(main.tags.length,8);
@@ -41,7 +41,7 @@ test('trade cards lead with distinct shipment, voyage and counterparty jobs', as
   assert.match(gulf.description, /^Review a commercial vessel and voyage/);
   assert.match(gulf.description, /IMO number/);
   assert.ok(gulf.skills[0].tags.includes('pre-fixture'));
-  assert.match(assistant.description, /^Find the right evidence checklist/);
+  assert.match(assistant.description, /^Describe a shipment or trade counterparty and the decision ahead/);
   assert.ok(assistant.skills[0].tags.includes('trade-counterparty'));
   const intents = assistant.x_agenda_intelligence.catalog_onboarding.evaluation_intents;
   assert.ok(intents.some(item => item.skill_id === 'corridor-sanctions-orientation' && item.text.includes('re-export file')));

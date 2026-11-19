@@ -101,8 +101,8 @@ test('local exports keep the checked material and survive edits, refusals and a 
 
 test('web raw answer, synthetic demo and correction use the real trial without fabricating sources',async()=>quiet(async()=>{
   const ui=await browser();
-  assert.match(ui.html,/Before: 2 citation\/quote issues/);
-  assert.match(ui.html,/After: 0 citation\/quote issues/);
+  assert.match(ui.html,/Revise · 2 issues/);
+  assert.match(ui.html,/Human review · 0 citation or quote issues/);
   ui.context.showCitationDemo('before');assert.equal(ui.elements['citation-demo-before'].hidden,false);
   ui.context.showCitationDemo('after');assert.equal(ui.elements['citation-demo-before'].hidden,true);
   assert.equal(ui.requests.length,0);
@@ -142,6 +142,8 @@ test('one-claim form is opt-in to the existing Output trial and begins without e
   const ui=await browser();
   assert.ok(ui.html.includes('id="one-claim-review"'));
   assert.ok(ui.html.includes('href="#one-claim-review"'));
+  assert.ok(ui.html.indexOf('id="citation-demo-before"')<ui.html.indexOf('id="raw-answer"'));
+  assert.ok(ui.html.includes('Copy API request'));
   assert.ok(ui.html.includes('same 5 campaign attempts'));
   assert.equal([...ui.html.matchAll(/id="profile-review"/g)].length,1);
   assert.equal([...ui.html.matchAll(/id="profile-allowance-check"/g)].length,1);
