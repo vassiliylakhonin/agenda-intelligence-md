@@ -93,6 +93,11 @@ test('profile cards link to visible browser examples without submitting input', 
     const html = await response.text();
     assert.match(html, profile === 'agent_output_verification'
       ? /<p id="citation-demo-before">/ : /<section id="worked-example" class="card">/);
+    if (profile === 'corridor_sanctions_assistant') {
+      const savedExample = html.split('<section id="worked-example" class="card">')[1];
+      assert.match(savedExample, /Counterparty and ownership evidence/);
+      assert.match(savedExample, /Open the selected evidence-review gate/);
+    }
   }
 });
 

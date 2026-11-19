@@ -145,6 +145,8 @@ function landingHtml(request, env, externalClient = false) {
   const featuredFixture = FOCUSED_WORKED_EXAMPLES[profile];
   const citationFirst = freeTrial && profile === 'agent_output_verification';
   const openSavedExample = new URL(request.url).searchParams.get('source') === 'agenstry' && Boolean(workedExample);
+  const savedCorridorGate = profile === 'corridor_sanctions_assistant'
+    ? reviewSummary(workedExample.response)?.selectedGate : null;
   const primaryOffer = card.x_agenda_intelligence.onboarding?.primary_evaluation;
   const workflow = PRODUCT_WORKFLOWS[profile];
   const useMcp = !endpoint || profile === 'kazakhstan';
@@ -290,7 +292,9 @@ button:hover { border-color:var(--accent); }
       ${reviewSummaryHtml(featuredFixture.response, escapeHtml)}
       <details><summary>Focused synthetic request and result</summary>${savedJson(featuredFixture, 'focused case')}</details>
       <h3>Full product walkthrough</h3>` : ''}
-    ${reviewSummaryHtml(workedExample?.response, escapeHtml)}
+    ${savedCorridorGate ? `${corridorPlanHtml(workedExample.response, escapeHtml)}
+      <p><a href="${escapeHtml(savedCorridorGate)}">Open the selected evidence-review gate</a></p>`
+      : reviewSummaryHtml(workedExample?.response, escapeHtml)}
     <details open><summary>Example request</summary><pre>${escapeHtml(JSON.stringify(workedExample?.request || {}, null, 2))}</pre></details>
     <details open><summary>Saved example result</summary>${savedJson(workedExample?.response || {}, 'result')}</details>
     ${profile === 'agent_financial_guard' && Array.isArray(workedExample?.scenarios) ? `<details><summary>Compare three synthetic pre-sign cases</summary><p>Saved fixtures only: no signing, payment or live checks. Review is always required.</p><ul>${workedExample.scenarios.map(item=>`<li>${escapeHtml(item.label)} — ${escapeHtml(item.verdict)}; ${escapeHtml(item.blocking_reasons.join(', '))}</li>`).join('')}</ul></details>` : ''}

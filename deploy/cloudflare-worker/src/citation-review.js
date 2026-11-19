@@ -169,7 +169,7 @@ export function citationReviewHtml(attempts, allowancePanel, escapeHtml) {
       <p><a href="#raw-answer">Try your own input</a></p>
       <details>
         <summary>Get a saved example over A2A</summary>
-        <p>POST this request to <code>/message/send</code> with <code>Content-Type: application/json</code> and <code>A2A-Version: 1.0</code>. It returns the saved one-claim fixture.</p>
+        <p>POST this request to <code>/message/send</code> with <code>Content-Type: application/json</code> and <code>A2A-Version: 1.0</code>. The API example uses a fictional launch date and returns a saved JSON result.</p>
         <label for="citation-demo-request">A2A request body</label>
         <textarea id="citation-demo-request" rows="10" readonly style="width:100%;font-family:var(--mono)">${escapeHtml(JSON.stringify(request, null, 2))}</textarea>
         <button type="button" onclick="copyCitationDemoRequest()">Copy API request</button>
