@@ -81,6 +81,21 @@ test('catalogue requirements use the serving contract and trial options respect 
   } finally {console.log=log;}
 });
 
+test('profile cards link to visible browser examples without submitting input', async () => {
+  for (const profile of Object.keys(WORKED_EXAMPLES)) {
+    const env = {AGENT_PROFILE:profile, BILLING_MODE:'pay_per_call', WORKER_FREE_TRIAL:'1'};
+    const card = agentCard(new Request(origin), env);
+    const savedUrl = new URL(card.x_agenda_intelligence.onboarding.agenstry_example_url);
+    const browserUrl = profile === 'agent_output_verification' ? new URL('/#one-claim-review', savedUrl) : savedUrl;
+    assert.ok(card.description.includes(browserUrl.href), profile);
+    const response = await handleRequest(new Request(browserUrl, {headers:{accept:'text/html'}}), env);
+    assert.equal(response.status, 200, profile);
+    const html = await response.text();
+    assert.match(html, profile === 'agent_output_verification'
+      ? /<p id="citation-demo-before">/ : /<section id="worked-example" class="card">/);
+  }
+});
+
 test('new catalogue commands preserve authorization, protocol and payment-material refusals', async () => {
   const log=console.log;console.log=()=>{};
   try {
