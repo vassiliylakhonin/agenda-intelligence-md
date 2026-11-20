@@ -59,7 +59,17 @@ function mountIntakeEditor(root, requestBox, template, options) {
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       var group = path && typeof key !== 'number' ? node('fieldset') : target;
       if (group !== target) { group.appendChild(node('legend', label(key))); target.appendChild(group); }
-      Object.entries(value).forEach(function(entry) { draw(entry[1], group, path ? path + '.' + entry[0] : entry[0], value, entry[0], depth + 1); });
+      var entries = Object.entries(value);
+      if (!path && options && options.firstField && Object.hasOwn(value, options.firstField)) {
+        var first = options.firstField;
+        draw(value[first], group, first, value, first, depth + 1);
+        entries = entries.filter(function(entry) { return entry[0] !== first; });
+        if (entries.length && options.foldRemaining) {
+          var remaining = node('details'); remaining.appendChild(node('summary', options.foldRemaining));
+          group.appendChild(remaining); group = remaining;
+        }
+      }
+      entries.forEach(function(entry) { draw(entry[1], group, path ? path + '.' + entry[0] : entry[0], value, entry[0], depth + 1); });
       return;
     }
     if (Array.isArray(value)) {

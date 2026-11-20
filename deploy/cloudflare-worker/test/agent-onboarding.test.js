@@ -82,13 +82,39 @@ test('every profile landing links its MCP setup and uses a search sitemap for pu
     assert.ok(page.includes(`href="${gate.example_url}"`));
     assert.ok(page.includes('href="#connect-mcp"'));
     const sitemap = await (await handleRequest(new Request(origin + '/sitemap.xml'), env)).text();
-    const publicPaths = ['/', '/trust', '/privacy', '/terms', '/sample-dossier', '/supplier-desk', '/supplier-review', '/document-archive', '/archive-review'];
+    const publicPaths = gate.profile === 'agenda'
+      ? ['/', '/sample-dossier', '/supplier-desk', '/supplier-review', '/document-archive', '/archive-review'] : ['/'];
     assert.equal(sitemap.match(/<loc>/g).length, publicPaths.length);
     for (const path of publicPaths) assert.ok(sitemap.includes(`<loc>${origin}${path}</loc>`), `${gate.profile} sitemap should include ${path}`);
     assert.doesNotMatch(sitemap, /\.well-known|openapi\.json|llms\.txt/);
   }
   assert.equal(titles.size, fleet.gates.length);
   assert.ok(!titles.has(undefined));
+});
+
+test('production HTTP upgrades before routing or evidence review and retains path and query', async () => {
+  const requestUrl = 'http://middle-corridor-deal-risk-gate.agendamcp.dpdns.org/message/send?source=test';
+  const response = await handleRequest(new Request(requestUrl, {method: 'POST'}), {AGENT_PROFILE: 'kazakhstan'});
+  assert.equal(response.status, 308);
+  assert.equal(response.headers.get('location'), requestUrl.replace('http:', 'https:'));
+});
+
+test('site offers the correct input and example before the integration details', async () => {
+  const cases = [
+    ['agenda', 'I have a question', 'I have a drafted memo', 'Route a strategic question for free'],
+    ['kazakhstan', 'Prepare a shipment dossier', 'Check a drafted shipment memo', 'Aktau–Baku shipment document checklist'],
+    ['corridor_sanctions_assistant', 'Route my trade question free', 'Handoff for the Aktau–Baku question', 'Route a trade question for free'],
+    ['agent_output_verification', 'See a citation check', 'Try your own input', 'A2A example · mismatched launch date quote'],
+    ['m2m_escrow_arbiter', 'Review my delivery evidence', 'Hash and schema findings', 'reported timing: late']
+  ];
+  for (const [profile, action, example, result] of cases) {
+    const env = {AGENT_PROFILE: profile, BILLING_MODE:'pay_per_call', WORKER_FREE_TRIAL:'1'};
+    const page = await (await handleRequest(new Request(origin, {headers:{accept:'text/html'}}), env)).text();
+    assert.ok(page.includes(action), profile);
+    assert.ok(page.includes(example), profile);
+    assert.ok(page.includes(result), profile);
+    assert.ok(page.indexOf(action) < page.indexOf('id="agent-integration"'), profile);
+  }
 });
 
 test('legacy Worker HTML points at the preferred site while its A2A card keeps the serving origin', async () => {

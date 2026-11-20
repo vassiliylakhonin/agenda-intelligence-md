@@ -168,8 +168,8 @@ export function citationReviewHtml(attempts, allowancePanel, escapeHtml) {
       <p><button type="button" onclick="showCitationDemo('before')">Show before</button> <button type="button" onclick="showCitationDemo('after')">Show after correction</button></p>
       <p><a href="#raw-answer">Try your own input</a></p>
       <details>
-        <summary>Get a saved example over A2A</summary>
-        <p>POST this request to <code>/message/send</code> with <code>Content-Type: application/json</code> and <code>A2A-Version: 1.0</code>. The API example uses a fictional launch date and returns a saved JSON result.</p>
+        <summary>A2A example · mismatched launch date quote</summary>
+        <p>POST this request to <code>/message/send</code> with <code>Content-Type: application/json</code> and <code>A2A-Version: 1.0</code>. This separate fixture uses a fictional launch date. <a href="/?source=agenstry#worked-example" onclick="showWorkedExample(); return false;">See the saved launch-date request and result</a> or <a href="/landing-examples.json">read the JSON under <code>focused</code></a>.</p>
         <label for="citation-demo-request">A2A request body</label>
         <textarea id="citation-demo-request" rows="10" readonly style="width:100%;font-family:var(--mono)">${escapeHtml(JSON.stringify(request, null, 2))}</textarea>
         <button type="button" onclick="copyCitationDemoRequest()">Copy API request</button>

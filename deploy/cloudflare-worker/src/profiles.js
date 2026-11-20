@@ -516,7 +516,7 @@ const agentFinancialGuardProfile = Object.freeze({
 const m2mEscrowArbiterProfile = Object.freeze({
   profile_key: "m2m_escrow_arbiter",
   product_profile: "m2m_escrow_arbiter",
-  canonical_product_name: "M2M Escrow Arbiter — Delivery Evidence Review",
+  canonical_product_name: "Escrow Delivery Evidence Review",
   documentation_url: M2M_ESCROW_ARBITER_DOCS_URL,
   provider_same_as: SHARED_PROVIDER_SAME_AS,
   wrapper_scope:
