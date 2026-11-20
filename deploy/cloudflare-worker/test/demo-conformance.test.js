@@ -5,7 +5,7 @@ const env={AGENT_PROFILE:'critical_minerals_due_diligence',BILLING_MODE:'pay_per
 const origin='https://example.test';
 test('worked example is a free precomputed demonstration, not a paid form submission',async()=>{
  const html=await (await handleRequest(new Request(origin,{headers:{accept:'text/html'}}),env)).text();
- assert.match(html,/onclick="showWorkedExample\(\)"/);assert.match(html,/Precomputed synthetic fixture/);assert.ok(!html.includes('Run the demo for the actual result'));
+ assert.match(html,/onclick="showWorkedExample\(\)/);assert.match(html,/Precomputed synthetic fixture/);assert.ok(!html.includes('Run the demo for the actual result'));
 });
 test('strict paid deployment preserves a valid A2A response to no-op heartbeat',async()=>{
  const body={jsonrpc:'2.0',id:'heartbeat',method:'SendMessage',params:{message:{messageId:'hb-1',role:'ROLE_USER',parts:[{text:'A2A conformance heartbeat'}]}}};
@@ -29,7 +29,7 @@ test('all public profiles expose an honest fixed example and a no-op with no eva
  const profiles=['agenda','kazakhstan','cis_secondary_sanctions','agentic_interaction_trust','agent_output_verification','gulf_maritime_exposure','market_entry_readiness','critical_minerals_due_diligence','dual_use_technology_export','corridor_sanctions_assistant','agent_financial_guard','m2m_escrow_arbiter'];
  for(const profile of profiles){
   const local={...env,AGENT_PROFILE:profile};
-  const html=await(await handleRequest(new Request(origin,{headers:{accept:'text/html'}}),local)).text();assert.match(html,/onclick="showWorkedExample\(\)"/);assert.match(html,/kind.*precomputed_synthetic_fixture|Precomputed synthetic fixture/);
+  const html=await(await handleRequest(new Request(origin,{headers:{accept:'text/html'}}),local)).text();assert.match(html,/onclick="showWorkedExample\(\)/);assert.match(html,/kind.*precomputed_synthetic_fixture|Precomputed synthetic fixture/);
   const body={jsonrpc:'2.0',id:8,method:'SendMessage',params:{message:{messageId:'hb',role:'ROLE_USER',parts:[{text:'ping'}]}}};
   const response=await handleRequest(new Request(origin+'/message/send',{method:'POST',headers:{'a2a-version':'1.0'},body:JSON.stringify(body)}),local);const j=await response.json();assert.equal(response.status,200);assert.equal(j.result.task.metadata.evaluation_performed,false);assert.equal(j.result.task.metadata.operation,'heartbeat');
  }

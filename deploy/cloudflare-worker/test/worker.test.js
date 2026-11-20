@@ -1184,7 +1184,7 @@ test("landing HTML advertises AI catalog endpoint and Link header", async () => 
   assert.match(body, /<link rel="ai-catalog" href="https:\/\/agenda-intelligence-a2a\.example\.workers\.dev\/\.well-known\/ai-catalog\.json">/);
   assert.ok(body.includes("/.well-known/ai-catalog.json"));
   assert.ok(body.includes("/profiles/confidential-project-room"));
-  assert.match(body, /Run a worked example/);
+  assert.match(body, /See a question routing example/);
   assert.match(body, /Discuss enterprise integration/);
 });
 
@@ -1293,6 +1293,10 @@ test("kazakhstan profile exposes focused corridor-risk agent card", () => {
   );
   assert.equal(
     card.documentationUrl,
+    "https://middle-corridor-deal-risk-gate-a2a.example.workers.dev/"
+  );
+  assert.equal(
+    card.x_agenda_intelligence.product_documentation_url,
     "https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/main/docs/use-cases/kazakhstan-middle-corridor.md"
   );
   assert.equal(
@@ -8966,7 +8970,7 @@ test("GET /health returns m2m_escrow_arbiter metadata", async () => {
   const json = await res.json();
   assert.equal(json.ok, true);
   assert.equal(json.profile, "m2m_escrow_arbiter");
-  assert.equal(json.name, "M2M Escrow Arbiter — Delivery Evidence Review");
+  assert.equal(json.name, "Escrow Delivery Evidence Review");
   assert.ok(json.skills.some((s) => s.id === "m2m-escrow-arbitration-ruling"));
 });
 
@@ -10279,7 +10283,7 @@ test("landing conversion: each profile has a usable console, v1 curl, honest pri
     assert.ok(html.includes("Missing a tool? POST what you need to /v1/request-capability on any of my workers - free, and I read requests daily and build what's asked."), `${host}: no capability-request CTA`);
     assert.ok(html.includes('href="/v1/request-capability"'), `${host}: no capability contract link`);
     assert.ok(html.includes(`href="${origin}/.well-known/agent-card.json"`));
-    assert.match(html, /onclick="showWorkedExample\(\)"/);
+    assert.match(html, /onclick="showWorkedExample\(\)/);
     assert.match(html, /-H &#39;A2A-Version: 1\.0&#39;/);
     assert.match(html, /method&quot;: &quot;SendMessage&quot;/);
     assert.match(html, /agenda-structured-verdict\/v1/);

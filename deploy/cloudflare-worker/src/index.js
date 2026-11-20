@@ -1402,7 +1402,12 @@ function agentCard(request, env = {}) {
   const agenstryExampleUrl = WORKED_EXAMPLES[profile] ? `${origin}/?source=agenstry#worked-example` : null;
   const browserExampleUrl = profile === 'agent_output_verification' && trial
     ? `${origin}/#one-claim-review` : agenstryExampleUrl;
-  const exampleLink = browserExampleUrl ? ` Open the free browser example at ${browserExampleUrl}` : '';
+  const productPageUrl = profile === 'agenda' || profile === 'kazakhstan' ? `${origin}/` : browserExampleUrl;
+  if (productPageUrl) {
+    shaped.x_agenda_intelligence.product_documentation_url = shaped.documentationUrl;
+    shaped.documentationUrl = productPageUrl;
+  }
+  const exampleLink = browserExampleUrl ? ` Open the free browser example at ${browserExampleUrl}.` : '';
   const scope = 'Supplied-evidence review, with mandatory human review before consequential action. Independent factual verification and clearance require separate checks. Caller must invoke and enforce the result in its integration.';
   shaped.description = `${PROFILE_TASKS[profile] || 'Review supplied evidence using the published contract.'}${exampleLink}\n\n${focusedIntro}${accessSummary}${flagshipPrice}\n\n${scope}\n\n${shaped.description}`;
   shaped.x_agenda_intelligence.onboarding = agentOnboarding(profile, env, origin);
@@ -1424,6 +1429,7 @@ function agentCard(request, env = {}) {
     };
   }
   if (agenstryExampleUrl) shaped.x_agenda_intelligence.onboarding.agenstry_example_url = agenstryExampleUrl;
+  if (productPageUrl) shaped.x_agenda_intelligence.onboarding.browser_start_url = productPageUrl;
   shaped.x_agenda_intelligence.machine_contract = `${origin}/.well-known/agent-contract.json`;
   shaped.x_agenda_intelligence.free_a2a_triage = {
     scope: accessSummary,
@@ -3573,7 +3579,7 @@ function applyAgentFinancialGuardProfile(card, request) {
 function applyM2MEscrowArbiterProfile(card, request) {
   const origin = originFromRequest(request);
   const discovery = profileDiscovery("m2m_escrow_arbiter");
-  card.name = "M2M Escrow Arbiter — Delivery Evidence Review";
+  card.name = "Escrow Delivery Evidence Review";
   card.documentationUrl = discovery.documentation_url;
   card.description =
     "Delivery evidence checks for human review of agent-to-agent disputes. " +
@@ -4247,7 +4253,7 @@ const GATE_REQUEST_GUIDES = Object.freeze({
     }
   },
   m2m_escrow_arbiter: {
-    title: "M2M Escrow Arbiter — Delivery Evidence Review",
+    title: "Escrow Delivery Evidence Review",
     schema: "schemas/v1/m2m-escrow-arbiter-request.schema.json",
     required: [
       "escrow_id — unique identifier of the escrow transaction",
@@ -15099,9 +15105,18 @@ function statusInfo(request, env) {
   return status;
 }
 
+function isPublicFleetHost(hostname) {
+  return hostname === 'agendamcp.dpdns.org' || hostname.endsWith('.agendamcp.dpdns.org');
+}
+
 function publicSiteOrigin(request, env = {}) {
   const origin = originFromRequest(request);
-  if (!new URL(origin).hostname.endsWith('.vassiliy-lakhonin.workers.dev')) return origin;
+  const url = new URL(origin);
+  if (isPublicFleetHost(url.hostname)) {
+    url.protocol = 'https:';
+    return url.origin;
+  }
+  if (!url.hostname.endsWith('.vassiliy-lakhonin.workers.dev')) return origin;
   return fleetDirectoryResponse().gates.find(gate => gate.profile === agentProfile(request, env))?.canonical_endpoint || origin;
 }
 
@@ -15131,9 +15146,10 @@ function robotsTxt(request, env = {}) {
 
 function sitemapXml(request, env) {
   const origin = publicSiteOrigin(request, env);
-  // Every profile serves these shared public trust and evidence pages. Keep
-  // the product sitemap useful to search crawlers instead of listing only `/`.
-  const paths = ['/', '/trust', '/privacy', '/terms', '/sample-dossier', '/supplier-desk', '/supplier-review', '/document-archive', '/archive-review'];
+  // Shared workspaces are advertised by the Agenda hub. The specialist hosts
+  // list their own product page rather than copies of the same workspaces.
+  const paths = agentProfile(request, env) === 'agenda'
+    ? ['/', '/sample-dossier', '/supplier-desk', '/supplier-review', '/document-archive', '/archive-review'] : ['/'];
   const urls = paths.map((path) => `  <url><loc>${origin}${path}</loc></url>`).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
 }
@@ -16265,7 +16281,12 @@ function trialOpenApiPaths(request, env) {
 }
 
 export async function handleRequest(request, env = {}, ctx = {}) {
-  const path = new URL(request.url).pathname;
+  const url = new URL(request.url);
+  if (url.protocol === 'http:' && isPublicFleetHost(url.hostname)) {
+    url.protocol = 'https:';
+    return Response.redirect(url, 308);
+  }
+  const path = url.pathname;
   if (env.AGENT_PROFILE === "agent_output_verification") {
     if (path === OPENAI_OUTPUT_PAGE && request.method === "GET") return openAiOutputLanding();
     if (path === OPENAI_OUTPUT_MCP_PATH) {
@@ -16893,10 +16914,11 @@ async function handleRequestInner(request, env = {}, ctx = {}) {
   }
 
   if (request.method === "GET" && url.pathname === "/") {
+    const headers = { ...aiCatalogHeaders(request), vary: "Accept" };
     if (acceptsHtml(request)) {
-      return htmlResponse(landingHtml(request, env, true), 200, aiCatalogHeaders(request));
+      return htmlResponse(landingHtml(request, env, true), 200, headers);
     }
-    return jsonResponse(healthInfo(request, env), 200, aiCatalogHeaders(request));
+    return jsonResponse(healthInfo(request, env), 200, headers);
   }
 
   if (request.method === "GET" && url.pathname === "/health/dependencies") {

@@ -2,6 +2,7 @@ import { TRIAL_NEXT_STEPS_SCRIPT } from './trial-next-steps.js';
 import { MINERAL_WORKFLOW_CLIENT_SCRIPT } from './mineral-workflow-client.js';
 import { WORKED_EXAMPLES, FOCUSED_WORKED_EXAMPLES } from "./worked-examples.js";
 import { CATALOG_CASES } from "./catalog-cases.js";
+import { firstResultHtml, memoExampleHtml } from './landing-first-result.js';
 import { MEMO_QUALITY_TOOL } from "./memo-quality-gate.js";
 import { PAYMENT_CLIENT_SCRIPT } from "./payment-client.js";
 import { hostedAccess, rateLimitPerHour } from "./hosted-access.js";
@@ -59,7 +60,9 @@ function landingHtml(request, env, externalClient = false) {
   const access = hostedAccess(profile, env, canonicalOrigin);
   const amount = evaluationAmount(profile, workedTool(profile));
   const priceLine = routingTool
-    ? 'Question routing is free, without a trial attempt. Specialist checks are priced separately.'
+    ? profile === 'agenda'
+      ? 'Question routing is free. Memo quality checks are also free. Specialists have separate access terms.'
+      : 'Question routing is free, without a trial attempt. The selected specialist has separate access terms.'
     : access.billing_mode === 'pay_per_call'
       ? `${freeTrial ? `${trialTerms.attempts_per_network} free checks per network for this campaign, then` : 'No free live trial enabled here;'} ${amount} USDC per paid check on Base.`
       : `Base calls are free${rateLimitPerHour(env) && env.AGENDA_USAGE ? `, up to ${rateLimitPerHour(env)} per hour (best effort)` : ''}; optional paid tools have separate prices.`;
@@ -77,11 +80,11 @@ function landingHtml(request, env, externalClient = false) {
 
   const presentation = {
     agenda: ["AI and Trade Evidence Review Tools | Agenda Intelligence", "Check a strategic-risk memo or find the specialist review for a pending trade or agent decision.", null],
-    kazakhstan: ["Middle Corridor Shipment Document Review", "Find missing documents in a Kazakhstan and Middle Corridor shipment file before signature, dispatch or bank review.", "kazakhstan"],
+    kazakhstan: ["Aktau–Baku and Middle Corridor Shipment Document Review", "Check an Aktau–Baku or other Middle Corridor shipment file before signature, dispatch or bank review.", "kazakhstan"],
     agentic_interaction_trust: ["AI Agent Identity and Delegation Evidence Review", "Give the tool owner a list of missing identity, delegation and action-scope evidence before an external agent request reaches execution.", "agentic_interaction_trust"],
-    agent_output_verification: ["AI Report Citation Checker | Output Verification", "Check an AI report against supplied source text for missing references and mismatched quotes before human review.", "agent_output_verification"],
+    agent_output_verification: ["AI Citation Checker | Output Verification", "Check AI-generated citations against the source excerpts you supply. Find missing references and mismatched quotes before sharing an answer or report.", "agent_output_verification"],
     agent_financial_guard: ["Wallet Transaction Review Before Signing | Agent Financial Guard", "Get a reject or human-review recommendation for a proposed transfer or token approval using the transaction fields and policy you supply.", "agent_financial_guard"],
-    m2m_escrow_arbiter: ["Escrow Delivery Evidence Review for AI Agents", "Check a delivered artifact against an agreed hash and supported schema. Flag reported timing and evidence gaps for a human dispute reviewer.", "m2m_escrow_arbiter"],
+    m2m_escrow_arbiter: ["Escrow Delivery Evidence Review", "Check a delivered artifact against an agreed hash and supported schema. Flag reported timing and evidence gaps for a human dispute reviewer.", "m2m_escrow_arbiter"],
     cis_secondary_sanctions: ["CIS Counterparty Ownership and Sanctions Evidence Review", "Prepare a CIS, Caucasus or Central Asia counterparty file with ownership records, dated screening results and a checklist for compliance review.", "cis_secondary_sanctions"],
     gulf_maritime_exposure: ["Gulf Voyage and Vessel Document Review", "Identify missing vessel, voyage and insurance records for a Gulf or Red Sea shipping review.", "gulf_maritime_exposure"],
     market_entry_readiness: ["Kazakhstan Market Entry Due Diligence Checklist", "Prepare a Kazakhstan partner, permit and project file with missing documents and suggested owners for the team making the decision.", "kazakhstan_market_entry_readiness"],
@@ -123,32 +126,37 @@ function landingHtml(request, env, externalClient = false) {
       ? [{ source_id: "port_operator_notice", label: "caller_supplied", as_of: null }]
       : [{ source_id: "ofac_sdn_extract", label: "caller_supplied", as_of: null }];
   }
-  const fixtureVerdict = profile === "kazakhstan" || profile === "cis_secondary_sanctions";
-  const heroExample = {
-    agenda: "Question → selected evidence-review profile + missing inputs",
-    kazakhstan: "Aktau → Poti shipment → document gaps before bank review",
-    cis_secondary_sanctions: "Counterparty ownership → ownership and sanctions evidence gaps",
-    corridor_sanctions_assistant: "Route question → selected gate and required fields",
-    agent_financial_guard: "A proposed token approval conflicts with the stated intent. Review the approval before signing.",
-    m2m_escrow_arbiter: "A delivery dispute needs the agreed hash, the supported schema and the submission time checked against the deadline.",
-    agent_output_verification: "A report claims a customer count. The checker flags the missing evidence and asks for the source excerpt and matching quote.",
-    agentic_interaction_trust: "Third-party agent request → identity and action evidence gaps",
-    gulf_maritime_exposure: "Gulf voyage → vessel, insurance and port-document gaps",
-    market_entry_readiness: "Kazakhstan entry plan → partner and permit evidence gaps",
-    critical_minerals_due_diligence: "A proposed offtake is missing scoped origin and ownership records. Request them from the supplier before review.",
-    dual_use_technology_export: "Electronics shipment → HS/ECCN and end-user evidence gaps"
-  }[profile] || "Supplied case → evidence gaps + next human-review step";
   const consoleId = freeTrial ? (profile === 'agent_output_verification' ? 'one-claim-review' : isKazakhstan ? 'corridor-wizard' : profile === 'cis_secondary_sanctions' ? 'cis-wizard' : profile === 'gulf_maritime_exposure' ? 'gulf-wizard' : profile === 'market_entry_readiness' ? 'market-entry-wizard' : 'profile-console') : isFinancialGuard ? "fin-form" : isEscrowArbiter ? "escrow-form" : "profile-console";
-  const exampleAction = "showWorkedExample()";
   const workedExample = WORKED_EXAMPLES[profile];
   const featuredCase = CATALOG_CASES[profile];
   const featuredFixture = FOCUSED_WORKED_EXAMPLES[profile];
+  const previewFixture = isKazakhstan ? workedExample : featuredFixture || workedExample;
+  const firstResult = firstResultHtml(profile, previewFixture.request, previewFixture.response, escapeHtml);
+  const memoReview = profile === 'agenda' || isKazakhstan;
   const citationFirst = freeTrial && profile === 'agent_output_verification';
   const openSavedExample = new URL(request.url).searchParams.get('source') === 'agenstry' && Boolean(workedExample);
   const savedCorridorGate = profile === 'corridor_sanctions_assistant'
     ? reviewSummary(workedExample.response)?.selectedGate : null;
   const primaryOffer = card.x_agenda_intelligence.onboarding?.primary_evaluation;
   const workflow = PRODUCT_WORKFLOWS[profile];
+  const ownInputLabel = {
+    agenda: 'I have a question',
+    kazakhstan: 'Prepare a shipment dossier',
+    cis_secondary_sanctions: 'Prepare a counterparty file',
+    gulf_maritime_exposure: 'Prepare a voyage file',
+    market_entry_readiness: 'Prepare an entry decision',
+    corridor_sanctions_assistant: 'Route my trade question free',
+    agent_financial_guard: 'Review a proposed transaction',
+    m2m_escrow_arbiter: 'Review my delivery evidence',
+    dual_use_technology_export: 'Prepare a full export file'
+  }[profile] || (freeTrial ? 'Check my evidence free' : 'Open evidence review');
+  const savedLabel = isKazakhstan ? 'See a shipment dossier example' :
+    profile === 'agenda' ? 'See a question routing example' : featuredCase?.[0] || 'See a saved example';
+  const hsReference = 'https://corridor-sanctions-assistant.agendamcp.dpdns.org';
+  const relatedReview = {
+    agentic_interaction_trust: '<a href="https://vizier.agendamcp.dpdns.org/playground#guard-one-release">Set up execution-time checks with a signed grant in Vizier</a>',
+    dual_use_technology_export: `Have a declared six-digit HS code? <a href="${hsReference}/#profile-console">Ask the Corridor Assistant for a free reference hint</a>. The separate <code>screen_dual_use_hs_code</code> operation has its own price. <a href="${hsReference}/.well-known/x402">See the applicable price</a>. A reference match gives an export reviewer a lead to investigate.`
+  }[profile];
   const useMcp = !endpoint || profile === 'kazakhstan';
   const consoleEndpoint = useMcp ? '/mcp' : endpoint;
   const consoleExample = routingTool ? {text: workedExample.request.text || 'What evidence is needed before shipping from Aktau to Baku?'} : freeTrial ? (workedExample.request.request || workedExample.request) : useMcp
@@ -250,6 +258,10 @@ function landingHtml(request, env, externalClient = false) {
 #profile-intake legend { font-weight:600;padding:0 6px; }
 #profile-intake input:not([type=checkbox]), #profile-intake textarea, #profile-intake select { padding:9px;border:1px solid var(--line);border-radius:6px;font:inherit;line-height:1.4;background:#fff; }
 #profile-intake label { font-size:14px;font-weight:600;margin:4px 0; }
+  .result-list div { display:grid; grid-template-columns:minmax(9rem, 1fr) 3fr; gap:12px; border-top:1px solid var(--line); padding:9px 0; }
+  .result-list dt { font-weight:650; }
+  .result-list dd { margin:0; }
+  @media (max-width:520px) { .result-list div { grid-template-columns:1fr; gap:2px; } }
 #profile-intake small { display:block;color:var(--muted); }
 button { padding:8px 12px;border:1px solid var(--line);border-radius:6px;cursor:pointer;margin:8px 4px 8px 0;background:#fff;font:inherit;color:var(--fg); }
 button:hover { border-color:var(--accent); }
@@ -265,27 +277,24 @@ button:hover { border-color:var(--accent); }
   <h1>${escapeHtml(presentation[0].split(' | ', 1)[0])}</h1>
   <p class="tagline">${escapeHtml(tagline)}</p>
 
-  <div class="status-row"><span class="badge">Human review required</span></div>
-  ${profile === 'agenda' ? taskChooserHtml(fleetDirectoryResponse(), escapeHtml) : ''}
-  <section aria-label="Your review workflow">
-    <h2>${escapeHtml(workflow.task)}</h2>
-    <p><strong>Bring:</strong> ${escapeHtml(workflow.bring)}</p>
-    <p><strong>You receive:</strong> ${escapeHtml(workflow.get)}</p>
-    <p><strong>Next step:</strong> ${escapeHtml(workflow.next)}</p>
-  </section>
   <div class="primary-actions">
     ${citationFirst
       ? '<a class="primary-action primary-action-main" href="#one-claim-review">See a citation check</a><a class="primary-action" href="#raw-answer">Try your own input</a>'
-      : `<a class="primary-action primary-action-main" href="#${consoleId}">${routingTool ? 'Route my question free' : freeTrial ? 'Check my evidence free' : env.BILLING_MODE === "pay_per_call" ? "Evaluate with a signed payment" : "Open free base call"}</a>`}
-    <button type="button" class="primary-action" onclick="${exampleAction}" style="cursor:pointer">${featuredCase ? escapeHtml(featuredCase[0]) : 'Run a worked example'}</button>
-    <a class="primary-action" href="#connect-mcp" onclick="document.getElementById('agent-integration').open = true">Connect MCP</a>
+      : `<a class="primary-action primary-action-main" href="#${consoleId}">${escapeHtml(ownInputLabel)}</a>
+         ${memoReview ? `<a class="primary-action" href="#memo-example">${isKazakhstan ? 'Check a drafted shipment memo' : 'I have a drafted memo'}</a>` : ''}
+         <a class="primary-action" href="/?source=agenstry#worked-example" onclick="showWorkedExample(); return false;">${escapeHtml(savedLabel)}</a>`}
   </div>
-  ${reviewerHandoff ? `<p><a href="${REPOSITORY_URL}/blob/main/docs/deployment/reviewer-handoffs.md#${reviewerHandoff[0]}">${escapeHtml(reviewerHandoff[1])}</a>.</p>` : ''}
-  <p class="access-summary" id="access-summary">${escapeHtml(priceLine)} <a href="/terms#access">Limits and payment terms</a> · <a href="/.well-known/x402">All operation prices</a></p>
-  <div class="card" aria-label="Example result"><strong>Example, synthetic input:</strong> ${escapeHtml(featuredCase?.[1] || heroExample)}<br>
-    ${fixtureVerdict
-      ? `<strong>Example output:</strong> ${escapeHtml(sampleOutput.result.metadata.verdict_standard.reason_code)} · ${escapeHtml(sampleOutput.result.metadata.verdict_standard.next_permitted_action)} · Gap: ${escapeHtml(sampleOutput.result.metadata.verdict_standard.evidence_gaps[0])}`
-      : `<small>Open the worked example to see its input and saved result.</small>`}</div>
+  <p class="access-summary" id="access-summary">Saved examples use no payment or trial attempt. Human review required. ${escapeHtml(priceLine)} <a href="/terms#access">Limits and payment terms</a> · <a href="/.well-known/x402">Operation prices</a></p>
+  ${relatedReview ? `<p>${relatedReview}</p>` : ''}
+  ${firstResult ? `<section class="card" aria-label="Example result"><h2>First result · fictional example</h2>${firstResult}</section>` : ''}
+  ${memoReview ? memoExampleHtml(isKazakhstan, escapeHtml) : ''}
+  ${citationFirst ? citationReviewHtml(trialTerms.attempts_per_network, allowancePanel, escapeHtml) : ''}
+  ${!citationFirst ? `<section aria-label="Your review workflow">
+    <h2>${escapeHtml(workflow.task)}</h2>
+    <p><strong>Bring.</strong> ${escapeHtml(workflow.bring)}</p>
+    <p><strong>You receive.</strong> ${escapeHtml(workflow.get)}</p>
+    <p><strong>Next step.</strong> ${escapeHtml(workflow.next)}</p>
+  </section>` : ''}
   <section id="worked-example" class="card"${openSavedExample ? '' : ' hidden'}>
     <h2>Free worked example</h2><p><strong>Precomputed synthetic fixture.</strong> No wallet, payment or trial attempt required. You can reopen it after your live allowance is exhausted. This saved example is not a live evaluation of your edited input or current sources.</p>
     ${featuredFixture ? `<h3>${escapeHtml(featuredCase[0])}</h3>
@@ -308,9 +317,12 @@ button:hover { border-color:var(--accent); }
       <a class="primary-action primary-action-main" href="#${consoleId}">Check my delivery evidence</a>` : routingTool
         ? `<p><a class="primary-action primary-action-main" href="#${consoleId}">Route my question free</a></p>` : ''}
   </section>
+  ${profile === 'agenda' ? `${taskChooserHtml(fleetDirectoryResponse(), escapeHtml)}
+    <p>Writing the deliverable itself? <a href="https://corridor.agendamcp.dpdns.org/start">See a corridor investment bankability note with a sample claim ledger</a>.</p>` : ''}
+  ${reviewerHandoff ? `<p><a href="${REPOSITORY_URL}/blob/main/docs/deployment/reviewer-handoffs.md#${reviewerHandoff[0]}">${escapeHtml(reviewerHandoff[1])}</a>.</p>` : ''}
   ${profile === 'agent_output_verification' ? `<p>Review citations in your own CI. <a href="${REPOSITORY_URL}/blob/main/docs/integrations/rag-output.md#add-a-local-ci-check">Run the local check and generate a report without source or answer text</a>.</p>` : ''}
   ${isKazakhstan || profile === 'gulf_maritime_exposure' ? `<p><a href="${REPOSITORY_URL}/blob/main/examples/kazakhstan-middle-corridor/reviewer-handoff.md">Open a sample shipment dossier and five-file pilot</a>.</p>` : ''}
-  <nav><a href="https://agendamcp.dpdns.org/">All profiles</a> · <a href="https://vizier.agendamcp.dpdns.org/">Vizier authorization</a> · <a href="${origin}/trust">Trust &amp; limitations</a> · <a href="${origin}/privacy">Privacy</a></nav>
+  <nav><a href="https://agendamcp.dpdns.org/">All profiles</a> · <a href="#connect-mcp" onclick="document.getElementById('agent-integration').open = true">Connect MCP</a> · <a href="https://vizier.agendamcp.dpdns.org/">Vizier authorization</a> · <a href="${origin}/trust">Trust &amp; limitations</a> · <a href="${origin}/privacy">Privacy</a></nav>
   <details id="agent-integration"><summary>Agent integration and connection details</summary>
   <section id="connect-mcp" class="card" aria-labelledby="connect-mcp-title">
     <h2 id="connect-mcp-title">Connect your agent</h2>
@@ -494,14 +506,13 @@ button:hover { border-color:var(--accent); }
   ${freeTrial && profile === 'cis_secondary_sanctions' ? cisWizardHtml(inputSchemaForProfile(profile), card.x_agenda_intelligence.required_before_review) : ''}
   ${freeTrial && profile === 'gulf_maritime_exposure' ? gulfWizardHtml(inputSchemaForProfile(profile), card.x_agenda_intelligence.required_before_review) : ''}
   ${freeTrial && profile === 'market_entry_readiness' ? marketEntryWizardHtml(inputSchemaForProfile(profile), card.x_agenda_intelligence.required_before_signature) : ''}
-  ${citationFirst ? citationReviewHtml(trialTerms.attempts_per_network, allowancePanel, escapeHtml) : ''}
   ${freeTrial && profile === 'agent_output_verification' ? reviewPanel : ''}
   ${profile === 'agent_output_verification' ? `<section class="card" id="numeric-consistency"><h2>Do the numbers agree?</h2>
     <p>For conflicting labeled values in a header, table or text, or an upside percentage that does not match the prices, use the separate opt-in <a href="https://vizier.agendamcp.dpdns.org/">Vizier numeric consistency preflight</a>. This page's citation and relay checks do not run it.</p>
     <p><code>POST https://vizier.agendamcp.dpdns.org/v1/numeric-consistency/scan</code> with <code>text</code> and/or <code>parameters</code>. For Vizier action verification, set <code>authority.constraints.numeric_consistency: true</code> in <code>/v1/verify</code>.</p>
     <p>A heuristic, not a fact check: it cannot decide which number is correct. Findings add <code>REVIEW / NUMERIC_INCONSISTENCY</code>, never <code>BLOCK</code> from this rule; other authorization rules can still block. Human review required. The <code>review_answer</code> numeric context check only flags claim numbers that no closest number-bearing sentence in the supplied sources supports.</p>
   </section>` : ''}
-  <h2>${freeTrial ? 'Check your own evidence free' : 'Live paid evaluation'}</h2>
+  <h2>${routingTool ? (profile === 'agenda' ? 'Route a strategic question for free' : 'Route a trade question for free') : freeTrial ? 'Check your own evidence free' : access.billing_mode === 'pay_per_call' ? 'Live paid evaluation' : 'Review your own evidence'}</h2>
   <div class="card">
     <p>${escapeHtml(workflow.bring)} Human review required. Use redacted inputs only. <a href="/terms#access">Trial and payment limits</a>.</p>
     ${profile === 'agent_output_verification' ? '' : allowancePanel}
@@ -618,7 +629,7 @@ ${freeTrial && isKazakhstan ? CORRIDOR_WIZARD_SCRIPT : ''}
 ${freeTrial && isKazakhstan ? corridorOwnerActions.toString() + '\n' + corridorOwnerActionsHtml.toString() : ''}
 ${freeTrial && profile === 'cis_secondary_sanctions' ? CIS_WIZARD_SCRIPT + '\n' + cisReviewView.toString() + '\n' + cisReviewViewHtml.toString() + '\n' +
   parseCounterpartyCsv.toString() + '\n' + prepareBatch.toString() : ''}
-${freeTrial ? `mountIntakeEditor(document.getElementById('profile-intake'), document.getElementById('profile-request'), ${JSON.stringify(consoleExample).replaceAll('<', '\\u003c')}, ${JSON.stringify({schema:inputSchemaForProfile(profile),readOnlyPaths:profile === 'critical_minerals_due_diligence' ? ['previous_submission'] : [],optional: profile === 'dual_use_technology_export'
+${freeTrial ? `mountIntakeEditor(document.getElementById('profile-intake'), document.getElementById('profile-request'), ${JSON.stringify(consoleExample).replaceAll('<', '\\u003c')}, ${JSON.stringify({schema:inputSchemaForProfile(profile),firstField: isFinancialGuard ? 'transaction' : null, foldRemaining: isFinancialGuard ? 'Agent, policy and review context' : null,readOnlyPaths:profile === 'critical_minerals_due_diligence' ? ['previous_submission'] : [],optional: profile === 'dual_use_technology_export'
   ? [{path:'shipment.eccn', label:'Caller-supplied ECCN — leave unknown if unclassified'}]
   : profile === 'm2m_escrow_arbiter' ? [
     {path:'specification.expected_artifact_sha256', label:'Expected artifact SHA-256 from agreed specification'},
@@ -824,7 +835,7 @@ async function runProfileExample(event, paid, reviewFlow) {
       ${freeTrial && isKazakhstan ? "var corridorActions=document.getElementById('corridor-owner-actions'); if(corridorActions) corridorActions.innerHTML = corridorOwnerActionsHtml(payload.request || payload, review, safeHtml);" : ''}
       ${freeTrial && profile === 'cis_secondary_sanctions' ? "var cisView=document.getElementById('cis-review-view'); if(cisView) cisView.innerHTML = cisReviewViewHtml(payload.request || payload, review, safeHtml);" : ''}
       ${freeTrial && profile === 'gulf_maritime_exposure' ? "var gulfView=document.getElementById('gulf-review-view'); if(gulfView) gulfView.innerHTML = gulfGateHtml(review.evaluation || review, safeHtml);" : ''}
-      ${freeTrial && profile === 'agent_financial_guard' ? "var fleetView=document.getElementById('fleet-review-view');if(fleetView)fleetView.innerHTML=financialGuardViewHtml(review.evaluation || review,safeHtml);" : ''}
+      ${freeTrial && profile === 'agent_financial_guard' ? "var fleetView=document.getElementById('fleet-review-view');if(fleetView)fleetView.innerHTML=financialGuardViewHtml(review.evaluation || review,safeHtml,payload.request || payload);" : ''}
       ${freeTrial && profile === 'dual_use_technology_export' ? "var fleetView=document.getElementById('fleet-review-view');if(fleetView)fleetView.innerHTML=dualUseViewHtml(review.evaluation || review,safeHtml);" : ''}
       ${profile === 'corridor_sanctions_assistant' ? "var fleetView=document.getElementById('fleet-review-view');if(fleetView)fleetView.innerHTML=corridorPlanHtml(review,safeHtml);" : ''}
       ${freeTrial && profile === 'm2m_escrow_arbiter' ? "var escrowView=document.getElementById('escrow-review-view');if(escrowView)escrowView.innerHTML=escrowReviewHtml(review.evaluation || review,safeHtml);" : ''}
