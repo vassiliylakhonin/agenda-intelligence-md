@@ -6304,10 +6304,12 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
         ],
         "properties": {
           "actor": {
-            "$ref": "#/$defs/actor"
+            "$ref": "#/$defs/actor",
+            "description": "The agent, client or automation asking to act. Everything here is declared by the caller and is not verified by this check. Requires declared_type and declared_name."
           },
           "target_surface": {
-            "$ref": "#/$defs/target_surface"
+            "$ref": "#/$defs/target_surface",
+            "description": "Surface the action runs on. Checkout, account and auth_flow can route to require_step_up when evidence is missing. a2a_endpoint and mcp_tool route to escalate_to_human_review when evidence is missing."
           },
           "requested_action": {
             "type": "string",
@@ -6328,21 +6330,25 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "policy_review",
               "committee_review",
               "other"
-            ]
+            ],
+            "description": "Where in the workflow this check happens. Most values do not change routing. policy_review and committee_review can route to not_decision_ready on surfaces without a specific rule."
           },
           "dated_sources": {
             "type": "array",
             "items": {
               "$ref": "#/$defs/dated_source"
-            }
+            },
+            "description": "Dated evidence items you already hold. Only their metadata (id, type, title, date) is checked, not their content, authenticity or freshness. An empty list returns insufficient_information. A fraud_or_account_takeover_signal item routes to block_until_verified."
           },
           "risk_question": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "description": "Required free text stating the decision to be made, for example whether the action is ready to allow, step up or send to human review. The triage does not answer it in free text."
           },
           "notes": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "description": "Optional free text for context. The triage does not score it. Put evidence in dated_sources."
           },
           "requested_output": {
             "type": "string",
@@ -6351,7 +6357,8 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "markdown_summary",
               "both"
             ],
-            "default": "structured_json"
+            "default": "structured_json",
+            "description": "Optional output preference. Accepted by the schema, but the triage response is structured JSON and does not change with this value."
           }
         },
         "$defs": {
@@ -6373,11 +6380,13 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                   "human_delegated_agent",
                   "unknown",
                   "other"
-                ]
+                ],
+                "description": "Type the caller claims for itself. Declared, not verified."
               },
               "declared_name": {
                 "type": "string",
-                "minLength": 1
+                "minLength": 1,
+                "description": "Name the caller claims for itself. Declared, not verified."
               },
               "operator": {
                 "type": "string",
@@ -6386,11 +6395,13 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               },
               "declared_agent_id": {
                 "type": "string",
-                "minLength": 1
+                "minLength": 1,
+                "description": "Optional agent identifier the caller claims, such as an A2A or registry ID. Not verified."
               },
               "declared_user_agent": {
                 "type": "string",
-                "minLength": 1
+                "minLength": 1,
+                "description": "Optional User-Agent string the caller sent. Not verified."
               },
               "authentication_context": {
                 "type": "string",
@@ -6403,7 +6414,8 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
                   "signed_agent_manifest",
                   "unknown",
                   "other"
-                ]
+                ],
+                "description": "Optional authentication method the session used. Describes the context only. This check does not verify credentials."
               }
             }
           },
@@ -6433,26 +6445,32 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
             "properties": {
               "id": {
                 "type": "string",
-                "minLength": 1
+                "minLength": 1,
+                "description": "Your identifier for this evidence item, so findings can point back to it."
               },
               "source_type": {
-                "$ref": "#/$defs/source_type"
+                "$ref": "#/$defs/source_type",
+                "description": "Kind of evidence. Missing minimum source types are listed as evidence gaps."
               },
               "title": {
                 "type": "string",
-                "minLength": 1
+                "minLength": 1,
+                "description": "Short human-readable name of the evidence item."
               },
               "date": {
                 "type": "string",
-                "format": "date"
+                "format": "date",
+                "description": "Date of the evidence, YYYY-MM-DD."
               },
               "url": {
                 "type": "string",
-                "format": "uri"
+                "format": "uri",
+                "description": "Optional link to the evidence. It is not fetched."
               },
               "notes": {
                 "type": "string",
-                "minLength": 1
+                "minLength": 1,
+                "description": "Optional free-text note about this item."
               }
             }
           },
