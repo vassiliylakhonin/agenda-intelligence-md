@@ -90,3 +90,23 @@ test('Gulf top describes one voyage file review without live tracking or authori
   assert.doesNotMatch(html,/proceed \/ gather more evidence \/ do not sail yet/);
   assert.doesNotMatch(landingHtml(req('/'),{AGENT_PROFILE:'agenda'},true),/id="voyage-evidence-review"/);
 });
+
+test('market entry first screen frames file readiness, not market research',async()=>{
+  const env={AGENT_PROFILE:'market_entry_readiness',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'};
+  const html=await(await handleRequest(req('/'),env)).text();
+  const firstScreen=html.slice(html.indexOf('<main>'),html.indexOf('id="worked-example"'));
+  assert.match(firstScreen,/id="entry-file-readiness"/);
+  assert.match(firstScreen,/Your entry file, not a market study/);
+  assert.match(firstScreen,/does not size the market, find partners or rate the country/);
+  assert.match(firstScreen,/pause_for_evidence/);
+  assert.match(firstScreen,/route_to_committee/);
+  assert.match(firstScreen,/launch_commitment_ready/);
+  assert.match(firstScreen,/authorization_granted: false/);
+  assert.match(firstScreen,/62 categories/);
+  assert.match(firstScreen,/free_trial_status/);
+  assert.match(firstScreen,/0\.01 USDC per paid check on Base/);
+  assert.doesNotMatch(firstScreen,/do not sign \/ launch yet/);
+  assert.doesNotMatch(firstScreen,/B-READY|Tridge/);
+  const other=await(await handleRequest(req('/'),{AGENT_PROFILE:'agenda',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'})).text();
+  assert.doesNotMatch(other,/id="entry-file-readiness"/);
+});

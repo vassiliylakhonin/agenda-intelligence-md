@@ -296,6 +296,15 @@ button:hover { border-color:var(--accent); }
     </details>
     <p>2 free checks per network address per product for this campaign; shared networks share the allowance and it does not reset daily. Free checks need no wallet or HTTP adapter: agents call <code>free_trial_status</code>, then <code>free_trial</code>. After the allowance, 0.01 USDC per paid check on Base.</p>
   </section>` : ''}
+  ${profile === 'market_entry_readiness' ? `<section id="entry-file-readiness" aria-label="Your entry file, not a market study">
+    <p><strong>Your entry file, not a market study.</strong> Bring one Kazakhstan project, one partner, one decision stage and your source records. The gate checks how complete that file is for the decision you named and lists what is missing. It does not size the market, find partners or rate the country's readiness.</p>
+    <p>The result gives a <code>gate_decision</code> (<code>proceed_to_validation</code>, <code>pause_for_evidence</code>, <code>route_to_committee</code>, <code>escalate_before_signature</code>, <code>not_decision_ready</code> or <code>stop</code>) and a <code>readiness_label</code> from <code>insufficient_information</code> to <code>launch_commitment_ready</code>, plus evidence gaps with suggested owners, a claim audit (<code>supported</code> to <code>unsupported</code>), owner actions, watch-next indicators and a summary with the strongest reason to proceed and to pause. Routing for a human reviewer, never permission: every response keeps <code>authorization_granted: false</code>.</p>
+    <details><summary>What to prepare and what this does not do</summary>
+      <p>Six fields are required: <code>project_name</code>, <code>partner_or_company</code>, <code>market</code>, <code>decision_question</code>, <code>decision_stage</code> (11 stages, from <code>concept_review</code> to <code>committee_review</code>) and <code>supplied_sources</code>. Each source record needs an <code>id</code>, a <code>source_type</code> (62 categories) and a <code>title</code>; <code>date</code> and <code>url</code> are optional. Sector, commercial objective, counterparties, assumptions and blockers are optional and sharpen the gaps.</p>
+      <p>The gate grades only the records you supply; it does not verify their content or truth, so fabricated records can look complete. Internal evidence triage only: not legal, compliance, customs, tax, financial, investment, insurance, sanctions or launch-authorization advice, and it does not authorize a signature or launch. Human review is required.</p>
+      <p>2 free checks per network address per product for this campaign; shared networks share the allowance and it does not reset daily. Free checks need no wallet or HTTP adapter: agents call <code>free_trial_status</code>, then <code>free_trial</code>. After the allowance, 0.01 USDC per paid check on Base.</p>
+    </details>
+  </section>` : ''}
 
   <div class="primary-actions">
     ${citationFirst
