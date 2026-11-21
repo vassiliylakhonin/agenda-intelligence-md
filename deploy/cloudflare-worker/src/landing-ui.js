@@ -307,6 +307,15 @@ button:hover { border-color:var(--accent); }
     </details>
   </section>` : ''}
 
+  ${profile === 'dual_use_technology_export' ? `<section id="export-file-review" aria-label="One export file, not an export permission">
+    <p><strong>One export file, not an export permission.</strong> Bring this technology shipment, its declared classification, destination, end user and dated references. Get missing-reference questions and the next step for a qualified export-control reviewer, not a decision to export or transfer.</p>
+    <p>This does not classify an item, assign an HS code or ECCN, determine whether a licence is required, grant a licence or clear a shipment. It checks caller declarations and reference metadata, not the content, authenticity, applicability or freshness of your records. A wrong specification or end-user declaration can make a file look more complete without making it safe. Human review remains required; no legal, export-control, sanctions or compliance advice, and no action is authorized.</p>
+    <details><summary>What to prepare and how to read the result</summary>
+      <p>Required: <code>shipment</code> with <code>hs_code</code>, <code>description</code>, <code>origin</code> and <code>destination</code>; <code>dated_sources</code>; and <code>risk_question</code>. Each source record needs an ID, source type, title and date. If you have no records, use an empty list so the gaps remain visible. A caller-declared ECCN, transit countries, end-user sector and named counterparties are optional inputs, but missing classification or end-user information can still block review readiness. Use redacted inputs only.</p>
+      <p>The export dossier verdict is <code>NOT_READY</code> or <code>READY_FOR_EXPORT_CONTROL_REVIEW</code>. The latter means ready for a person to review, never permission to export. The result includes blocking gaps, review leads, an evidence ledger and <code>next_one_thing</code>; <code>authorization_granted</code> is always false. Classification-note and end-user-statement references are checked; a supplied ECCN also triggers a licence-pathway reference request. An HS match in the bundled CHPL snapshot combined with a declared Central Asia/Caspian route triggers extra reference requests. These are internal review prompts, not legal requirements or a current control-list determination. Placeholder records do not close gaps.</p>
+    </details>
+  </section>` : ''}
+
   <div class="primary-actions">
     ${citationFirst
       ? '<a class="primary-action primary-action-main" href="#one-claim-review">See a citation check</a><a class="primary-action" href="#raw-answer">Try your own input</a>'

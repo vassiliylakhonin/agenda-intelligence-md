@@ -121,3 +121,17 @@ test('Corridor Assistant top describes free routing, not a cargo gate',()=>{
   assert.ok(html.indexOf('id="corridor-orientation"')<html.indexOf('aria-label="Example result"'));
   for(const profile of ['kazakhstan','cis_secondary_sanctions','gulf_maritime_exposure']) assert.ok(!landingHtml(req('/'),{AGENT_PROFILE:profile},true).includes('id="corridor-orientation"'));
 });
+
+test('Dual-use top explains reference-file readiness without classification or permission',()=>{
+  const html=landingHtml(req('/'),{AGENT_PROFILE:'dual_use_technology_export',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'},true);
+  assert.match(html,/id="export-file-review"/);
+  assert.match(html,/One export file, not an export permission/);
+  assert.match(html,/not the content, authenticity, applicability or freshness/);
+  assert.match(html,/READY_FOR_EXPORT_CONTROL_REVIEW/);
+  assert.match(html,/never permission to export/);
+  assert.match(html,/internal review prompts, not legal requirements/);
+  assert.match(html,/end-user sector and named counterparties are optional inputs/);
+  assert.match(html,/Placeholder records do not close gaps/);
+  assert.doesNotMatch(html,/ready for review \/ gather more evidence \/ do not export/);
+  assert.doesNotMatch(landingHtml(req('/'),{AGENT_PROFILE:'agenda'},true),/id="export-file-review"/);
+});
