@@ -110,3 +110,12 @@ test('market entry first screen frames file readiness, not market research',asyn
   const other=await(await handleRequest(req('/'),{AGENT_PROFILE:'agenda',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'})).text();
   assert.doesNotMatch(other,/id="entry-file-readiness"/);
 });
+
+test('Corridor Assistant top describes free routing, not a cargo gate',()=>{
+  const html=landingHtml(req('/'),{AGENT_PROFILE:'corridor_sanctions_assistant',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'},true);
+  const top=html.slice(html.indexOf('id="corridor-orientation"'),html.indexOf('aria-label="Example result"'));
+  for(const phrase of ['Choose a specialist, not a shipment verdict','keywords','incomplete request draft','Nothing is sent','corridor_sanctions_assistant','screen_dual_use_hs_code','no match is not clearance','Routing needs no trial attempt','not a comprehensive sanctions name-screening service']) assert.ok(top.includes(phrase),phrase);
+  assert.doesNotMatch(top,/proceed \/ gather more evidence|do not ship yet|2 free live attempts|Halyk|THINK|AI drafts/);
+  assert.ok(html.indexOf('id="corridor-orientation"')<html.indexOf('aria-label="Example result"'));
+  for(const profile of ['kazakhstan','cis_secondary_sanctions','gulf_maritime_exposure']) assert.ok(!landingHtml(req('/'),{AGENT_PROFILE:profile},true).includes('id="corridor-orientation"'));
+});
