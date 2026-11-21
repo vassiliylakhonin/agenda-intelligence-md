@@ -150,3 +150,24 @@ test('Critical minerals top describes one project file review without geology, E
   assert.doesNotMatch(html,/ready for decision \/ gather more evidence \/ do not invest/);
   assert.doesNotMatch(landingHtml(req('/'),{AGENT_PROFILE:'agenda'},true),/id="dossier-evidence-review"/);
 });
+
+test('Escrow top frames delivery evidence review, not an escrow contract',()=>{
+  const html=landingHtml(req('/'),{AGENT_PROFILE:'m2m_escrow_arbiter',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'},true);
+  assert.match(html,/id="escrow-delivery-evidence"/);
+  assert.match(html,/One delivered artifact, not an escrow contract/);
+  assert.match(html,/never holds, locks or releases funds/);
+  assert.match(html,/RELEASE_TO_SELLER/);
+  assert.match(html,/REFUND_TO_BUYER/);
+  assert.match(html,/PARTIAL_SETTLEMENT/);
+  assert.match(html,/ESCALATE_HUMAN/);
+  assert.match(html,/escrow_action: HOLD/);
+  assert.match(html,/settlement_authorized: false/);
+  assert.match(html,/human_review_required: true/);
+  assert.match(html,/all_or_nothing/);
+  assert.match(html,/pro_rata/);
+  assert.match(html,/slo_penalty/);
+  assert.match(html,/supplied_artifact_only/);
+  assert.match(html,/0\.05 USDC per paid check on Base/);
+  assert.doesNotMatch(html,/do not place escrow yet|Claim audit|Watch-next|Brief for the team|Halyk|THINK|AI drafts/);
+  assert.doesNotMatch(landingHtml(req('/'),{AGENT_PROFILE:'agenda'},true),/id="escrow-delivery-evidence"/);
+});

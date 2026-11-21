@@ -325,6 +325,16 @@ button:hover { border-color:var(--accent); }
     <p>2 free checks per network address per product for this campaign; shared networks share the allowance and it does not reset daily. Free checks need no wallet or HTTP adapter: agents call <code>free_trial_status</code>, then <code>free_trial</code>. After the allowance, 0.01 USDC per paid check on Base.</p>
   </section>` : ''}
 
+  ${profile === 'm2m_escrow_arbiter' ? `<section id="escrow-delivery-evidence" aria-label="One delivered artifact, not an escrow contract">
+    <p><strong>One delivered artifact, not an escrow contract.</strong> M2M here means one agent paying another for a deliverable, not IoT devices. Bring one escrowed deal: its terms, the agreed specification and the artifact the seller says was delivered. The review compares that artifact against the agreed SHA-256 hash and supported schema, compares caller-reported times with the deadline, and lists what a human dispute reviewer still needs. It never holds, locks or releases funds and touches no wallet or contract.</p>
+    <p>The result is an <code>arbitration_ruling</code>: a <code>status</code> (<code>decision_ready</code> or <code>not_decision_ready</code>), a proposed <code>ruling</code> (<code>RELEASE_TO_SELLER</code>, <code>REFUND_TO_BUYER</code>, <code>PARTIAL_SETTLEMENT</code> or <code>ESCALATE_HUMAN</code>) and a proposed <code>payout_breakdown</code>, with per-check results, violations and evidence gaps. Proposals only: every response keeps <code>escrow_action: HOLD</code>, <code>settlement_authorized: false</code> and <code>human_review_required: true</code>.</p>
+    <details><summary>What to prepare and what this does not do</summary>
+      <p>Required: <code>escrow_id</code>, <code>deal_terms</code> (buyer, seller, amount, currency, deadline and an <code>arbitration_policy</code> of <code>all_or_nothing</code>, <code>pro_rata</code> or <code>slo_penalty</code>), a <code>specification</code> (deliverable type, with the agreed schema or expected artifact hash) and a <code>delivery_submission</code> carrying the actual artifact. A dispute claim and attestation references are optional; references are counted as caller declarations, not verified.</p>
+      <p>Checks cover supplied content only (<code>evaluation_scope: supplied_artifact_only</code>). Submission time and SLO telemetry are caller-reported, so deadline and SLO stay <code>unverified</code>; nothing is checked against live systems, such as repository merges, test runs or uptime probes. No attestation protocol is configured, no legal or financial advice is given, and no dispute is settled with real money: the authorized parties decide settlement separately.</p>
+      <p>2 free checks per network address per product for this campaign; shared networks share the allowance and it does not reset daily. Free checks need no wallet or HTTP adapter: agents call <code>free_trial_status</code>, then <code>free_trial</code>. After the allowance, 0.05 USDC per paid check on Base.</p>
+    </details>
+  </section>` : ''}
+
   <div class="primary-actions">
     ${citationFirst
       ? '<a class="primary-action primary-action-main" href="#one-claim-review">See a citation check</a><a class="primary-action" href="#raw-answer">Try your own input</a>'
