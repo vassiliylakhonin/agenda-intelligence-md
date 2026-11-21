@@ -65,3 +65,14 @@ test('interaction trust first screen explains the missing-evidence checklist wit
   assert.doesNotMatch(firstScreen,/0–1000|AgentTrust|trust score 0/);
   assert.doesNotMatch(firstScreen,/proceed \/ gather more evidence \/ do not proceed/);
 });
+
+test('Middle Corridor top describes evidence review without commercial authorization',()=>{
+  const html=landingHtml(req('/'),{AGENT_PROFILE:'kazakhstan',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'},true);
+  assert.match(html,/id="shipment-evidence-review"/);
+  assert.match(html,/One shipment file, not a corridor forecast/);
+  assert.match(html,/content, authenticity and freshness are not independently verified/);
+  assert.match(html,/no dedicated HS-code or dual-use field is required/);
+  assert.match(html,/including <code>proceed<\/code>, is triage routing only/);
+  assert.match(html,/supply an empty source list/);
+  assert.doesNotMatch(landingHtml(req('/'),{AGENT_PROFILE:'agenda'},true),/id="shipment-evidence-review"/);
+});

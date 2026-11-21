@@ -278,6 +278,15 @@ button:hover { border-color:var(--accent); }
   <h1>${escapeHtml(presentation[0].split(' | ', 1)[0])}</h1>
   <p class="tagline">${escapeHtml(tagline)}</p>
 
+  ${isKazakhstan ? `<section id="shipment-evidence-review" aria-label="One shipment file, not a corridor forecast">
+    <p><strong>One shipment file, not a corridor forecast.</strong> Bring this route, this cargo and these counterparties. Get missing-document categories, evidence-readiness triage and suggested next actions for a human reviewer, not a decision to sign or ship.</p>
+    <p>This is not cargo tracking, a transit-time forecast or a corridor-financing service. Source records are checked as supplied metadata; their content, authenticity and freshness are not independently verified. No legal, compliance, sanctions or financial advice. No action is authorized.</p>
+    <details><summary>What to prepare and how to read the result</summary>
+      <p>Supply route, cargo, at least one counterparty with a role and name, a decision stage, your risk question and dated source records. Each record needs an ID, source type, title and date. If you have none, supply an empty source list so the gaps remain visible. Shipment value and notes are optional; no dedicated HS-code or dual-use field is required.</p>
+      <p>The result separates <code>triage_recommendation</code>, <code>risk_signal</code>, evidence gaps and readiness for human review. Any <code>operational_decision</code>, including <code>proceed</code>, is triage routing only, not clearance or permission. Collect the flagged records and have the responsible reviewer verify them before any commercial action.</p>
+    </details>
+  </section>` : ''}
+
   <div class="primary-actions">
     ${citationFirst
       ? '<a class="primary-action primary-action-main" href="#one-claim-review">See a citation check</a><a class="primary-action" href="#raw-answer">Try your own input</a>'
