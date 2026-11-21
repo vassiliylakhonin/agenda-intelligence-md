@@ -170,6 +170,8 @@ test('Escrow top frames delivery evidence review, not an escrow contract',()=>{
   assert.match(html,/0\.05 USDC per paid check on Base/);
   assert.doesNotMatch(html,/do not place escrow yet|Claim audit|Watch-next|Brief for the team|Halyk|THINK|AI drafts/);
   assert.doesNotMatch(landingHtml(req('/'),{AGENT_PROFILE:'agenda'},true),/id="escrow-delivery-evidence"/);
+});
+
 test('Financial Guard top describes one pre-sign review without payment enforcement',()=>{
   const html=landingHtml(req('/'),{AGENT_PROFILE:'agent_financial_guard',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'},true);
   assert.match(html,/id="pre-sign-evidence-review"/);
