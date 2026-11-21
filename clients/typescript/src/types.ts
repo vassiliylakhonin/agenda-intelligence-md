@@ -100,23 +100,34 @@ export interface AgentOutputVerificationResponse {
 }
 
 export interface AgenticInteractionTrustRequestActor {
+  /** Type the caller claims for itself. Declared, not verified. */
   declared_type: "ai_agent" | "automation_script" | "api_client" | "browser_bot" | "human_delegated_agent" | "unknown" | "other";
+  /** Name the caller claims for itself. Declared, not verified. */
   declared_name: string;
   /** Declared operator, principal, organization, or user on whose behalf the actor claims to act. */
   operator?: string;
+  /** Optional agent identifier the caller claims, such as an A2A or registry ID. Not verified. */
   declared_agent_id?: string;
+  /** Optional User-Agent string the caller sent. Not verified. */
   declared_user_agent?: string;
+  /** Optional authentication method the session used. Describes the context only. This check does not verify credentials. */
   authentication_context?: "anonymous" | "session_cookie" | "api_key" | "oauth" | "mTLS" | "signed_agent_manifest" | "unknown" | "other";
 }
 
 export type AgenticInteractionTrustRequestTargetSurface = "checkout" | "account" | "api" | "mcp_tool" | "a2a_endpoint" | "content_or_catalog" | "auth_flow" | "support_or_messaging" | "other";
 
 export interface AgenticInteractionTrustRequestDatedSource {
+  /** Your identifier for this evidence item, so findings can point back to it. */
   id: string;
+  /** Kind of evidence. Missing minimum source types are listed as evidence gaps. */
   source_type: AgenticInteractionTrustRequestSourceType;
+  /** Short human-readable name of the evidence item. */
   title: string;
+  /** Date of the evidence, YYYY-MM-DD. */
   date: string;
+  /** Optional link to the evidence. It is not fetched. */
   url?: string;
+  /** Optional free-text note about this item. */
   notes?: string;
 }
 
@@ -124,16 +135,23 @@ export type AgenticInteractionTrustRequestSourceType = "agent_identity_claim" | 
 
 /** Product-grade structured request contract for evidence triage of agent-mediated interactions across checkout, account, API, MCP tool, and A2A endpoint surfaces. The contract asks whether the supplied evidence is sufficient for allow, step-up, human-review, or block-until-verified routing. It does not provide cybersecurity monitoring, fraud adjudication, legal advice, compliance advice, financial advice, identity verification, transaction authorization, autonomous blocking, live retrieval, or factual-truth verification. */
 export interface AgenticInteractionTrustRequest {
+  /** The agent, client or automation asking to act. Everything here is declared by the caller and is not verified by this check. Requires declared_type and declared_name. */
   actor: AgenticInteractionTrustRequestActor;
+  /** Surface the action runs on. Checkout, account and auth_flow can route to require_step_up when evidence is missing. a2a_endpoint and mcp_tool route to escalate_to_human_review when evidence is missing. */
   target_surface: AgenticInteractionTrustRequestTargetSurface;
   /** The concrete action the agent, automated client, or delegated actor is trying to perform. */
   requested_action: string;
   /** Optional account, endpoint, order, transaction, MCP tool, A2A capability, or other resource under review. */
   asset_or_resource?: string;
+  /** Where in the workflow this check happens. Most values do not change routing. policy_review and committee_review can route to not_decision_ready on surfaces without a specific rule. */
   decision_stage: "pre_execution" | "in_session" | "post_alert" | "policy_review" | "committee_review" | "other";
+  /** Dated evidence items you already hold. Only their metadata (id, type, title, date) is checked, not their content, authenticity or freshness. An empty list returns insufficient_information. A fraud_or_account_takeover_signal item routes to block_until_verified. */
   dated_sources: AgenticInteractionTrustRequestDatedSource[];
+  /** Required free text stating the decision to be made, for example whether the action is ready to allow, step up or send to human review. The triage does not answer it in free text. */
   risk_question: string;
+  /** Optional free text for context. The triage does not score it. Put evidence in dated_sources. */
   notes?: string;
+  /** Optional output preference. Accepted by the schema, but the triage response is structured JSON and does not change with this value. */
   requested_output?: "structured_json" | "markdown_summary" | "both";
 }
 
