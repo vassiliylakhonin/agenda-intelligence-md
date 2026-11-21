@@ -135,3 +135,18 @@ test('Dual-use top explains reference-file readiness without classification or p
   assert.doesNotMatch(html,/ready for review \/ gather more evidence \/ do not export/);
   assert.doesNotMatch(landingHtml(req('/'),{AGENT_PROFILE:'agenda'},true),/id="export-file-review"/);
 });
+
+test('Critical minerals top describes one project file review without geology, ESG audit or authorization',()=>{
+  const html=landingHtml(req('/'),{AGENT_PROFILE:'critical_minerals_due_diligence',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'},true);
+  assert.match(html,/id="dossier-evidence-review"/);
+  assert.match(html,/One project file, not a geology or ESG audit/);
+  assert.match(html,/not a resource, reserve, grade or NPV estimate/);
+  assert.match(html,/no conflict-free or responsible-sourcing certification/);
+  assert.match(html,/the strongest route is <code>ready_for_human_review<\/code>/);
+  assert.match(html,/<code>escalate_before_offtake<\/code>/);
+  assert.match(html,/<code>request_evidence<\/code>, <code>require_approval<\/code> or <code>stop<\/code>\) is triage routing only, not clearance or permission/);
+  assert.match(html,/The score measures documentary coverage only, never investment quality/);
+  assert.match(html,/2 free checks per network address per product for this campaign; shared networks share the allowance and it does not reset daily/);
+  assert.doesNotMatch(html,/ready for decision \/ gather more evidence \/ do not invest/);
+  assert.doesNotMatch(landingHtml(req('/'),{AGENT_PROFILE:'agenda'},true),/id="dossier-evidence-review"/);
+});
