@@ -18,6 +18,7 @@ import { interactionTrustTopHtml } from './interaction-trust-top.js';
 import { CORRIDOR_WIZARD_SCRIPT, corridorWizardHtml } from './corridor-wizard.js';
 import { corridorOwnerActions, corridorOwnerActionsHtml } from './corridor-owner-actions.js';
 import { CIS_WIZARD_SCRIPT, cisWizardHtml } from './cis-wizard.js';
+import { cisTopHtml } from './cis-top.js';
 import { GULF_WIZARD_SCRIPT, gulfWizardHtml, gulfGateHtml } from './gulf-wizard.js';
 import { MARKET_ENTRY_WIZARD_SCRIPT, marketEntryWizardHtml } from './market-entry-wizard.js';
 import { financialGuardViewHtml, dualUseViewHtml, corridorPlanHtml } from './fleet-review-view.js';
@@ -353,6 +354,7 @@ button:hover { border-color:var(--accent); }
          <a class="primary-action" href="/?source=agenstry#worked-example" onclick="showWorkedExample(); return false;">${escapeHtml(savedLabel)}</a>`}
   </div>
   <p class="access-summary" id="access-summary">Saved examples use no payment or trial attempt. Human review required. ${escapeHtml(priceLine)} <a href="/terms#access">Limits and payment terms</a> · <a href="/.well-known/x402">Operation prices</a></p>
+  ${profile === 'cis_secondary_sanctions' ? cisTopHtml() : ''}
   ${profile === 'agenda' ? `<section id="start-here" class="card" aria-label="Where to start">
     <h2>Where to start</h2>
     <p><strong>In a browser, no code:</strong> <a href="https://output-verification.agendamcp.dpdns.org/#one-claim-review">check one claim against its source excerpt</a> or <a href="https://vizier.agendamcp.dpdns.org/#action-example">inspect one proposed agent action in Vizier</a>. Both are evaluation examples; they grant no permission to act.</p>

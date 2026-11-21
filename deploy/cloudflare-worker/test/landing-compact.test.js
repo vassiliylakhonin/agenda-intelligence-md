@@ -185,3 +185,19 @@ test('Financial Guard top describes one pre-sign review without payment enforcem
   assert.doesNotMatch(html,/ready for decision \/ gather more evidence/);
   assert.doesNotMatch(landingHtml(req('/'),{AGENT_PROFILE:'agenda'},true),/id="pre-sign-evidence-review"/);
 });
+test('cis top block: verified claims only, cis profile only',async()=>{
+  const cis=await(await handleRequest(req('/'),{AGENT_PROFILE:'cis_secondary_sanctions',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'})).text();
+  assert.match(cis,/What this does not do/);
+  assert.match(cis,/ready_for_human_review/);
+  assert.match(cis,/escalate_before_onboarding/);
+  assert.match(cis,/insufficient_information/);
+  assert.match(cis,/authorization_granted: false/);
+  assert.match(cis,/not a sanctions screen and not clearance/);
+  assert.match(cis,/A name match is not identity verification/);
+  assert.match(cis,/does not reset daily/);
+  assert.match(cis,/user-supplied evidence only, with no live retrieval/);
+  assert.match(cis,/Show a counterparty ownership example/);
+  assert.doesNotMatch(cis,/do not onboard yet|file ready for review|AI drafts\. Humans decide/);
+  const other=await(await handleRequest(req('/'),{AGENT_PROFILE:'gulf_maritime_exposure',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'})).text();
+  assert.doesNotMatch(other,/What this does not do/);
+});
