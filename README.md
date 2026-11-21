@@ -9,22 +9,25 @@
 [![CI](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml/badge.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/LICENSE)
 
-A deterministic evidence-packet linter for claim-backed AI output. Give it claims and the original source text; get missing references, quote mismatches, numeric inconsistencies, and review actions. Use it in Python, RAG pipelines, agent workflows, or CI.
+A deterministic evidence-packet linter for claim-backed AI output. Supply claims, source IDs, original source text, and optional quotations. Get structured findings and next steps for a human reviewer.
 
-**The core checker runs locally. No model API key, account, or network needed after installation.**
+**Core checks run locally. No model API key, account, or network needed after installation.**
 
 [Try in your browser](https://output-verification.agendamcp.dpdns.org/#one-claim-review) · [First run](#first-run) · [RAG integration](#review-a-rag-answer) · [MCP](https://github.com/vassiliylakhonin/agenda-intelligence-md/blob/v1.26.0/MCP.md) · [Documentation](#documentation)
 
 ## See the problem it catches
 
-A generated answer can cite a real source and still change what it says:
+A real citation can still carry an altered quote or an unsupported number:
 
-| Supplied source | Generated claim | Checker result |
+| Supplied source | Submitted claim or quotation | Finding |
 | --- | --- | --- |
-| “The synthetic review covers **120** documents.” | “The synthetic review covers **900** documents.” | `source_review_required` — unmatched number `900` |
-| Same source | “The synthetic review covers **120** documents.” | `packet_complete` — no configured finding |
+| "The report lists three warehouses." | Claim declares the quotation "five warehouses" from that source. | `quote_absent:report`: the declared quote is not in the source. |
+| "The synthetic review covers 120 documents." | Claim says the review covers 900 documents. | `unmatched_numbers`: `900` is not supported by the supplied source. |
+| A packet contains only source `report`. | Claim cites source `missing-report`. | `missing_source:missing-report`: the reference does not resolve. |
 
-These are synthetic examples. Both results keep `factuality_status=not_assessed`: passing the linter does not establish truth or authorize an action.
+These are fictional examples. The first is a **quote-presence check**, not a general promise to understand number words or meaning. The checker also reports lexical-support gaps and negation cues for review; these are heuristics, not proof of contradiction.
+
+A clean packet still returns `factuality_status=not_assessed` and requires human review. It does not establish truth, authenticate a source, or authorize an action.
 
 ## First run
 
@@ -71,7 +74,15 @@ not_assessed
 packet_complete
 ```
 
-**Next:** replace the synthetic claim and excerpt with your own. Keep the original source text; rewriting it to agree with the answer defeats the check.
+**Next:** replace the fictional claim and excerpt with your own. Keep the original source text; rewriting it to agree with the answer defeats the check.
+
+## Where it fits
+
+- **Think:** [Global Think Tank Analyst](https://github.com/vassiliylakhonin/global-think-tank-analyst/blob/main/SKILL.md) guides an AI agent in preparing a strategic-risk memo.
+- **Check:** Agenda Intelligence MD checks the claims and evidence supplied with an answer or memo.
+- **Authorize:** [Vizier](https://vizier.agendamcp.dpdns.org/playground#missing-grant) evaluates proposed actions against delegation and policy. It does not execute them; enforcement needs an authenticated integration.
+
+AI drafts. Humans decide.
 
 ## What this is
 
