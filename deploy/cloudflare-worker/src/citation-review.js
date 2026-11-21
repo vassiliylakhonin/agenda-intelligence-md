@@ -156,6 +156,23 @@ export function citationReviewHtml(attempts, allowancePanel, escapeHtml) {
       parts: [{text: CATALOG_CASES.agent_output_verification[0]}]}}
   };
   return `<section id="one-claim-review" aria-label="Review one claim">
+    <section class="card" aria-label="One-Claim Review introduction">
+      <h2>One-Claim Review: Check one claim</h2>
+      <p><strong>Check the citation, not whether the claim is true.</strong></p>
+      <p>Paste one assertion from an AI answer and the source excerpt you have. Add an exact quote if the answer contains one. See whether the supplied quote appears in the excerpt, plus evidence gaps and suggested next steps for a human reviewer.</p>
+      <h3>What this does not do</h3>
+      <p>It does not establish whether the source supports the claim's meaning, whether the source is real or whether it is accurate or current. It does not fetch sources or give permission to share or act. A false claim or a fabricated or stale source can still produce no citation issues. Human review is always required.</p>
+      <h3>How to use the one-claim form</h3>
+      <ol>
+        <li>Paste the assertion and the actual source excerpt, not just a URL.</li>
+        <li>Add the exact quote, if there is one.</li>
+        <li>Choose your assessment of the source's support. This is recorded, not independently verified.</li>
+        <li>Read the findings and next steps. Correct any gaps, then send the material for human review.</li>
+      </ol>
+      <p><a class="primary-action primary-action-main" href="#citation-claim">Go to the one-claim form</a></p>
+      <p>No code, wallet or MCP setup is needed to use this browser form.</p>
+      <p><small>Up to ${attempts} free attempts per network for this product's campaign, shared across browser, HTTP, MCP and A2A. The allowance does not reset daily; shared daily capacity also applies. Corrected submissions use another attempt. Saved examples use none. Do not submit confidential material. <a href="/terms#access">Limits and privacy terms</a>.</small></p>
+    </section>
     <section class="card" aria-label="Synthetic citation demonstration">
       <h2>See a citation check</h2>
       <p>Saved fictional example. Viewing it uses no trial attempt.</p>

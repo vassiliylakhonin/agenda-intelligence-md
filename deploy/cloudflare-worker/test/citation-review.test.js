@@ -141,6 +141,11 @@ test('web raw answer, synthetic demo and correction use the real trial without f
 test('one-claim form is opt-in to the existing Output trial and begins without evidence or inferred support',async()=>quiet(async()=>{
   const ui=await browser();
   assert.ok(ui.html.includes('id="one-claim-review"'));
+  assert.ok(ui.html.includes('One-Claim Review: Check one claim'));
+  assert.ok(ui.html.includes('Check the citation, not whether the claim is true.'));
+  assert.ok(ui.html.includes('href="#citation-claim"'));
+  assert.ok(ui.html.includes('The allowance does not reset daily; shared daily capacity also applies.'));
+  assert.ok(ui.html.indexOf('One-Claim Review: Check one claim') < ui.html.indexOf('id="citation-demo-before"'));
   assert.ok(ui.html.includes('href="#one-claim-review"'));
   assert.ok(ui.html.indexOf('id="citation-demo-before"')<ui.html.indexOf('id="raw-answer"'));
   assert.ok(ui.html.includes('Copy API request'));
