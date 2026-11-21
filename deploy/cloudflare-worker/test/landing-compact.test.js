@@ -82,6 +82,8 @@ test('Gulf top describes one voyage file review without live tracking or authori
   assert.match(html,/id="voyage-evidence-review"/);
   assert.match(html,/One voyage file, not a live picture of the sea/);
   assert.match(html,/Strait of Hormuz, Bab-el-Mandeb, the Red Sea, the Arabian Gulf or the Gulf of Oman/);
+  assert.match(html,/<meta name="description" content="Identify missing vessel, voyage and insurance records for a Gulf shipping review through the Strait of Hormuz, Bab-el-Mandeb or the Red Sea\.">/);
+  assert.match(html,/<p class="tagline">Identify missing vessel, voyage and insurance records for a Gulf shipping review through the Strait of Hormuz, Bab-el-Mandeb or the Red Sea\.<\/p>/);
   assert.match(html,/not live vessel tracking, AIS monitoring or an incident map/);
   assert.match(html,/no war-risk premium, P&amp;I cover or quote/);
   assert.match(html,/There is no "proceed": the strongest route is <code>ready_for_human_review<\/code>/);
