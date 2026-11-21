@@ -285,6 +285,12 @@ button:hover { border-color:var(--accent); }
          <a class="primary-action" href="/?source=agenstry#worked-example" onclick="showWorkedExample(); return false;">${escapeHtml(savedLabel)}</a>`}
   </div>
   <p class="access-summary" id="access-summary">Saved examples use no payment or trial attempt. Human review required. ${escapeHtml(priceLine)} <a href="/terms#access">Limits and payment terms</a> · <a href="/.well-known/x402">Operation prices</a></p>
+  ${profile === 'agenda' ? `<section id="start-here" class="card" aria-label="Where to start">
+    <h2>Where to start</h2>
+    <p><strong>In a browser, no code:</strong> <a href="https://output-verification.agendamcp.dpdns.org/#one-claim-review">check one claim against its source excerpt</a> or <a href="https://vizier.agendamcp.dpdns.org/#action-example">inspect one proposed agent action in Vizier</a>. Both are evaluation examples; they grant no permission to act.</p>
+    <p><strong>From an agent:</strong> read the <a href="/.well-known/fleet.json">fleet directory</a> (12 profiles). Each profile has its own MCP address at <code>/mcp/agent</code> on its own host; this host's tool is <code>strategic_risk_triage</code>. Vizier is a separate service. Discover tools from the endpoint you connect to.</p>
+  </section>
+` : ''}
   ${relatedReview ? `<p>${relatedReview}</p>` : ''}
   ${firstResult ? `<section class="card" aria-label="Example result"><h2>First result · fictional example</h2>${firstResult}</section>` : ''}
   ${memoReview ? memoExampleHtml(isKazakhstan, escapeHtml) : ''}
