@@ -3181,11 +3181,6 @@ const PROVIDER_FRONT_DOOR_POINTER =
   "Describe the route or counterparty and the next decision or review; fit, scope, fee, and timing are confirmed " +
   "before work starts.";
 
-const CIS_FILE_PREPARATION_POINTER =
-  " For person-led preparation of a company-owned trade file, request the redacted intake by email at " +
-  `${SUPPORT_CONTACT_EMAIL}. One fixed fee per file is agreed before ` +
-  "work starts; scope, fee and timing are confirmed within one business day.";
-
 const CORRIDOR_ASSISTANT_NOT_ADVICE_NOTICE =
   "Orientation and routing only. Not legal, compliance, sanctions, financial, investment, or insurance advice, " +
   "and not an autonomous decision system. The structured gates perform the triage; human review is required before " +
@@ -3716,15 +3711,18 @@ function applyCisSecondarySanctionsProfile(card, request, env = {}) {
     (activeOption
       ? ""
       : "Sanctions-list name-match (Snapshot public-list snapshot, or Watchman / OpenSanctions) is wired but disabled in this deployment, which runs on user-supplied evidence only. ") +
-    "Person-led file preparation is for the exporter, importer, trader, freight forwarder, or finance lead who owns the file. It accepts redacted context and is not a compliance determination." +
-    CIS_FILE_PREPARATION_POINTER;
+    "Person-led file preparation is for the exporter, importer, trader, freight forwarder, or finance lead who owns the file. It accepts redacted context and is not a compliance determination.";
   card.provider.legalEntity.sameAs = discovery.provider_same_as;
   card.skills = [
     {
       id: "cis-secondary-sanctions-exposure",
       name: "CIS secondary-sanctions exposure triage",
       description:
-        "Turns a CIS / Caucasus / Central Asia counterparty, exposure facets, and dated source extracts into structured evidence gaps, exposure dimensions, and mandatory human-review routing, with server-side name matches against a public-list snapshot (Snapshot upstream, with Watchman / OpenSanctions as alternates). Plain text creates an unconfirmed intake candidate only; no screening runs until structured confirmation. When ownership enrichment is enabled, it also fetches disclosed LEI ownership (direct / ultimate parent, via GLEIF) as ownership evidence. Name matches are possible string matches, not identity verification or a determination. The API sits beside a screening or ownership-resolution tool and does not traverse multi-layer beneficial-ownership graphs.",
+        "Turns a CIS / Caucasus / Central Asia counterparty, exposure facets, and dated source extracts into structured evidence gaps, exposure dimensions, and mandatory human-review routing, with server-side name matches against a public-list snapshot (Snapshot upstream, with Watchman / OpenSanctions as alternates). Plain text creates an unconfirmed intake candidate only; no screening runs until structured confirmation. " +
+        (gleifEnabled(env)
+          ? "It also fetches disclosed LEI ownership (direct / ultimate parent, via GLEIF) as ownership evidence. "
+          : "An optional ownership-enrichment step (disclosed LEI direct / ultimate parent, via GLEIF) is wired but disabled in this deployment. ") +
+        "Name matches are possible string matches, not identity verification or a determination. The API sits beside a screening or ownership-resolution tool and does not traverse multi-layer beneficial-ownership graphs.",
       tags: [
         "cis",
         "kazakhstan",
