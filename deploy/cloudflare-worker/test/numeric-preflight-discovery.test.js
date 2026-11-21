@@ -5,7 +5,7 @@ const req=path=>new Request('https://example.test'+path,{headers:{accept:'text/h
 test('OV advertises a separate numeric preflight, not a built-in fact check',async()=>{
   const env={AGENT_PROFILE:'agent_output_verification',WORKER_FREE_TRIAL:'1'};
   const card=agentCard(req('/'),env);
-  assert.match(card.description,/separate opt-in Vizier/);
+  assert.match(card.description,/Not a fact check/);
   const preflight=card.x_agenda_intelligence.numeric_preflight;
   assert.equal(preflight.endpoint,'https://vizier.agendamcp.dpdns.org/v1/numeric-consistency/scan');
   assert.match(preflight.review,/REVIEW \/ NUMERIC_INCONSISTENCY/);

@@ -133,7 +133,7 @@ test('flagship cards lead to the matching contract and distinguish regular and t
     assert.equal(primary.mcp_endpoint, origin + '/mcp/agent');
     const offer = (await get(primary.pricing_url)).offers.find(item => item.tool === tool);
     assert.deepEqual(primary, {...offer, mcp_endpoint: onboarding.mcp_endpoint, pricing_url: x402.manifest_url});
-    assert.ok(card.description.includes(`${offer.price_usdc} USDC per evaluation`));
+    assert.equal(primary.price_usdc, offer.price_usdc);
     assert.equal((await get(primary.example_url)).example_available, true);
     assert.ok((await get(primary.input_schema_url)).$schema);
     assert.equal(onboarding.first_evaluation.payment_required, false);

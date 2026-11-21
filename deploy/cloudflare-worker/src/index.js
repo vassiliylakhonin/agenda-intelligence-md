@@ -7,7 +7,7 @@ import {isA2ATrial, a2aTrialInput, a2aTrialDiscovery, A2A_TRIAL_URI} from "./a2a
 import { withEvaluationContract } from "./evaluation-contract.js";
 import { addSkillDiscovery } from './skill-discovery.js';
 import { addCatalogOnboarding, catalogOperation, catalogDemoContent } from './catalog-demo.js';
-import { CATALOG_CASES } from './catalog-cases.js';
+import { CARD_DESCRIPTIONS } from './card-descriptions.js';
 import { catalogSetupContent } from './catalog-onboarding.js';
 import { MEMO_QUALITY_TOOL, MEMO_QUALITY_EXAMPLE, CORRIDOR_MEMO_EXAMPLE, isMemoQualityCall, memoQualityInput, memoQualityResult } from './memo-quality-gate.js';
 import {routingToolForProfile,isFreeRoutingTool} from './pricing-policy.js';
@@ -1394,11 +1394,6 @@ function agentCard(request, env = {}) {
     : profile === 'agent_output_verification' ? 'agent_output_verification'
     : profile === 'm2m_escrow_arbiter' ? 'm2m_escrow_arbitration_ruling' : null;
   const flagshipOffer = flagshipTool && shaped.x_agenda_intelligence.x402.offers.find(offer => offer.tool === flagshipTool);
-  const flagshipPrice = flagshipOffer?.payment_required
-    ? ` Configured price for ${flagshipTool}: ${flagshipOffer.price_usdc} USDC per evaluation. Read the current terms at ${access.pricing_url} and check the operation's payment challenge before paying.`
-    : '';
-  const focusedCase = CATALOG_CASES[profile];
-  const focusedIntro = focusedCase ? `${focusedCase[1]} Try the saved example: "${focusedCase[0]}". It uses fictional inputs and shows the output before you submit your own material. ` : '';
   const agenstryExampleUrl = WORKED_EXAMPLES[profile] ? `${origin}/?source=agenstry#worked-example` : null;
   const browserExampleUrl = profile === 'agent_output_verification' && trial
     ? `${origin}/#one-claim-review` : agenstryExampleUrl;
@@ -1407,9 +1402,8 @@ function agentCard(request, env = {}) {
     shaped.x_agenda_intelligence.product_documentation_url = shaped.documentationUrl;
     shaped.documentationUrl = productPageUrl;
   }
-  const exampleLink = browserExampleUrl ? ` Open the free browser example at ${browserExampleUrl}.` : '';
-  const scope = 'Supplied-evidence review, with mandatory human review before consequential action. Independent factual verification and clearance require separate checks. Caller must invoke and enforce the result in its integration.';
-  shaped.description = `${PROFILE_TASKS[profile] || 'Review supplied evidence using the published contract.'}${exampleLink}\n\n${focusedIntro}${accessSummary}${flagshipPrice}\n\n${scope}\n\n${shaped.description}`;
+  shaped.description = CARD_DESCRIPTIONS[profile] || shaped.description;
+  shaped.x_agenda_intelligence.evaluation_boundary = 'Supplied-evidence review, with mandatory human review before consequential action. Independent factual verification and clearance require separate checks. Caller must invoke and enforce the result in its integration.';
   shaped.x_agenda_intelligence.onboarding = agentOnboarding(profile, env, origin);
   if (profile === 'agenda' || profile === 'kazakhstan') {
     const memoExample = profile === 'kazakhstan' ? CORRIDOR_MEMO_EXAMPLE : MEMO_QUALITY_EXAMPLE;

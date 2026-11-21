@@ -4327,8 +4327,8 @@ test("cis_secondary_sanctions profile is detected from host and env", () => {
   assert.equal(card.name, "CIS Secondary-Sanctions Exposure");
   assert.ok(Array.isArray(card.skills) && card.skills.length === 3);
   assert.equal(card.skills[0].id, "cis-secondary-sanctions-exposure");
-  assert.match(card.description, /exporter, importer, trader, freight forwarder, or finance lead/);
-  assert.match(card.description, /request the redacted intake by email at \S+@\S+/);
+  assert.match(card.description, /counterparty file before onboarding/);
+  assert.match(card.description, /Not sanctions clearance/);
   assert.doesNotMatch(card.description, /free one-off pre-deal screening memo/);
   assert.doesNotMatch(card.description, /Targets enhanced due diligence/);
   assert.doesNotMatch(card.description, /decision-readiness score/);
@@ -4588,8 +4588,8 @@ test("structured gate cards route to the current person-led scope and quote proc
     agentCard(new Request("https://kazakhstan-market-entry-readiness-a2a.example.workers.dev/message/send"), {})
   ];
   for (const card of cards) {
-    assert.match(card.description, /Corridor & Sanctions Risk Assistant/);
-    assert.match(card.description, /fit, scope, fee, and timing/);
+    assert.ok(card.x_agenda_intelligence.onboarding);
+    assert.match(card.x_agenda_intelligence.evaluation_boundary, /mandatory human review/);
     assert.doesNotMatch(card.description, /free.{0,30}(memo|screening)|(?:memo|screening).{0,30}free/i);
   }
 });
@@ -10421,14 +10421,14 @@ test("industry-language copy describes external evidence review without claiming
     const card = agentCard(req, env);
     assert.match(html, /outside the calling model/);
     assert.match(html, /caller must invoke it and enforce/);
-    assert.match(card.description, /Caller must invoke and enforce/);
-    assert.match(card.description, /mandatory human review/);
+    assert.match(card.x_agenda_intelligence.evaluation_boundary, /Caller must invoke and enforce/);
+    assert.match(card.x_agenda_intelligence.evaluation_boundary, /mandatory human review/);
     assert.doesNotMatch(html, /NVIDIA secures your agents|attested telemetry is issued/i);
   }
   const req = new Request("https://agent-output-verification-a2a.vassiliy-lakhonin.workers.dev/");
   const card = agentCard(req, { AGENT_PROFILE: "agent_output_verification" });
-  assert.match(card.description, /allow_relay is never issued/);
-  assert.match(card.description, /verify_before_relay with mandatory human review/);
+  assert.match(card.description, /Not a fact check/);
+  assert.match(card.description, /before a person reviews/);
 });
 
 test("Pro activation retries the original transfer after a transport failure", async () => {

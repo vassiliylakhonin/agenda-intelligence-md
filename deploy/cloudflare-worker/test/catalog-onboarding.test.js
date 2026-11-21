@@ -87,7 +87,7 @@ test('profile cards link to visible browser examples without submitting input', 
     const card = agentCard(new Request(origin), env);
     const savedUrl = new URL(card.x_agenda_intelligence.onboarding.agenstry_example_url);
     const browserUrl = profile === 'agent_output_verification' ? new URL('/#one-claim-review', savedUrl) : savedUrl;
-    assert.ok(card.description.includes(browserUrl.href), profile);
+    assert.equal(card.x_agenda_intelligence.onboarding.agenstry_example_url, savedUrl.href, profile);
     const response = await handleRequest(new Request(browserUrl, {headers:{accept:'text/html'}}), env);
     assert.equal(response.status, 200, profile);
     const html = await response.text();

@@ -26,8 +26,8 @@ test('shipment, policy-memo and AI-report discovery have distinct jobs', async (
   const main = output.skills.find(skill => skill.id === 'agent-output-verification');
   assert.equal(main.name,'Citation check for AI reports');
   assert.equal(main.tags.length,8);
-  assert.match(output.description,/allow_relay is never issued/);
-  assert.match(output.description,/mandatory human review/);
+  assert.match(output.description,/Not a fact check/);
+  assert.match(output.x_agenda_intelligence.evaluation_boundary,/mandatory human review/);
 });
 
 test('trade cards lead with distinct shipment, voyage and counterparty jobs', async () => {
@@ -35,13 +35,13 @@ test('trade cards lead with distinct shipment, voyage and counterparty jobs', as
   const gulf = await card('gulf_maritime_exposure');
   const assistant = await card('corridor_sanctions_assistant');
 
-  assert.match(middleCorridor.description, /^Review a Kazakhstan or Trans-Caspian shipment file/);
-  assert.match(middleCorridor.description, /Show a shipment memo example/);
+  assert.match(middleCorridor.description, /^Before signature or shipment/);
+  assert.match(middleCorridor.description, /missing customs, carrier and counterparty evidence/);
   assert.ok(middleCorridor.skills[0].tags.includes('shipment-dossier'));
-  assert.match(gulf.description, /^Review a commercial vessel and voyage/);
-  assert.match(gulf.description, /IMO number/);
+  assert.match(gulf.description, /^Before chartering or fixture/);
+  assert.match(gulf.description, /No live vessel tracking or ownership verification/);
   assert.ok(gulf.skills[0].tags.includes('pre-fixture'));
-  assert.match(assistant.description, /^Describe a shipment or trade counterparty and the decision ahead/);
+  assert.match(assistant.description, /^Describe your shipment or trade counterparty and the decision ahead/);
   assert.ok(assistant.skills[0].tags.includes('trade-counterparty'));
   const intents = assistant.x_agenda_intelligence.catalog_onboarding.evaluation_intents;
   assert.ok(intents.some(item => item.skill_id === 'corridor-sanctions-orientation' && item.text.includes('re-export file')));

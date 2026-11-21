@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { agentCard, handleRequest, toSpecWireCard } from '../src/index.js';
 import { validateAgentCard } from '../scripts/verify-agent-card.js';
-import { PROFILE_TASKS } from '../src/agent-onboarding.js';
+import { CARD_DESCRIPTIONS } from '../src/card-descriptions.js';
 import { TRIAL_PROFILES } from '../src/trial-profiles.js';
 
 const origin = 'https://example.test';
@@ -14,15 +14,15 @@ test('task-first cards expose only enabled trials and stay valid A2A cards', () 
     const card = agentCard(new Request(origin), env);
     const plan = card.x_agenda_intelligence.onboarding;
     starts.add(card.description.split('.')[0]);
-    assert.ok(card.description.startsWith(PROFILE_TASKS[profile]), profile);
+    assert.ok(card.description === CARD_DESCRIPTIONS[profile], profile);
     assert.deepEqual(validateAgentCard(toSpecWireCard(card)), [], profile);
     assert.equal(plan.first_evaluation.tool, TRIAL_PROFILES[profile].tool);
     assert.equal(plan.first_evaluation.attempts_per_network, profile === 'agent_output_verification' ? 5 : 2);
     if (routingToolForProfile(profile)) {
-      assert.match(card.description,/free/);
+      assert.match(card.x_agenda_intelligence.free_a2a_triage.scope,/free/);
       assert.equal(plan.first_call.tool,routingToolForProfile(profile));
       assert.equal(plan.first_call.trial_attempt_consumed,false);
-    } else assert.match(card.description, /free live attempts on your own input/);
+    } else assert.match(card.x_agenda_intelligence.free_a2a_triage.scope, /free live attempts on your own input/);
     assert.doesNotMatch(card.x_agenda_intelligence.free_a2a_triage.scope, /heartbeat only/);
     const disabled = agentCard(new Request(origin), {...env, WORKER_FREE_TRIAL: '0'});
     assert.equal(disabled.x_agenda_intelligence.onboarding.first_evaluation, undefined);
@@ -51,7 +51,7 @@ test('MCP clients learn the trial body format, selected tool and correct docs', 
   assert.ok(tools[0]._meta['com.agenda/readiness'].resources.access.endsWith('/.well-known/x402'));
   assert.match(tools[0].description, /free_trial/);
   const server = await (await handleRequest(new Request(origin+'/.well-known/mcp/server-card.json'),env)).json();
-  assert.ok(server.description.startsWith(PROFILE_TASKS.dual_use_technology_export));
+  assert.ok(server.description === CARD_DESCRIPTIONS.dual_use_technology_export);
   assert.equal(server.onboarding.first_evaluation.tool, 'dual_use_technology_export');
   const fleet = await (await handleRequest(new Request(origin+'/.well-known/fleet.json'),env)).json();
   const gate = fleet.gates.find(gate=>gate.profile==='dual_use_technology_export');
