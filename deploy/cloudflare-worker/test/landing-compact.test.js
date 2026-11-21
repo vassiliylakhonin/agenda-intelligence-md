@@ -76,3 +76,17 @@ test('Middle Corridor top describes evidence review without commercial authoriza
   assert.match(html,/supply an empty source list/);
   assert.doesNotMatch(landingHtml(req('/'),{AGENT_PROFILE:'agenda'},true),/id="shipment-evidence-review"/);
 });
+
+test('Gulf top describes one voyage file review without live tracking or authorization',()=>{
+  const html=landingHtml(req('/'),{AGENT_PROFILE:'gulf_maritime_exposure',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'},true);
+  assert.match(html,/id="voyage-evidence-review"/);
+  assert.match(html,/One voyage file, not a live picture of the sea/);
+  assert.match(html,/Strait of Hormuz, Bab-el-Mandeb, the Red Sea, the Arabian Gulf or the Gulf of Oman/);
+  assert.match(html,/not live vessel tracking, AIS monitoring or an incident map/);
+  assert.match(html,/no war-risk premium, P&amp;I cover or quote/);
+  assert.match(html,/There is no "proceed": the strongest route is <code>ready_for_human_review<\/code>/);
+  assert.match(html,/17 categories, from <code>vessel_registry_extract<\/code> to <code>human_review_note<\/code>/);
+  assert.match(html,/2 free checks per network address per product for this campaign; shared networks share the allowance and it does not reset daily/);
+  assert.doesNotMatch(html,/proceed \/ gather more evidence \/ do not sail yet/);
+  assert.doesNotMatch(landingHtml(req('/'),{AGENT_PROFILE:'agenda'},true),/id="voyage-evidence-review"/);
+});

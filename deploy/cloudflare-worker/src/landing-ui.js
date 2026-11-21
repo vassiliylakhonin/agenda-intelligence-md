@@ -287,6 +287,16 @@ button:hover { border-color:var(--accent); }
     </details>
   </section>` : ''}
 
+  ${profile === 'gulf_maritime_exposure' ? `<section id="voyage-evidence-review" aria-label="One voyage file, not a live picture of the sea">
+    <p><strong>One voyage file, not a live picture of the sea.</strong> Bring this vessel, this voyage, this cargo and these counterparties through the Strait of Hormuz, Bab-el-Mandeb, the Red Sea, the Arabian Gulf or the Gulf of Oman. Get the missing identity, ownership, insurance and sanctions records to request before a human fixture or voyage review, not a decision to sail.</p>
+    <p>This is not live vessel tracking, AIS monitoring or an incident map; the chokepoint watch is a static review checklist built from the voyage you supply. It is not an insurance service: no war-risk premium, P&amp;I cover or quote. It does not verify vessel identity, ownership or cover, and it does not check whether your records are true: source references are checked as supplied metadata only. No legal, sanctions, compliance, financial, investment, insurance or trading advice. No voyage is authorized; every route ends with a human reviewer.</p>
+    <details><summary>What to prepare and how to read the result</summary>
+      <p>Required: a voyage with one chokepoint (<code>strait_of_hormuz</code>, <code>persian_gulf</code>, <code>gulf_of_oman</code>, <code>bab_el_mandeb</code>, <code>red_sea</code>, <code>suez_canal</code> or <code>other</code>), at least one exposure facet you select yourself, a decision stage, dated source records and your risk question. Vessel identifiers (name, IMO, MMSI, flag, type), cargo, counterparties and jurisdictions are optional; every identifier is a caller claim, not a verified fact. Each source record needs an ID, a source type (17 categories, from <code>vessel_registry_extract</code> to <code>human_review_note</code>), a title and a date.</p>
+      <p>The result separates <code>triage_recommendation</code> (<code>insufficient_information</code>, <code>escalate_before_fixture</code>, <code>escalate_before_voyage</code>, <code>not_decision_ready</code> or <code>ready_for_human_review</code>), <code>exposure_signal</code>, evidence gaps, suggested document requests and a voyage gate with blocking reason codes. There is no "proceed": the strongest route is <code>ready_for_human_review</code>, and <code>human_review_required</code> is always true. AIS quality is not assessed.</p>
+    </details>
+    <p>2 free checks per network address per product for this campaign; shared networks share the allowance and it does not reset daily. Free checks need no wallet or HTTP adapter: agents call <code>free_trial_status</code>, then <code>free_trial</code>. After the allowance, 0.01 USDC per paid check on Base.</p>
+  </section>` : ''}
+
   <div class="primary-actions">
     ${citationFirst
       ? '<a class="primary-action primary-action-main" href="#one-claim-review">See a citation check</a><a class="primary-action" href="#raw-answer">Try your own input</a>'
