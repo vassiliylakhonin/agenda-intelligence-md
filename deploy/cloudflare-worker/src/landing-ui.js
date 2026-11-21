@@ -13,6 +13,7 @@ import {routingToolForProfile} from './pricing-policy.js';
 import { PRODUCT_WORKFLOWS, reviewSummary, reviewSummaryHtml, reviewDeltaHtml, taskChooserHtml } from "./product-workflows.js";
 import { INTAKE_CLIENT_SCRIPT } from './intake-editor.js';
 import { CITATION_REVIEW_SCRIPT, citationReviewHtml } from './citation-review.js';
+import { interactionTrustTopHtml } from './interaction-trust-top.js';
 import { CORRIDOR_WIZARD_SCRIPT, corridorWizardHtml } from './corridor-wizard.js';
 import { corridorOwnerActions, corridorOwnerActionsHtml } from './corridor-owner-actions.js';
 import { CIS_WIZARD_SCRIPT, cisWizardHtml } from './cis-wizard.js';
@@ -292,6 +293,7 @@ button:hover { border-color:var(--accent); }
   </section>
 ` : ''}
   ${relatedReview ? `<p>${relatedReview}</p>` : ''}
+  ${profile === 'agentic_interaction_trust' ? interactionTrustTopHtml() : ''}
   ${firstResult ? `<section class="card" aria-label="Example result"><h2>First result · fictional example</h2>${firstResult}</section>` : ''}
   ${memoReview ? memoExampleHtml(isKazakhstan, escapeHtml) : ''}
   ${citationFirst ? citationReviewHtml(trialTerms.attempts_per_network, allowancePanel, escapeHtml) : ''}

@@ -50,3 +50,18 @@ test('no trial enabled never advertises a free live allowance',()=>{
     if(!routingToolForProfile(profile))assert.match(line,/No free live trial enabled/);
   }
 });
+test('interaction trust first screen explains the missing-evidence checklist without overclaiming',async()=>{
+  const env={AGENT_PROFILE:'agentic_interaction_trust',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'};
+  const html=await(await handleRequest(req('/'),env)).text();
+  const firstScreen=html.slice(html.indexOf('<main>'),html.indexOf('id="worked-example"'));
+  assert.match(firstScreen,/id="missing-evidence-check"/);
+  assert.match(firstScreen,/allow_low_risk/);
+  assert.match(firstScreen,/escalate_to_human_review/);
+  assert.match(firstScreen,/block_until_verified/);
+  assert.match(firstScreen,/authorization_granted: false/);
+  assert.match(firstScreen,/remediation\.issues/);
+  assert.match(firstScreen,/free_trial_status/);
+  assert.match(firstScreen,/0\.01 USDC per paid check on Base/);
+  assert.doesNotMatch(firstScreen,/0–1000|AgentTrust|trust score 0/);
+  assert.doesNotMatch(firstScreen,/proceed \/ gather more evidence \/ do not proceed/);
+});
