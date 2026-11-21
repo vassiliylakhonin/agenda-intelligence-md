@@ -170,4 +170,16 @@ test('Escrow top frames delivery evidence review, not an escrow contract',()=>{
   assert.match(html,/0\.05 USDC per paid check on Base/);
   assert.doesNotMatch(html,/do not place escrow yet|Claim audit|Watch-next|Brief for the team|Halyk|THINK|AI drafts/);
   assert.doesNotMatch(landingHtml(req('/'),{AGENT_PROFILE:'agenda'},true),/id="escrow-delivery-evidence"/);
+test('Financial Guard top describes one pre-sign review without payment enforcement',()=>{
+  const html=landingHtml(req('/'),{AGENT_PROFILE:'agent_financial_guard',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'},true);
+  assert.match(html,/id="pre-sign-evidence-review"/);
+  assert.match(html,/One proposed transaction, not a payment guard/);
+  assert.match(html,/never holds money and never sees wallet keys/);
+  assert.match(html,/The verdict is only ever <code>REJECT<\/code> or <code>HUMAN_REVIEW<\/code>/);
+  assert.match(html,/static local denylist, not current screening/);
+  assert.match(html,/There is no "allow": even a clean request routes to a human/);
+  assert.match(html,/2 free checks per network address per product for this campaign; shared networks share the allowance and it does not reset daily/);
+  assert.doesNotMatch(html,/do not grant yet/);
+  assert.doesNotMatch(html,/ready for decision \/ gather more evidence/);
+  assert.doesNotMatch(landingHtml(req('/'),{AGENT_PROFILE:'agenda'},true),/id="pre-sign-evidence-review"/);
 });
