@@ -139,6 +139,10 @@ test('Dual-use top explains reference-file readiness without classification or p
 test('Critical minerals top describes one project file review without geology, ESG audit or authorization',()=>{
   const html=landingHtml(req('/'),{AGENT_PROFILE:'critical_minerals_due_diligence',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'},true);
   assert.match(html,/id="dossier-evidence-review"/);
+  const title='Critical Minerals Supplier and Offtake Evidence Review';
+  const tagline='Prepare a mineral supplier or offtake file: identify missing origin, ownership and traceability records and request them before human review.';
+  for(const expected of [`<title>${title}</title>`,`<h1>${title}</h1>`,`<meta property="og:title" content="${title}">`,`<p class="tagline">${tagline}</p>`,`<meta name="description" content="${tagline}">`,`<meta property="og:description" content="${tagline}">`]) assert.ok(html.includes(expected),expected);
+  for(const profile of ['agenda','cis_secondary_sanctions','gulf_maritime_exposure']) assert.ok(!landingHtml(req('/'),{AGENT_PROFILE:profile},true).includes(title));
   assert.match(html,/One project file, not a geology or ESG audit/);
   assert.match(html,/not a resource, reserve, grade or NPV estimate/);
   assert.match(html,/no conflict-free or responsible-sourcing certification/);
