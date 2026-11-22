@@ -41,7 +41,13 @@ def assert_scoped_provenance(metadata, expected_violation):
 def post_json(url: str, payload: dict) -> dict:
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
-        url, data=data, headers={"Content-Type": "application/json", "User-Agent": "ZeroMockProof/1.0"}
+        url,
+        data=data,
+        headers={
+            "Content-Type": "application/json",
+            "User-Agent": "ZeroMockProof/1.0",
+            "X-Client-Id": "agenda-owner-fleet-health",
+        },
     )
     with urllib.request.urlopen(req, timeout=15) as resp:
         return json.loads(resp.read().decode("utf-8"))

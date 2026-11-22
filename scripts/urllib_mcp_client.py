@@ -7,6 +7,9 @@ from urllib.request import Request, urlopen
 
 USER_AGENT = "Agenda-urllib-client/1.0"
 
+# Owner smoke client: self-declared operator traffic, never demand.
+OWNER_CLIENT_ID = "agenda-owner-urllib-mcp-smoke"
+
 
 def rpc(endpoint, method, params=None, request_id=1):
     body = {"jsonrpc": "2.0", "id": request_id, "method": method}
@@ -17,6 +20,7 @@ def rpc(endpoint, method, params=None, request_id=1):
         data=json.dumps(body).encode(),
         headers={
             "User-Agent": USER_AGENT,
+            "X-Client-Id": OWNER_CLIENT_ID,
             "Content-Type": "application/json",
             "Accept": "application/json, text/event-stream",
         },

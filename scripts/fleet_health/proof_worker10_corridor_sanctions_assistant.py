@@ -34,6 +34,7 @@ def post_json(url: str, payload: dict) -> dict:
         headers={
             "Content-Type": "application/json",
             "User-Agent": "ZeroMockProof/1.0",
+            "X-Client-Id": "agenda-owner-fleet-health",
         },
     )
     with urllib.request.urlopen(req, timeout=15) as resp:
@@ -46,6 +47,7 @@ def get_json(url: str) -> dict:
         headers={
             "Accept": "application/json",
             "User-Agent": "ZeroMockProof/1.0",
+            "X-Client-Id": "agenda-owner-fleet-health",
         },
     )
     with urllib.request.urlopen(req, timeout=15) as resp:

@@ -19,6 +19,7 @@ def test_discovery_uses_application_identity(monkeypatch):
 
     def fetch(request, timeout):
         assert request.get_header("User-agent") == client.USER_AGENT
+        assert request.get_header("X-client-id") == client.OWNER_CLIENT_ID
         assert timeout == 20
         body = json.loads(request.data)
         methods.append(body["method"])

@@ -41,6 +41,7 @@ def test_rest_endpoint():
         headers={
             "Content-Type": "application/json",
             "User-Agent": "ZeroMockProof/1.0",
+            "X-Client-Id": "agenda-owner-fleet-health",
         },
     )
 
@@ -133,6 +134,7 @@ def test_a2a_endpoint():
         headers={
             "Content-Type": "application/json",
             "User-Agent": "ZeroMockProof/1.0",
+            "X-Client-Id": "agenda-owner-fleet-health",
         },
     )
 
