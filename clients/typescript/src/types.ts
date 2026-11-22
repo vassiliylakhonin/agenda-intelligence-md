@@ -1150,6 +1150,8 @@ export interface MiddleCorridorDealRiskResponse {
   /** Heuristic 0-100 score for evidence-pack readiness for human review. This is not approval, clearance, legal advice, sanctions advice, compliance advice, financial advice, investment advice, insurance advice, or trading advice. */
   decision_readiness_score: number;
   decision_readiness_label: "insufficient_information" | "not_decision_ready" | "partial" | "review_ready";
+  /** Optional short plain-text rationale for why the status fields are what they are, built deterministically from the same rules (no LLM). It separates missing evidence from a found threat. It is not approval, clearance, legal advice, sanctions advice, or compliance advice. */
+  assessment_summary?: string;
   /** Observe-only structural lint of cited source-URL well-formedness. Present only when at least one supplied source carries a malformed or placeholder URL. Structural check only: it does not fetch URLs, verify that a page exists, perform live retrieval, or verify factual content. It does not change the triage recommendation, risk signal, operational decision, or evidence gaps. */
   link_integrity?: {
     checked: number;

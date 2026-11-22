@@ -139,6 +139,7 @@
   "limitations": [
     "One or more counterparties are domiciled in a re-export / circumvention-watch jurisdiction (Georgian consignee (consignee, Georgia)); this is a diversion watch item for human review, not a sanctions determination. Verify end-use and onward destination before any commercial action."
   ],
+  "assessment_summary": "None of the 6 evidence types required before go were supplied, so every required check is still open. Because the deal is at the pre-shipment stage, this routes to escalation before loading. The risk signal is medium_high because 4 or more required sources are missing: it reflects missing evidence, not a found threat. 1 separate flag(s) are listed under limitations; they are escalation leads for human review, not determinations. Readiness 0/100 measures evidence completeness only, not deal quality.",
   "vessel_due_diligence_indicators": [
     "AIS continuity: check for extended transmission gaps or disablement over the voyage.",
     "Vessel identity consistency: check for MMSI / name / IMO manipulation or misclassification.",

@@ -4085,6 +4085,11 @@ export const MCP_TOOL_CONTRACTS = Object.freeze({
               "review_ready"
             ]
           },
+          "assessment_summary": {
+            "description": "Optional short plain-text rationale for why the status fields are what they are, built deterministically from the same rules (no LLM). It separates missing evidence from a found threat. It is not approval, clearance, legal advice, sanctions advice, or compliance advice.",
+            "type": "string",
+            "minLength": 1
+          },
           "link_integrity": {
             "description": "Observe-only structural lint of cited source-URL well-formedness. Present only when at least one supplied source carries a malformed or placeholder URL. Structural check only: it does not fetch URLs, verify that a page exists, perform live retrieval, or verify factual content. It does not change the triage recommendation, risk signal, operational decision, or evidence gaps.",
             "type": "object",

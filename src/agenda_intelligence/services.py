@@ -2818,6 +2818,79 @@ def _middle_corridor_counterparty_readiness(
     }
 
 
+def _middle_corridor_assessment_summary(
+    request_json: dict,
+    triage_recommendation: str,
+    risk_signal: str,
+    readiness_score: int,
+    missing_sources: list[str],
+    flag_count: int,
+) -> str:
+    """Short plain-text rationale for why the deterministic status is what it is.
+
+    Template text built from the same branches that set the status fields; no LLM and no new
+    logic. It separates "evidence missing" from "threat found". Not clearance, approval, or advice.
+    """
+    required_total = len(MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO)
+    readiness_note = f"Readiness {readiness_score}/100 measures evidence completeness only, not deal quality."
+    if not request_json.get("dated_sources"):
+        return (
+            "No dated sources were supplied, so nothing can be assessed yet. "
+            f"The status is {triage_recommendation} and the risk signal is {risk_signal}: that means not assessed, "
+            f"not low risk. {readiness_note}"
+        )
+    outstanding = [s for s in missing_sources if s in MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO]
+    missing_count = len(outstanding)
+    supplied_count = required_total - missing_count
+    if missing_count == 0:
+        coverage = f"All {required_total} evidence types required before go were supplied."
+    elif supplied_count == 0:
+        coverage = (
+            f"None of the {required_total} evidence types required before go were supplied, "
+            "so every required check is still open."
+        )
+    else:
+        coverage = (
+            f"{supplied_count} of {required_total} evidence types required before go were supplied; "
+            f"{missing_count} still open ({', '.join(outstanding)})."
+        )
+    routing = {
+        "escalate_before_signature": (
+            "Because the deal is at the pre-signature stage, this routes to escalation before signature."
+        ),
+        "escalate_before_shipment": (
+            "Because the deal is at the pre-shipment stage, this routes to escalation before loading."
+        ),
+        "ready_for_human_review": "The required set is complete, so the file is ready for human review.",
+        "not_decision_ready": (
+            "The deal stage does not call for an escalation route, so the file stays not decision ready "
+            "until the open checks close."
+        ),
+    }.get(triage_recommendation, f"The routing status is {triage_recommendation}.")
+    if risk_signal == "medium_high":
+        signal = (
+            "The risk signal is medium_high because 4 or more required sources are missing: "
+            "it reflects missing evidence, not a found threat."
+        )
+    elif risk_signal == "medium":
+        signal = (
+            "The risk signal is medium because some required sources are missing: "
+            "it reflects missing evidence, not a found threat."
+        )
+    else:
+        signal = (
+            f"The risk signal is {risk_signal}: a complete evidence set does not by itself show " "that no risk exists."
+        )
+    parts = [coverage, routing, signal]
+    if flag_count:
+        parts.append(
+            f"{flag_count} separate flag(s) are listed under limitations; they are escalation leads "
+            "for human review, not determinations."
+        )
+    parts.append(readiness_note)
+    return " ".join(parts)
+
+
 def middle_corridor_deal_risk(request_json: dict) -> dict:
     """Build a structured Middle Corridor deal-risk response.
 
@@ -2948,6 +3021,9 @@ def middle_corridor_deal_risk(request_json: dict) -> dict:
         )
     if limitations:
         response["limitations"] = limitations
+    response["assessment_summary"] = _middle_corridor_assessment_summary(
+        request_json, triage_recommendation, risk_signal, readiness_score, missing_sources, len(limitations)
+    )
     if matched_sanctions_segments:
         response["route_sanctions_matched_segments"] = list(matched_sanctions_segments)
     if "vessel_or_carrier_history" in missing_sources:

@@ -1076,3 +1076,57 @@ def test_middle_corridor_link_integrity_is_observe_only_and_non_breaking():
     assert mutated_cmp == base_cmp
 
     assert_valid(RESPONSE_SCHEMA_PATH, _write_tmp(mutated["response"]))
+
+
+def _assessment_request(stage, source_types):
+    return {
+        "route": "Aktau -> Baku -> Poti",
+        "cargo": "ceramic tiles",
+        "counterparties": [{"role": "forwarder", "name": "Forwarder A"}],
+        "dated_sources": [
+            {"id": kind, "source_type": kind, "title": "Document record", "date": "2026-11-01"} for kind in source_types
+        ],
+        "risk_question": "Which evidence gaps need review?",
+        "decision_stage": stage,
+    }
+
+
+def test_assessment_summary_explains_status_without_changing_it():
+    from agenda_intelligence import services
+
+    result = services.middle_corridor_deal_risk(_assessment_request("pre_shipment", ["port_operator_notice"]))
+    assert result["valid"] is True
+    response = result["response"]
+    summary = response["assessment_summary"]
+    assert response["triage_recommendation"] == "escalate_before_shipment"
+    assert response["risk_signal"] == "medium_high"
+    assert "None of the 6" in summary
+    assert "before loading" in summary
+    assert "not a found threat" in summary
+    assert f"Readiness {response['decision_readiness_score']}/100" in summary
+
+
+def test_assessment_summary_partial_and_complete_and_empty():
+    from agenda_intelligence import services
+
+    partial = services.middle_corridor_deal_risk(
+        _assessment_request("pre_signature", sorted(REQUIRED_BEFORE_GO - {"vessel_or_carrier_history"}))
+    )["response"]
+    assert "5 of 6" in partial["assessment_summary"]
+    assert "vessel_or_carrier_history" in partial["assessment_summary"]
+    assert "medium because" in partial["assessment_summary"]
+
+    complete = services.middle_corridor_deal_risk(_assessment_request("pre_signature", sorted(REQUIRED_BEFORE_GO)))[
+        "response"
+    ]
+    assert "All 6" in complete["assessment_summary"]
+    assert "ready for human review" in complete["assessment_summary"]
+
+    empty = services.middle_corridor_deal_risk(_assessment_request("pre_signature", []))["response"]
+    assert "not assessed" in empty["assessment_summary"]
+
+
+def test_assessment_summary_is_optional_in_schema():
+    schema = json.loads(RESPONSE_SCHEMA_PATH.read_text())
+    assert "assessment_summary" in schema["properties"]
+    assert "assessment_summary" not in schema["required"]

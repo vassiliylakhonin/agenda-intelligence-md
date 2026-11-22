@@ -123,6 +123,7 @@
     "schema_id": "https://github.com/vassiliylakhonin/agenda-intelligence-md/schemas/v1/middle-corridor-deal-risk-response.schema.json",
     "input_digest": "sha256:ef02413e1b5c596424fb253634be542a7a255adbef02e0ab6b78fd7050b25d61"
   },
+  "assessment_summary": "No dated sources were supplied, so nothing can be assessed yet. The status is insufficient_information and the risk signal is unknown: that means not assessed, not low risk. Readiness 0/100 measures evidence completeness only, not deal quality.",
   "vessel_due_diligence_indicators": [
     "AIS continuity: check for extended transmission gaps or disablement over the voyage.",
     "Vessel identity consistency: check for MMSI / name / IMO manipulation or misclassification.",

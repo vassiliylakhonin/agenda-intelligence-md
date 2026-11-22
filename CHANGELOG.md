@@ -1,5 +1,9 @@
 # CHANGELOG
 
+### Middle Corridor Deal-Risk Gate: assessment_summary (2026-11-22)
+
+- Add an optional `assessment_summary` string to the Middle Corridor Deal-Risk response: a short deterministic rationale (template text, no LLM) saying why the status is what it is. It separates missing evidence from a found threat and states that readiness measures evidence completeness only. Status, risk signal and readiness logic are unchanged.
+
 ## 1.26.0 — 2026-11-17
 
 ### Python packaging

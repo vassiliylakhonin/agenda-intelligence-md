@@ -135,6 +135,7 @@
   "limitations": [
     "One or more counterparties were newly formed in a transshipment-risk jurisdiction (Astana NewCo Trading LLP (consignee, Kazakhstan, formed 2023-08-12)); this matches an OFAC FFI advisory red-flag pattern and is an escalation flag for human review, not a sanctions determination."
   ],
+  "assessment_summary": "None of the 6 evidence types required before go were supplied, so every required check is still open. Because the deal is at the pre-signature stage, this routes to escalation before signature. The risk signal is medium_high because 4 or more required sources are missing: it reflects missing evidence, not a found threat. 1 separate flag(s) are listed under limitations; they are escalation leads for human review, not determinations. Readiness 0/100 measures evidence completeness only, not deal quality.",
   "vessel_due_diligence_indicators": [
     "AIS continuity: check for extended transmission gaps or disablement over the voyage.",
     "Vessel identity consistency: check for MMSI / name / IMO manipulation or misclassification.",
