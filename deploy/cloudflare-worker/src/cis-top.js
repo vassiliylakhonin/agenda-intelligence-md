@@ -4,8 +4,14 @@
 // (source-requirements/cis-secondary-sanctions.json), the trial terms
 // (output-trial.js: WORKER_TRIAL_LIMIT = 2, WORKER_TRIAL_PATH = '/v1/trial'),
 // the local stdio description (src/agenda_intelligence/mcp_stdio.py) and the
-// deployment config (wrangler.toml: Snapshot upstream active, GLEIF off).
-export function cisTopHtml() {
+// deployment config (Snapshot upstream active; GLEIF ownership enrichment is
+// gated on env.GLEIF_ENABLED per deployment, so its line below is conditional).
+import { isEnabled as gleifEnabled } from './upstream_gleif.js';
+
+export function cisTopHtml(env = {}) {
+  const gleifLine = gleifEnabled(env)
+    ? " Supply the counterparty's LEI and it also fetches the disclosed LEI record from GLEIF (the public LEI pool, CC0-1.0), including any disclosed direct or ultimate parent relationships published there, as an auto-fetched source. GLEIF covers disclosed relationships only, not hidden or multi-layer beneficial ownership, so attach your own dated ownership-chain records too."
+    : '';
   return `<section class="card" aria-label="What this review is">
   <h2>Before you onboard this counterparty: is the file ready for compliance review?</h2>
   <p>You have one counterparty from Kazakhstan, Uzbekistan, Kyrgyzstan, Tajikistan, Turkmenistan, Georgia, Armenia, Azerbaijan or Moldova. Bring its name and jurisdiction, the exposure facets, dated source extracts, your risk question and the decision stage. The review returns:</p>
@@ -26,7 +32,7 @@ export function cisTopHtml() {
   <p>You still need the separate list check and the separate legal review. This prepares the file for those checks; it does not replace them.</p>
   <h3>Hosted and local modes</h3>
   <ul>
-    <li><strong>Hosted (this page):</strong> reviews your supplied evidence and also matches the counterparty name against a server-side public-list snapshot. A match is a possible string match, not identity verification or a determination. Two free live attempts on your own input at <code>/v1/trial</code> per network address for this campaign; shared networks share the allowance and it does not reset daily. No wallet or HTTP adapter is needed for the trial. After the allowance, 0.01 USDC per paid check on Base.</li>
+    <li><strong>Hosted (this page):</strong> reviews your supplied evidence and also matches the counterparty name against a server-side public-list snapshot. A match is a possible string match, not identity verification or a determination.${gleifLine} Two free live attempts on your own input at <code>/v1/trial</code> per network address for this campaign; shared networks share the allowance and it does not reset daily. No wallet or HTTP adapter is needed for the trial. After the allowance, 0.01 USDC per paid check on Base.</li>
     <li><strong>Local stdio package:</strong> runs on user-supplied evidence only, with no live retrieval.</li>
   </ul>
   <h3>How to use it</h3>

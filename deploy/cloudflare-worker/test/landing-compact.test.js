@@ -202,6 +202,13 @@ test('cis top block: verified claims only, cis profile only',async()=>{
   assert.match(cis,/user-supplied evidence only, with no live retrieval/);
   assert.match(cis,/Show a counterparty ownership example/);
   assert.doesNotMatch(cis,/do not onboard yet|file ready for review|AI drafts\. Humans decide/);
+  assert.doesNotMatch(cis,/GLEIF/);
   const other=await(await handleRequest(req('/'),{AGENT_PROFILE:'gulf_maritime_exposure',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call'})).text();
   assert.doesNotMatch(other,/What this does not do/);
+});
+test('cis top block: GLEIF ownership line only when GLEIF_ENABLED',async()=>{
+  const on=await(await handleRequest(req('/'),{AGENT_PROFILE:'cis_secondary_sanctions',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call',GLEIF_ENABLED:'1'})).text();
+  assert.match(on,/disclosed LEI record from GLEIF/);
+  assert.match(on,/disclosed direct or ultimate parent relationships published there/);
+  assert.match(on,/disclosed relationships only, not hidden or multi-layer beneficial ownership/);
 });
