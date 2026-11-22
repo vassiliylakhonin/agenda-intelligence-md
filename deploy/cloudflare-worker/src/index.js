@@ -11118,6 +11118,39 @@ function operationalDecisionForStructuredRequest(request, triageRecommendation, 
   };
 }
 
+function assessmentSummaryForStructuredRequest(request, triageRecommendation, riskSignal, score, minimumSourcesBeforeGo, flagCount) {
+  // Short deterministic rationale for the status fields. Template text, no LLM, no new logic.
+  // Separates missing evidence from a found threat. Not clearance, approval, or advice.
+  const requiredTotal = MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO.length;
+  const readinessNote = `Readiness ${score}/100 measures evidence completeness only, not deal quality.`;
+  if (!Array.isArray(request.dated_sources) || request.dated_sources.length === 0) {
+    return `No dated sources were supplied, so nothing can be assessed yet. The status is ${triageRecommendation} and the risk signal is ${riskSignal}: that means not assessed, not low risk. ${readinessNote}`;
+  }
+  const outstanding = minimumSourcesBeforeGo.filter((s) => MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO.includes(s));
+  const missingCount = outstanding.length;
+  const suppliedCount = requiredTotal - missingCount;
+  let coverage;
+  if (missingCount === 0) coverage = `All ${requiredTotal} evidence types required before go were supplied.`;
+  else if (suppliedCount === 0) coverage = `None of the ${requiredTotal} evidence types required before go were supplied, so every required check is still open.`;
+  else coverage = `${suppliedCount} of ${requiredTotal} evidence types required before go were supplied; ${missingCount} still open (${outstanding.join(", ")}).`;
+  const routing =
+    {
+      escalate_before_signature: "Because the deal is at the pre-signature stage, this routes to escalation before signature.",
+      escalate_before_shipment: "Because the deal is at the pre-shipment stage, this routes to escalation before loading.",
+      ready_for_human_review: "The required set is complete, so the file is ready for human review.",
+      not_decision_ready: "The deal stage does not call for an escalation route, so the file stays not decision ready until the open checks close."
+    }[triageRecommendation] || `The routing status is ${triageRecommendation}.`;
+  let signal;
+  if (riskSignal === "high") signal = "The risk signal is high because a screening or security check raised a flag: it is an escalation lead for human review, not a determination.";
+  else if (riskSignal === "medium_high") signal = "The risk signal is medium_high because 4 or more required sources are missing: it reflects missing evidence, not a found threat.";
+  else if (riskSignal === "medium") signal = "The risk signal is medium because some required sources are missing: it reflects missing evidence, not a found threat.";
+  else signal = `The risk signal is ${riskSignal}: a complete evidence set does not by itself show that no risk exists.`;
+  const parts = [coverage, routing, signal];
+  if (flagCount) parts.push(`${flagCount} separate flag(s) are listed under limitations; they are escalation leads for human review, not determinations.`);
+  parts.push(readinessNote);
+  return parts.join(" ");
+}
+
 function dealRiskContractResponseForRequest(request, vizierCorridor = null) {
   const suppliedSources = suppliedSourcesFromStructuredRequest(request);
   const minimumSourcesBeforeGo = MIDDLE_CORRIDOR_REQUIRED_BEFORE_GO.filter(
@@ -11289,6 +11322,14 @@ function dealRiskContractResponseForRequest(request, vizierCorridor = null) {
     );
   }
   if (limitations.length > 0) response.limitations = limitations;
+  response.assessment_summary = assessmentSummaryForStructuredRequest(
+    request,
+    triageRecommendation,
+    riskSignal,
+    decisionReadiness.score,
+    minimumSourcesBeforeGo,
+    limitations.length
+  );
   if (matchedSanctionsSegments.length > 0) {
     response.route_sanctions_matched_segments = [...matchedSanctionsSegments];
   }

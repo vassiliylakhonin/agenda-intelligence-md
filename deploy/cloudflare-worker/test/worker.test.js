@@ -6607,7 +6607,8 @@ test("mcp tools/call keeps the largest worker result below a bounded context cos
   assert.equal(response.result.structuredContent.triage_recommendation, "escalate_before_signature");
   assert.ok(!("artifacts" in response.result.structuredContent));
   assert.deepEqual(JSON.parse(response.result.content[0].text), response.result.structuredContent);
-  assert.ok(Buffer.byteLength(JSON.stringify(response)) < 30_000);
+  assert.match(response.result.structuredContent.assessment_summary, /not a found threat/);
+  assert.ok(Buffer.byteLength(JSON.stringify(response)) < 31_500);
 });
 
 test("mcp tools/call rejects an unknown tool as a tool error, not a protocol error", async () => {

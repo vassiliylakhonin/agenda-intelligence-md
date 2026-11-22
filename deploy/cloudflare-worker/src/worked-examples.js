@@ -317,6 +317,7 @@ export const WORKED_EXAMPLES = {
         "Rail gauge-change points: confirm transloading and gauge-change handling and capacity at Khorgos / Altynkol and at the Caspian rail-ferry interchange (the corridor is rail-dominant, not maritime).",
         "Caspian dwell exposure: flag demurrage, wagon-detention, and ferry-slot risk at Aktau / Kuryk and onward Black Sea ports."
       ],
+      "assessment_summary": "None of the 6 evidence types required before go were supplied, so every required check is still open. Because the deal is at the pre-signature stage, this routes to escalation before signature. The risk signal is medium_high because 4 or more required sources are missing: it reflects missing evidence, not a found threat. Readiness 0/100 measures evidence completeness only, not deal quality.",
       "vessel_due_diligence_indicators": [
         "AIS continuity: check for extended transmission gaps or disablement over the voyage.",
         "Vessel identity consistency: check for MMSI / name / IMO manipulation or misclassification.",
@@ -843,6 +844,7 @@ export const WORKED_EXAMPLES = {
           "Rail gauge-change points: confirm transloading and gauge-change handling and capacity at Khorgos / Altynkol and at the Caspian rail-ferry interchange (the corridor is rail-dominant, not maritime).",
           "Caspian dwell exposure: flag demurrage, wagon-detention, and ferry-slot risk at Aktau / Kuryk and onward Black Sea ports."
         ],
+        "assessment_summary": "None of the 6 evidence types required before go were supplied, so every required check is still open. Because the deal is at the pre-signature stage, this routes to escalation before signature. The risk signal is medium_high because 4 or more required sources are missing: it reflects missing evidence, not a found threat. Readiness 0/100 measures evidence completeness only, not deal quality.",
         "vessel_due_diligence_indicators": [
           "AIS continuity: check for extended transmission gaps or disablement over the voyage.",
           "Vessel identity consistency: check for MMSI / name / IMO manipulation or misclassification.",
