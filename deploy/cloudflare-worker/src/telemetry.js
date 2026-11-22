@@ -409,13 +409,34 @@ function exampleTraceId(request) {
 }
 const VALIDATION_CATEGORIES = new Set(['unsupported_protocol', 'invalid_message', 'invalid_jsonrpc',
   'invalid_request_object', 'missing_structured_request', 'schema_validation_failed', 'missing_input', 'invalid_json', 'body_too_large']);
+
+// Presence of the explicit owner marker only: the `owner_test=1` query
+// parameter or an owner-prefixed X-Client-Id, the two channels owner
+// verification traffic is asked to use. Deliberately narrower than
+// callerKind()'s owner_synthetic bucket, which also infers ownership from
+// user-agent naming conventions; this flag answers "did the request carry
+// the marker" so a rejection can be matched to a synthetic check without
+// re-deriving the classification chain. The marker value itself is not
+// stored.
+function ownerMarkerPresent(request) {
+  if (new URL(request.url).searchParams.get('owner_test') === '1') return true;
+  const clientId = (request.headers.get('x-client-id') || '').trim();
+  return Boolean(clientId) && OWNER_SYNTHETIC_CLIENT_ID.test(clientId);
+}
+
 function logPaymentEvent(request, env, { stage, attempt_id, payment_trace_id, profile, minimum_usdc, reason = null, status = null, validation = null, caller_hash = null, execution_id = null, trial_limit_reason = null, input_diagnostics = null }) {
   try {
     const url = new URL(request.url);
     const safeValidation = validation && VALIDATION_CATEGORIES.has(validation.category) ?
       { category: validation.category, error_count: Math.min(100, Math.max(0, Number.isInteger(validation.error_count) ? validation.error_count : 0)) } : null;
     const safeInput = ['invalid_json', 'body_too_large'].includes(safeValidation?.category) ? safeJsonInputDiagnostics(input_diagnostics) : null;
-    console.log({ event: "agenda_intelligence_payment", event_version: 5,
+    console.log({ event: "agenda_intelligence_payment", event_version: 6,
+      // 6: adds method, request_path and owner_marker_present. transport
+      // collapses '/' and '/message/send' into 'a2a', so a bare rejection row
+      // could not say which action path was hit, and matching a rejection to
+      // an owner smoke run meant guessing from timing. The path is the URL
+      // pathname only, never the query string, which may carry caller data;
+      // the owner flag is a boolean, never the marker value.
       // A spoofable UI claim, never an identity or authorization signal.
       client_surface: request.headers.get('x-agenda-client-surface') === 'web-console-v1' ? 'web_console_claim' : 'unclaimed',
       review_flow: profile === 'agent_output_verification' && request.headers.get('x-agenda-review-flow') === 'one-claim-v1' ? 'one_claim_claim' : 'unclaimed',
@@ -432,6 +453,9 @@ function logPaymentEvent(request, env, { stage, attempt_id, payment_trace_id, pr
       demo_trace_id: exampleTraceId(request),
       host: url.hostname, transport: url.pathname.startsWith('/mcp') ? 'mcp' :
         (url.pathname === '/message/send' || url.pathname === '/') ? 'a2a' : 'rest',
+      method: request.method,
+      request_path: url.pathname,
+      owner_marker_present: ownerMarkerPresent(request),
       agent_profile: profile, minimum_usdc: minimum_usdc ?? null, validation: safeValidation,
       code_version: VERSION, engine_version: env?.CF_VERSION_METADATA?.id || env?.DEPLOYMENT_VERSION || VERSION,
       caller_kind: callerKind(request), traffic_class: trafficClass(request),

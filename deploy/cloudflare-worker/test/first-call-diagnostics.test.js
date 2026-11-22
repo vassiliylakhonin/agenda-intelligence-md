@@ -118,7 +118,7 @@ test('JSON admission distinguishes empty, form, UTF-8, malformed and oversized i
       origin_relation:'same_origin',referrer_relation:'agenstry'});
     const payment=events.filter(e=>e?.event==='agenda_intelligence_payment');
     assert.equal(payment.length,2);
-    assert.ok(payment.every(e=>e.event_version===5 && e.origin_verification==='unverified'));
+    assert.ok(payment.every(e=>e.event_version===6 && e.origin_verification==='unverified'));
     assert.ok(payment.every(e=>JSON.stringify(e.input_diagnostics)===JSON.stringify(data.input_diagnostics)));
     assert.ok(!events.some(e=>e?.event==='agenda_intelligence_a2a_usage'));
     assert.doesNotMatch(JSON.stringify(events),/private-marker|private-boundary|private-type|private-query|private-path/);

@@ -1,5 +1,9 @@
 # CHANGELOG
 
+### Payment telemetry: request path and owner-marker flag on rejections (2026-11-22)
+
+- Payment events (`agenda_intelligence_payment`, event_version 6) now record `method`, `request_path` and `owner_marker_present`. `transport` collapses `/` and `/message/send` into `a2a`, so a rejected request could not be attributed to the exact action path, and matching a rejection to an owner smoke run meant guessing from timing. `request_path` is the URL pathname only, never the query string, which may carry caller data; `owner_marker_present` is a boolean for the explicit owner marker (`owner_test=1` or an owner-prefixed `X-Client-Id`), never the marker value, and is deliberately narrower than the `owner_synthetic` caller bucket, which also infers ownership from user-agent naming. Observability only: payment admission, validation, verdicts, pricing and responses are unchanged.
+
 ### Middle Corridor Deal-Risk Gate: assessment_summary (2026-11-22)
 
 - Add an optional `assessment_summary` string to the Middle Corridor Deal-Risk response: a short deterministic rationale (template text, no LLM) saying why the status is what it is. It separates missing evidence from a found threat and states that readiness measures evidence completeness only. Status, risk signal and readiness logic are unchanged.

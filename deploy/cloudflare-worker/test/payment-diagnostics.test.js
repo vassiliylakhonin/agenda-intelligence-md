@@ -60,6 +60,35 @@ test('explicit owner marker excludes manual browser tests without changing payme
   }
 });
 
+test('payment rejections record method and exact request path, never the query string', async () => {
+  for (const path of ['/', '/message/send']) {
+    const { response, events } = await capture(path + '?secret=query', { jsonrpc: '2.0', id: 1, method: 'SendMessage', params: {} }, { 'a2a-version': '0.3.0' });
+    assert.equal(response.status, 400);
+    const rejected = events.find(e => e.stage === 'payment_rejected');
+    assert.equal(rejected.method, 'POST');
+    assert.equal(rejected.request_path, path);
+    assert.ok(!JSON.stringify(events).includes('secret'));
+  }
+});
+
+test('payment rejections flag the explicit owner marker as a boolean only', async () => {
+  const marked = [
+    ['/message/send?owner_test=1', {}],
+    ['/message/send', { 'x-client-id': 'agenda-owner-smoke' }],
+    ['/message/send', { 'x-client-id': 'instinct-owner-verify' }]
+  ];
+  for (const [path, headers] of marked) {
+    const { events } = await capture(path, { jsonrpc: '2.0', id: 1, method: 'SendMessage', params: {} }, { 'a2a-version': '0.3.0', ...headers });
+    assert.equal(events.find(e => e.stage === 'payment_rejected').owner_marker_present, true);
+  }
+  for (const headers of [{}, { 'x-client-id': 'someone-else' }, { 'user-agent': 'instinct-ownerverify-legacy-ua' }]) {
+    const { events } = await capture('/message/send', { jsonrpc: '2.0', id: 1, method: 'SendMessage', params: {} }, { 'a2a-version': '0.3.0', ...headers });
+    const rejected = events.find(e => e.stage === 'payment_rejected');
+    assert.equal(rejected.owner_marker_present, false);
+    assert.ok(!('owner_marker' in rejected));
+  }
+});
+
 test('all fleet public A2A examples and landing REST inputs pass paid admission validation', async () => {
   const profiles = ['agenda', 'kazakhstan', 'cis_secondary_sanctions', 'agentic_interaction_trust',
     'agent_output_verification', 'agent_financial_guard', 'm2m_escrow_arbiter', 'gulf_maritime_exposure',
