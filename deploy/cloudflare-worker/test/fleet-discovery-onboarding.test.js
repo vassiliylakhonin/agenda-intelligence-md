@@ -14,7 +14,8 @@ test('task-first cards expose only enabled trials and stay valid A2A cards', () 
     const card = agentCard(new Request(origin), env);
     const plan = card.x_agenda_intelligence.onboarding;
     starts.add(card.description.split('.')[0]);
-    assert.ok(card.description === CARD_DESCRIPTIONS[profile], profile);
+    assert.ok(card.description.startsWith(CARD_DESCRIPTIONS[profile].split('. ')[0] + '.'), profile);
+    assert.equal(card.description.includes('No-wallet trial:'), !routingToolForProfile(profile), profile);
     assert.deepEqual(validateAgentCard(toSpecWireCard(card)), [], profile);
     assert.equal(plan.first_evaluation.tool, TRIAL_PROFILES[profile].tool);
     assert.equal(plan.first_evaluation.attempts_per_network, profile === 'agent_output_verification' ? 5 : 2);
@@ -51,7 +52,8 @@ test('MCP clients learn the trial body format, selected tool and correct docs', 
   assert.ok(tools[0]._meta['com.agenda/readiness'].resources.access.endsWith('/.well-known/x402'));
   assert.match(tools[0].description, /free_trial/);
   const server = await (await handleRequest(new Request(origin+'/.well-known/mcp/server-card.json'),env)).json();
-  assert.ok(server.description === CARD_DESCRIPTIONS.dual_use_technology_export);
+  assert.ok(server.description.startsWith(CARD_DESCRIPTIONS.dual_use_technology_export.split('. ')[0] + '.'));
+  assert.match(server.description, /No-wallet trial: call MCP free_trial_status, then free_trial/);
   assert.equal(server.onboarding.first_evaluation.tool, 'dual_use_technology_export');
   const fleet = await (await handleRequest(new Request(origin+'/.well-known/fleet.json'),env)).json();
   const gate = fleet.gates.find(gate=>gate.profile==='dual_use_technology_export');

@@ -7,7 +7,7 @@ import {isA2ATrial, a2aTrialInput, a2aTrialDiscovery, A2A_TRIAL_URI} from "./a2a
 import { withEvaluationContract } from "./evaluation-contract.js";
 import { addSkillDiscovery } from './skill-discovery.js';
 import { addCatalogOnboarding, catalogOperation, catalogDemoContent } from './catalog-demo.js';
-import { CARD_DESCRIPTIONS } from './card-descriptions.js';
+import { cardDescription } from './card-descriptions.js';
 import { catalogSetupContent } from './catalog-onboarding.js';
 import { MEMO_QUALITY_TOOL, MEMO_QUALITY_EXAMPLE, CORRIDOR_MEMO_EXAMPLE, isMemoQualityCall, memoQualityInput, memoQualityResult } from './memo-quality-gate.js';
 import {routingToolForProfile,isFreeRoutingTool} from './pricing-policy.js';
@@ -1402,7 +1402,7 @@ function agentCard(request, env = {}) {
     shaped.x_agenda_intelligence.product_documentation_url = shaped.documentationUrl;
     shaped.documentationUrl = productPageUrl;
   }
-  shaped.description = CARD_DESCRIPTIONS[profile] || shaped.description;
+  shaped.description = cardDescription(profile, access, shaped.description);
   shaped.x_agenda_intelligence.evaluation_boundary = 'Supplied-evidence review, with mandatory human review before consequential action. Independent factual verification and clearance require separate checks. Caller must invoke and enforce the result in its integration.';
   shaped.x_agenda_intelligence.onboarding = agentOnboarding(profile, env, origin);
   if (profile === 'agenda' || profile === 'kazakhstan') {
