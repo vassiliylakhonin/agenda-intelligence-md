@@ -176,8 +176,11 @@ def test_ov_free_first_health_checks_status_without_consuming_and_keeps_paid_pro
 def test_configured_health_retries_transient_timeout_before_running_proofs(monkeypatch, error):
     seen = run_fixture(monkeypatch, "agenda", health_error=error)
     assert [(request.get_method(), urlparse(request.full_url).path) for request in seen] == [
-        ("GET", "/health"), ("GET", "/health"), ("GET", "/.well-known/x402"),
-        ("POST", "/mcp"), ("POST", "/mcp"),
+        ("GET", "/health"),
+        ("GET", "/health"),
+        ("GET", "/.well-known/x402"),
+        ("POST", "/mcp"),
+        ("POST", "/mcp"),
     ]
 
 
