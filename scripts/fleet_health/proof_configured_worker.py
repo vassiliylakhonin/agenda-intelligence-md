@@ -30,7 +30,13 @@ def request_json(origin: str, path: str, payload: dict | None = None, expected_s
 def check_worker(name: str) -> None:
     origins = json.loads((Path(__file__).resolve().parents[1] / "mcp-monitor-origins.json").read_text())
     origin = origins[name]
-    health = request_json(origin, "/health")
+    # Retry only the read-only liveness probe after a network timeout.
+    try:
+        health = request_json(origin, "/health")
+    except (TimeoutError, urllib.error.URLError) as error:
+        if isinstance(error, urllib.error.URLError) and not isinstance(error.reason, TimeoutError):
+            raise
+        health = request_json(origin, "/health")
     assert health.get("profile"), "Worker must expose its profile"
     manifest = request_json(origin, "/.well-known/x402")
     access = manifest.get("x_agenda_access", {})

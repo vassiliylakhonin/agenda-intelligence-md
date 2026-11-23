@@ -4,6 +4,7 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+from urllib.error import URLError
 from urllib.parse import urlparse
 
 import pytest
@@ -24,7 +25,7 @@ def load_proof():
     return proof
 
 
-def run_fixture(monkeypatch, profile, *, auth=False, failure=None):
+def run_fixture(monkeypatch, profile, *, auth=False, failure=None, health_error=None):
     proof = load_proof()
     router = {"agenda": "strategic_risk_triage", "corridor_sanctions_assistant": "corridor_sanctions_assistant"}.get(
         profile
@@ -40,6 +41,8 @@ def run_fixture(monkeypatch, profile, *, auth=False, failure=None):
         seen.append(request)
         path = urlparse(request.full_url).path
         if path == "/health":
+            if len(seen) == 1 and health_error is not None:
+                raise health_error
             return Response({"profile": profile})
         if path == "/.well-known/x402":
             return Response(
@@ -167,3 +170,29 @@ def test_ov_free_first_health_checks_status_without_consuming_and_keeps_paid_pro
     monkeypatch.setattr(proof.urllib.request, "urlopen", fetch)
     proof.check_worker("agent-output-verification-a2a")
     assert seen == ["free_trial_status", "pre_action_check"]
+
+
+@pytest.mark.parametrize("error", [TimeoutError("read timed out"), URLError(TimeoutError("connect timed out"))])
+def test_configured_health_retries_transient_timeout_before_running_proofs(monkeypatch, error):
+    seen = run_fixture(monkeypatch, "agenda", health_error=error)
+    assert [(request.get_method(), urlparse(request.full_url).path) for request in seen] == [
+        ("GET", "/health"),
+        ("GET", "/health"),
+        ("GET", "/.well-known/x402"),
+        ("POST", "/mcp"),
+        ("POST", "/mcp"),
+    ]
+
+
+def test_configured_health_still_fails_when_both_requests_time_out(monkeypatch):
+    proof = load_proof()
+    calls = []
+
+    def timed_out(request, **kwargs):
+        calls.append((request.get_method(), urlparse(request.full_url).path))
+        raise TimeoutError("unreachable")
+
+    monkeypatch.setattr(proof.urllib.request, "urlopen", timed_out)
+    with pytest.raises(TimeoutError, match="unreachable"):
+        proof.check_worker("agenda-intelligence-a2a")
+    assert calls == [("GET", "/health"), ("GET", "/health")]
