@@ -244,6 +244,22 @@ test('five public-document owner tasks run through the bundled form, real trial 
   }
 }));
 
+test('one-claim form shows numeric context in the summary and clears it after correction',async()=>quiet(async()=>{
+  const ui = await browser();
+  const quote = 'The Orchid cable spans 2 kilometers';
+  ui.elements['citation-claim'].value = 'The Orchid cable spans 2 meters.';
+  ui.elements['citation-source'].value = `${quote}.`;
+  ui.elements['citation-quote'].value = quote;
+  ui.elements['citation-support'].value = 'direct';
+  await run(ui);
+  assert.match(ui.elements['profile-summary'].innerHTML, /Review numeric context.*2 meters/);
+  assert.equal(ui.responses[0].evidence_gaps.length, 0);
+  ui.elements['citation-claim'].value = 'The Orchid cable spans 2,000 meters.';
+  await run(ui);
+  assert.doesNotMatch(ui.elements['profile-summary'].innerHTML, /Review numeric context/);
+  assert.equal(ui.responses[1].verdict, ui.responses[0].verdict);
+}));
+
 test('one-claim retries retain quota admission, last result and owner-bound optional feedback',async()=>quiet(async()=>{
   const ui=await browser();
   ui.elements['citation-claim'].value='The document says five attempts.';

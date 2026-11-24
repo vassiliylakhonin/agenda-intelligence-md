@@ -187,6 +187,44 @@ test("actual output HTTP evaluation returns stable quote diagnostics and a reque
   );
 });
 
+test("number in the wrong context adds a signed advisory to the paid evaluation shape", async () => {
+  const keys = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+  const key = await crypto.subtle.exportKey("jwk", keys.privateKey);
+  const env = { AGENT_PROFILE: "agent_output_verification", VIZIER_DISABLED: "1",
+    OUTPUT_EVALUATION_RECEIPTS: "1", AGENT_CARD_SIGNING_KEY: JSON.stringify(key) };
+  const quote = "Jahlil Okafor had 18 points, 10 of which came in the first half";
+  const call = async (claim) => {
+    const request = {
+      claims: [{ claim_id: "c1", claim, support_level: "direct", evidence_ids: ["e1"],
+        supporting_quotes: [{ evidence_id: "e1", quote }] }],
+      evidence: [{ evidence_id: "e1", content: `Justise Winslow led Duke with 19 points while ${quote}.` },
+        { evidence_id: "uncited", content: "Jahlil Okafor had 18 points and 10 rebounds." }],
+    };
+    const response = await handleRequest(new Request("https://example.test/v1/agent-output/verification", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request),
+    }), env);
+    assert.equal(response.status, 200);
+    return { request, response: await response.json(), publicJwk: key, expectedIssuer: "https://example.test" };
+  };
+  const correct = await call(`${quote}.`);
+  const wrong = await call("Jahlil Okafor had 18 points and 10 rebounds.");
+  const reviewed = await verifyOutputReceipt(wrong);
+  assert.equal(reviewed.valid, true);
+  assert.ok(!correct.response.reason_codes.includes("NUMERIC_CONTEXT_REVIEW"));
+  assert.ok(reviewed.evaluation.reason_codes.includes("NUMERIC_CONTEXT_REVIEW"));
+  assert.deepEqual(reviewed.evaluation.checks.find(check => check.id === "numeric.context"), {
+    id: "numeric.context", claim_id: "c1", result: "not_assessed", reason_code: "NUMERIC_CONTEXT_REVIEW",
+  });
+  assert.match(reviewed.evaluation.owner_actions.find(action => action.includes("numeric context")), /\b10\b/);
+  for (const field of ["verdict", "readiness_score", "next_action", "human_review_required", "authorization_granted"]) {
+    assert.equal(wrong.response[field], correct.response[field], field);
+  }
+  assert.deepEqual(wrong.response.evidence_gaps, correct.response.evidence_gaps);
+  const altered = structuredClone(wrong.response);
+  altered.owner_actions = [];
+  assert.equal((await verifyOutputReceipt({ ...wrong, response: altered })).valid, false);
+});
+
 test("native MCP and A2A trials return the same signed evaluation contract", async () => {
   const keys = await crypto.subtle.generateKey(
     { name: "ECDSA", namedCurve: "P-256" },

@@ -158,6 +158,15 @@ for (const campaignExhausted of [false, true]) test(`official @x402/mcp settles 
   const env = environment(),
     network = mockNetwork(),
     previous = globalThis.fetch;
+  const quote = "The Orchid cable spans 2 kilometers";
+  const reviewInput = campaignExhausted ? {
+    claims: [{
+      ...input.claims[0],
+      claim: "The Orchid cable spans 2 meters.",
+      supporting_quotes: [{ evidence_id: "e1", quote }],
+    }],
+    evidence: [{ evidence_id: "e1", content: `${quote}.` }],
+  } : input;
   globalThis.fetch = network.fetch;
   try {
     const headers = { "content-type": "application/json", "cf-connecting-ip": "192.0.2.71" };
@@ -206,14 +215,14 @@ for (const campaignExhausted of [false, true]) test(`official @x402/mcp settles 
         return budget({ paymentRequired });
       },
     });
-    const result = await client.callTool("agent_output_verification", input);
+    const result = await client.callTool("agent_output_verification", reviewInput);
     assert.equal(result.isError, false);
     assert.equal(result.paymentMade, true);
     assert.equal(result.paymentResponse.success, true);
     assert.equal(calls, 2);
     assert.equal(approved, 1);
     assert.equal(network.settles(), 1);
-    const verification = await reviewSignedOutput(input, {
+    const verification = await reviewSignedOutput(reviewInput, {
       mode: "paid",
       expectedIssuer: "https://example.test",
       paidClient: { callTool: async () => result },
@@ -223,6 +232,7 @@ for (const campaignExhausted of [false, true]) test(`official @x402/mcp settles 
     assert.equal(verification.valid, true);
     assert.equal(verification.evaluation.human_review_required, true);
     assert.equal(verification.authorization_granted, false);
+    assert.equal(verification.evaluation.reason_codes.includes("NUMERIC_CONTEXT_REVIEW"), campaignExhausted);
   } finally {
     globalThis.fetch = previous;
   }
