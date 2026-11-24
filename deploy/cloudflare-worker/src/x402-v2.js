@@ -105,7 +105,7 @@ export function x402Requirements(request, minimum) {
     ],
   };
 }
-export function x402RequiredResponse(request, body, minimum, legacyResponse, trial = null) {
+export function x402RequiredResponse(request, body, minimum, legacyResponse, trial = null, trialLimitReason = null) {
   const required = x402Requirements(request, minimum),
     headers = new Headers(legacyResponse.headers);
   headers.set("PAYMENT-REQUIRED", encodeX402(required));
@@ -132,19 +132,22 @@ export function x402RequiredResponse(request, body, minimum, legacyResponse, tri
               admission_status: 402,
               // Trial availability is derived from the live trial configuration
               // passed by the dispatcher, never asserted unconditionally.
-              next_step: trial
+              next_step: trialLimitReason
+                ? "This network has used its free trial allowance for this tool. Review the current quote with the wallet owner before choosing a paid evaluation. Use validate_input to check the input for free."
+                : trial
                 ? `A free trial for ${trial.tool} is available before payment: call MCP ${trial.mcp_status_tool}, then ${trial.mcp_tool} with that tool's inputSchema arguments, or GET ${trial.endpoint} for terms, the input schema and an example. HTTP, MCP and A2A share the campaign allowance; other tools are not included. Inspect any separate paid price with the wallet owner; payment must not be automatic without an authorized budget.`
                 : "This deployment does not advertise a free trial for this product. Use the free validate_input preflight to repair the request shape, and review any separate paid price with the wallet owner; payment must not be automatic without an authorized budget.",
               ...(trial
                 ? {
                     free_trial: {
-                      available: true,
+                      available: !trialLimitReason,
                       payment_required: false,
                       tool: trial.tool,
                       endpoint: trial.endpoint,
                       mcp_status_tool: trial.mcp_status_tool,
                       mcp_tool: trial.mcp_tool,
                       attempts_per_network: trial.attempts_per_network,
+                      ...(trialLimitReason ? { unavailable_reason: trialLimitReason } : {}),
                     },
                   }
                 : {}),

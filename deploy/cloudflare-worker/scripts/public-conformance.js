@@ -6,6 +6,7 @@ import {validateAgentCard} from './verify-agent-card.js';
 import {assertSignedCard} from './card-signing-bootstrap.js';
 import {decodeX402} from '../src/x402-v2.js';
 import {cardExtensionParams} from '../src/card-extension.js';
+import {X402_DISCOVERY_URI} from '../src/payment-discovery.js';
 
 const customHosts = {
   'agenda-intelligence-a2a': 'agendamcp.dpdns.org',
@@ -42,37 +43,46 @@ export async function verifyPublicAgent(target,{fetchImpl=fetch,refusalsOnly=fal
     await assertSignedCard(card.data,jwks.data,origin);counts.signature_verified++;
     const example=meta.a2a_send_message_example;assert.ok(example?.request&&example?.headers);
     const admission=await request(primary.url,example.request,example.headers,fetchImpl);
-    assert.equal(admission.response.status,402);
+    const expectedStatus=example.expected?.http_status_without_payment??402;
+    assert.equal(admission.response.status,expectedStatus);
+    assert.equal(admission.data.jsonrpc,'2.0');
+    assert.equal(admission.data.id,example.request.id);
     const requiredHeader=admission.response.headers.get('payment-required');
-    if(requiredHeader!==null) {
-      // Standard x402 admission precedes JSON-RPC dispatch and has no RPC id.
-      const required=decodeX402(requiredHeader);
-      assert.equal(admission.data.error,'payment_required');
-      assert.equal(admission.data.status,402);
-      assert.equal(required.x402Version,2);
-      assert.equal(required.resource?.url,primary.url);
-      assert.ok(Array.isArray(required.accepts)&&required.accepts.length>0);
-      const legacy=admission.data.x402;
-      assert.equal(legacy?.protocol,'x402');
-      for(const offer of required.accepts) {
-        assert.equal(offer.scheme,'exact');
-        assert.equal(offer.network,`eip155:${legacy.chain_id}`);
-        assert.match(offer.amount,/^[1-9][0-9]*$/);
-        assert.equal(offer.amount,legacy.amount_raw);
-        assert.match(offer.asset,/^0x[0-9a-fA-F]{40}$/);
-        assert.equal(offer.asset,legacy.token_contract);
-        assert.match(offer.payTo,/^0x[0-9a-fA-F]{40}$/);
-        assert.equal(offer.payTo,legacy.recipient_wallet);
-        assert.ok(Number.isInteger(offer.maxTimeoutSeconds)&&offer.maxTimeoutSeconds>0);
-      }
+    if(expectedStatus===200) {
+      assert.equal(requiredHeader,null);
+      assert.equal(admission.data.result?.task?.status?.state,example.expected.task_state);
+      counts.routing_completed=1;
     } else {
-      assert.equal(admission.data.jsonrpc,'2.0');
-      assert.equal(admission.data.id,example.request.id);
-      assert.ok(admission.data.error?.data);
+      const error=admission.data.error;
+      assert.equal(error?.data?.error,'payment_required');
+      assert.equal(error.data.status,402);
+      const supportsV2=card.data.capabilities?.extensions?.some(extension=>
+        extension.uri===X402_DISCOVERY_URI&&extension.params?.x402Version===2);
+      if(supportsV2) assert.ok(requiredHeader,'advertised x402 v2 requires a payment header');
+      if(requiredHeader!==null) {
+        const required=decodeX402(requiredHeader);
+        assert.equal(required.x402Version,2);
+        assert.equal(required.resource?.url,primary.url);
+        assert.ok(Array.isArray(required.accepts)&&required.accepts.length>0);
+        const legacy=error.data.x402;
+        assert.equal(legacy?.protocol,'x402');
+        assert.deepEqual(admission.data.x402,legacy);
+        for(const offer of required.accepts) {
+          assert.equal(offer.scheme,'exact');
+          assert.equal(offer.network,`eip155:${legacy.chain_id}`);
+          assert.match(offer.amount,/^[1-9][0-9]*$/);
+          assert.equal(offer.amount,legacy.amount_raw);
+          assert.match(offer.asset,/^0x[0-9a-fA-F]{40}$/);
+          assert.equal(offer.asset,legacy.token_contract);
+          assert.match(offer.payTo,/^0x[0-9a-fA-F]{40}$/);
+          assert.equal(offer.payTo,legacy.recipient_wallet);
+          assert.ok(Number.isInteger(offer.maxTimeoutSeconds)&&offer.maxTimeoutSeconds>0);
+        }
+      }
+      assert.equal(admission.data.result,undefined);
+      assert.match(admission.response.headers.get('x-payment-trace-id')||'',/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i);
+      counts.payment_admission++;
     }
-    assert.equal(admission.data.result,undefined);
-    assert.match(admission.response.headers.get('x-payment-trace-id')||'',/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i);
-    counts.payment_admission++;
   }
   for(const path of [primary.url,origin+'/mcp']) {
     for(const [name,body,code] of [
