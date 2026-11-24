@@ -85,6 +85,31 @@ test('retained integration preserves free-entry guidance in both payment shapes 
   }
 }));
 
+test('Output Verification payment guidance carries the original trace and proof headers across transports',async()=>silent(async()=>{
+  const input=WORKED_EXAMPLES.agent_output_verification.request;
+  const privateQuery='private-marker';
+  for (const standard of ['0','1']) {
+    const env={AGENT_PROFILE:'agent_output_verification',WORKER_FREE_TRIAL:'1',BILLING_MODE:'pay_per_call',X402_STANDARD:standard};
+    for (const [path,body] of [['/v1/agent-output/verification',input],['/mcp/agent',{
+      jsonrpc:'2.0',id:'first-call',method:'tools/call',params:{name:'pre_action_check',arguments:input}
+    }]]) {
+      const response=await handleRequest(new Request(origin+path+'?'+privateQuery,{method:'POST',headers,body:JSON.stringify(body)}),env);
+      assert.equal(response.status,path.startsWith('/mcp')?200:402);
+      const hint=hintOf(await response.json());
+      const continuation=hint.payment_continuation;
+      assert.ok(continuation);
+      assert.equal(continuation.request_body,'unchanged');
+      assert.equal(continuation.endpoint,'same_endpoint');
+      assert.equal(continuation.trace.header,'X-Payment-Trace-Id');
+      assert.equal(continuation.trace.value,response.headers.get('x-payment-trace-id'));
+      assert.equal(continuation.proof.submission_header,standard==='1'?'PAYMENT-SIGNATURE':'X-Payment-Signature');
+      assert.equal(continuation.requires_payment_authorization,true);
+      assert.equal(hint.automatic_payment,false);
+      assert.doesNotMatch(JSON.stringify(hint),new RegExp(privateQuery));
+    }
+  }
+}));
+
 test('disabled trials and production authentication are represented without granting access',async()=>silent(async()=>{
   const env={AGENT_PROFILE:'cis_secondary_sanctions',BILLING_MODE:'pay_per_call',CIS_SECONDARY_SANCTIONS_API_KEY:'private-key'};
   const req=authorization=>new Request(origin+'/v1/cis-secondary-sanctions/exposure',{method:'POST',headers:{...headers,...authorization},body:'{'});

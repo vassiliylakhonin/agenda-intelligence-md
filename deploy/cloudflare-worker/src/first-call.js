@@ -2,6 +2,7 @@ import {INPUT_VALIDATION_MAX_BYTES,INPUT_VALIDATION_PATH} from './input-validati
 import {outputTrialEnabled,outputTrialTerms} from './output-trial.js';
 import {productionAuthKey} from './hosted-access.js';
 import {isMcpClientPath} from './mcp-client-path.js';
+import {normalizePaymentTrace} from './payment-trace.js';
 
 // Server-owned links only. Never copy rejected input, request IDs, query strings,
 // payment proofs or credentials into recovery instructions.
@@ -42,6 +43,18 @@ export async function firstCallResponse(request,response,profile,env) {
   if(standardMcp ? admission?.admission_status!==402 :
     response.status!==402 && body.code!=='invalid_paid_request')return response;
   const first_call=guidance(request,profile,env);
+  const trace=normalizePaymentTrace(response.headers.get('x-payment-trace-id'));
+  if (trace && (standardMcp || response.status===402)) {
+    const standard=response.headers.has('payment-required');
+    first_call.payment_continuation={
+      endpoint:'same_endpoint',method:'POST',request_body:'unchanged',requires_payment_authorization:true,
+      trace:{header:'X-Payment-Trace-Id',value:trace},
+      proof:standard
+        ? {scheme:'x402_v2',challenge_header:'PAYMENT-REQUIRED',submission_header:'PAYMENT-SIGNATURE'}
+        : {scheme:'legacy_transaction',transaction_header:'X-Payment-Tx',challenge_status:401,submission_header:'X-Payment-Signature'},
+      instruction:'If the wallet owner authorizes this charge, follow the advertised payment scheme and keep the original endpoint, request body and trace header. Do not automatically pay, transfer again, or switch endpoints after funding.'
+    };
+  }
   if(standardMcp) {
     admission.first_call=first_call;
     if(!first_call.free_trial)admission.next_step='Inspect first_call for free input schema preflight. This deployment does not advertise a free trial. Review separate paid admission with the owner; do not pay automatically.';
