@@ -19,6 +19,7 @@ import {mcpHttpRejection,mcpHttpStatus,isModernMcpHttp} from './mcp-http.js';
 import {ANSWER_REVIEW_TOOL,ANSWER_REVIEW_OPEN_TOOL,ANSWER_REVIEW_URI,ANSWER_REVIEW_MIME,
   answerReviewTools,isAnswerReviewTool,answerReviewErrors,reviewAnswer,answerReviewTerms} from './answer-review.js';
 import {ANSWER_REVIEW_HTML} from './answer-review-html.js';
+import { NumericCorpus } from './numeric-context.js';
 import {SUPPLIER_DESK_HTML} from './supplier-desk-page.js';
 import {DOCUMENT_ARCHIVE_HTML} from './document-archive-page.js';
 import {DOCUMENT_ARCHIVE_CLIENT} from './document-archive-bundle.js';
@@ -5702,13 +5703,17 @@ function normalizeQuoteText(value) {
     .replace(/^[\s"'.,;:!?()\[\]{}]+|[\s"'.,;:!?()\[\]{}]+$/g, "");
 }
 
-function evidenceItemContentText(item) {
+function evidenceItemText(item) {
   if (!item || typeof item !== "object") return "";
   const parts = [];
   for (const field of AGENT_OUTPUT_QUOTE_CONTENT_FIELDS) {
     if (typeof item[field] === "string" && item[field]) parts.push(item[field]);
   }
-  return normalizeQuoteText(parts.join("\n"));
+  return parts.join("\n");
+}
+
+function evidenceItemContentText(item) {
+  return normalizeQuoteText(evidenceItemText(item));
 }
 
 function quoteMatchesEvidenceContent(quoteText, item) {
@@ -5727,6 +5732,37 @@ function claimHasMatchedQuote(claim, evidenceById) {
     if (!item) return false;
     return quoteMatchesEvidenceContent(sq.quote || sq.text || "", item);
   });
+}
+
+function outputNumericContextWarnings(claims, evidenceById, seenUnsafe) {
+  // Bound repeated source parsing on a shared Worker. Analyze whole excerpts
+  // so a fact past the limit is never treated as absent from a truncated source.
+  let remainingChars = 16_000;
+  let remainingClaims = 12;
+  let limited = false;
+  const warnings = [];
+  for (const claim of claims) {
+    if (seenUnsafe.has(claim.claim_id) || typeof claim.claim !== "string" ||
+        !/\d/u.test(claim.claim) || !Array.isArray(claim.evidence_ids) || !claim.evidence_ids.length) continue;
+    const ids = [...new Set(claim.evidence_ids)];
+    const texts = ids.map(id => evidenceItemText(evidenceById.get(id)));
+    if (texts.some(text => !text.trim())) continue;
+    const size = texts.reduce((total, text) => total + text.length, claim.claim.length);
+    if (claim.claim.length > 2_000 || size > remainingChars || !remainingClaims) {
+      limited = true;
+      continue;
+    }
+    remainingChars -= size;
+    remainingClaims -= 1;
+    const documents = Object.fromEntries(texts.map((text, index) => [`source${index}`, text]));
+    const { unmatched } = new NumericCorpus(documents).numericSupport(claim.claim, Object.keys(documents));
+    if (unmatched.length) {
+      warnings.push({ claimId: claim.claim_id, numbers: unmatched.slice(0, 6).map(number =>
+        number.length > 60 ? `${number.slice(0, 57)}...` : number
+      ) });
+    }
+  }
+  return { warnings, limited };
 }
 
 function isAgentOutputVerificationRequest(value) {
@@ -6017,6 +6053,14 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
     );
   }
 
+  const numericContext = outputNumericContextWarnings(claims, evidenceById, seenUnsafe);
+  for (const { claimId, numbers } of numericContext.warnings) {
+    ownerActions.push(`Review numeric context for claim ${claimId} (${numbers.join(", ")}). Compare the figure and what it describes with the cited excerpts.`);
+  }
+  if (numericContext.limited) {
+    ownerActions.push("Send fewer claims or shorter cited excerpts to check numeric context within the review limit.");
+  }
+
   const limitations = [
     "Schema-level and structural only. Does not verify that any claim or quote is factually true.",
     "Does not fetch or validate cited sources; it checks declared support structure only.",
@@ -6065,6 +6109,16 @@ function agentOutputVerificationResult(request, vizierDlp = null) {
     {id:"claim.factual_truth",result:"not_assessed",reason_code:"FACTUAL_TRUTH_NOT_ASSESSED"},
     {id:"output.dlp",result:vizierDlp?.status === "success" ? dlpFindings.length ? "fail" : "pass" : "not_assessed",
       reason_code:vizierDlp?.status === "success" ? dlpFindings.length ? "DLP_FINDING" : "DLP_SCAN_COMPLETED" : "DLP_NOT_ASSESSED"});
+  for (const { claimId } of numericContext.warnings) {
+    response.checks.push({
+      id: "numeric.context", claim_id: claimId, result: "not_assessed", reason_code: "NUMERIC_CONTEXT_REVIEW",
+    });
+  }
+  if (numericContext.limited) {
+    response.checks.push({
+      id: "numeric.context", result: "not_assessed", reason_code: "NUMERIC_CONTEXT_LIMIT",
+    });
+  }
   response.reason_codes = [...new Set([
     ...response.checks.filter(check=>check.result!=="pass").map(check=>check.reason_code),
     ...(unsupportedStatements.length ? ["UNSUPPORTED_STATEMENT"] : []),
