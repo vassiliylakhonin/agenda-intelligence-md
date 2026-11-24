@@ -50,3 +50,24 @@ test('bankability data and JSON text both use the same admission and execution i
     assert.equal(refused.data.code,'invalid_payment_tx');
   }
 });
+
+test('standard x402 A2A quotes preserve the JSON-RPC request ID and HTTP payment headers',async()=>{
+  const profile='gulf_maritime_exposure';
+  const settings={...env(profile),X402_STANDARD:'1'};
+  const card=await (await handleRequest(new Request(origin+'/.well-known/agent-card.json'),settings)).json();
+  const sample=card.capabilities.extensions.find(entry=>entry.params?.x_agenda_intelligence).params.x_agenda_intelligence.a2a_send_message_example;
+  for (const [path,id] of [['/message/send','quote-1'],['/',0]]) {
+    const response=await handleRequest(new Request(origin+path,{method:'POST',
+      headers:{...sample.headers,'content-type':'application/json','x-client-id':'agenda-owner-a2a-x402-test'},
+      body:JSON.stringify({...sample.request,id})}),settings);
+    const body=await response.json();
+    assert.equal(response.status,402);
+    const offer=JSON.parse(atob(response.headers.get('payment-required')));
+    assert.equal(offer.x402Version,2);
+    assert.equal(body.jsonrpc,'2.0');
+    assert.equal(body.id,id);
+    assert.equal(typeof body.error.code,'number');
+    assert.ok(body.error.data.x402);
+    assert.equal(body.error.data.first_call.payment_continuation.trace.value,response.headers.get('x-payment-trace-id'));
+  }
+});

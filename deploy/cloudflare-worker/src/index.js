@@ -36,7 +36,7 @@ import { prepareHandoff } from "./handoff.js";
 import { reviewSourceRecords } from "./source-records.js";
 import { reviewMineralDossier, mineralReadiness, mineralBaselineErrors } from "./critical_minerals_dossier.js";
 import { executePaidRequest, paidContext } from "./paid-execution.js";
-import { paymentTraceId, paymentTraceResponse } from "./payment-trace.js";
+import { normalizePaymentTrace, paymentTraceId, paymentTraceResponse } from "./payment-trace.js";
 import { snapshotHealth } from "./upstream_snapshot.js";
 import { snapshotAssetResponse } from "./snapshot-assets.js";
 import { consumeProQuota } from "./payment-ledger.js";
@@ -13901,6 +13901,7 @@ function x402Document(request, env) {
 function isOvFreeFirst(profile, env, request, body) {
   return profile === 'agent_output_verification' && env.BILLING_MODE === 'pay_per_call' && outputTrialEnabled(profile,env) &&
     body?.jsonrpc === '2.0' && body.method === 'tools/call' && body.params?.name === 'agent_output_verification' &&
+    !paidContext(request) &&
     !['x-payment-tx','x-payment-signature','payment-signature','x-payment'].some(key=>request.headers.has(key)) &&
     !bearerTokenFromRequest(request).startsWith('agy_pro_') && body.params?._meta?.['x402/payment'] === undefined;
 }
@@ -16460,7 +16461,20 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
   }
   if ((path === '/message/send' || path === '/') && catalogOperation(body, profile)) return handleCatalogReadCommand(body, request, env);
   if ((path === '/message/send' || path === '/') && isA2ATrial(body)) return handleA2ATrial(body,request,env,ctx);
-  if (path.startsWith('/mcp') && isOvFreeFirst(profile,env,request,body)) return execute();
+  let exhaustedTrial = null;
+  if (path.startsWith('/mcp') && isOvFreeFirst(profile,env,request,body)) {
+    const trialResponse = await execute();
+    if (path !== MCP_AGENT_ENDPOINT_PATH || !x402Enabled(env) || !trialResponse.ok) return trialResponse;
+    const result = (await trialResponse.clone().json()).result;
+    const text = result?.content?.[0]?.text;
+    if (result?.isError !== true || typeof text !== 'string') return trialResponse;
+    const refusal = JSON.parse(text);
+    // A quota refusal can lead to a quote for this same operation. Actual trial
+    // results, free-only tools, storage failures and daily reset hints keep their own responses.
+    if (refusal.code !== 'trial_exhausted' || refusal.trial?.limit_reason !== 'network_allowance_exhausted' ||
+        refusal.trial.attempt_consumed !== false) return trialResponse;
+    exhaustedTrial = refusal;
+  }
   const metaProof = path.startsWith('/mcp') && body?.method === 'tools/call' ? body.params?._meta?.['x402/payment'] : undefined;
   let standardProof;
   let standardError;
@@ -16504,7 +16518,7 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
     return operation?.free ? handleRequestInner(request, operation.routing || operation.memoQuality ? env : { ...env, BILLING_MODE: 'freemium' }, ctx) : execute();
   }
   const attempt_id = crypto.randomUUID();
-  const payment_trace_id = paymentTraceId(request);
+  const payment_trace_id = normalizePaymentTrace(exhaustedTrial?.trace_id) ?? paymentTraceId(request);
   const protocolReply = reply;
   reply = response => protocolReply(response).then(value => paymentTraceResponse(value, payment_trace_id, attempt_id));
   const caller_hash = await callerHash(request, env).catch(() => null);
@@ -16542,11 +16556,11 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
       const response = await handleRequestInner(request, { ...env, BILLING_MODE: 'freemium' }, ctx);
       if (response.status === 402) emit('payment_required', 'payment_required', 402);
       else emit(response.ok ? 'preview_completed' : 'preview_failed', response.ok ? 'free_preview' : 'preview_refused', response.status);
-      return response.status === 402 && x402Enabled(env) ? paymentTraceResponse(x402RequiredResponse(request,body,operation.minimum,response,trialTerms),payment_trace_id,attempt_id) : reply(response);
+      return reply(response.status === 402 && x402Enabled(env) ? x402RequiredResponse(request,body,operation.minimum,response,trialTerms) : response);
     }
     emit('payment_required', 'payment_required', 402);
     const legacy = generateX402PaymentResponse(operation.profile, request, env, 'payment_required', trialTerms);
-    return x402Enabled(env) ? paymentTraceResponse(x402RequiredResponse(request,body,operation.minimum,legacy,trialTerms),payment_trace_id,attempt_id) : reply(legacy);
+    return reply(x402Enabled(env) ? x402RequiredResponse(request,body,operation.minimum,legacy,trialTerms,exhaustedTrial?.trial.limit_reason) : legacy);
   }
   if (path.startsWith('/v1/evidence-packet/') && bearerTokenFromRequest(request).startsWith('agy_pro_')) {
     const rate = await checkRateLimit(request, env, profile);

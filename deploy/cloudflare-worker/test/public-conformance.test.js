@@ -15,6 +15,13 @@ for(const [name,profile] of [['middle-corridor-deal-risk-gate','kazakhstan'],['a
     assert.equal(result.signature_verified,1);assert.equal(result.payment_admission,1);assert.equal(result.refusals,6);
   });
 }
+test('public verifier runs the advertised free A2A routing example without a quote',async()=>{
+  const env=await environment('agenda');
+  const target=publicTargets().find(item=>item.key==='agenda-intelligence');
+  const result=await verifyPublicAgent(target,{fetchImpl:(url,options)=>handleRequest(new Request(url,options),env)});
+  assert.equal(result.routing_completed,1);
+  assert.equal(result.payment_admission,0);
+});
 test('public verifier rejects a tampered served card instead of counting discovery as healthy',async()=>{
   const env=await environment('agent_financial_guard');const target=publicTargets().find(item=>item.key==='agent-financial-guard');
   await assert.rejects(verifyPublicAgent(target,{fetchImpl:async(url,options)=>{
@@ -30,6 +37,7 @@ for(const [name,mutate] of [
   ['wrong recipient',(body)=>{body.x402.recipient_wallet='0x'+'0'.repeat(40);}],
   ['wrong amount',(body)=>{body.x402.amount_raw='999';}],
   ['unexpected success',(body)=>{body.result={ok:true};}],
+  ['wrong standard RPC id',(body)=>{body.id='wrong';}],
   ['wrong legacy RPC id',(body)=>{body.id='wrong';}]
 ]) {
   test(`public verifier rejects ${name}`,async()=>{

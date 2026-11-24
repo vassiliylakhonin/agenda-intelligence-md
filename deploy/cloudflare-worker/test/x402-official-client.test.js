@@ -154,12 +154,23 @@ test("official @x402/fetch signs, retries the real handler and recovers one resu
     globalThis.fetch = previous;
   }
 });
-test("official @x402/mcp recognizes PaymentRequired and retries using native payment metadata", async () => {
+for (const campaignExhausted of [false, true]) test(`official @x402/mcp settles and verifies a receipt ${campaignExhausted ? 'after trial exhaustion' : 'without a trial campaign'}`, async () => {
   const env = environment(),
     network = mockNetwork(),
     previous = globalThis.fetch;
   globalThis.fetch = network.fetch;
   try {
+    const headers = { "content-type": "application/json", "cf-connecting-ip": "192.0.2.71" };
+    if (campaignExhausted) {
+      env.WORKER_FREE_TRIAL = "1";
+      for (let i = 0; i < 5; i++) {
+        const trial = await handleRequest(new Request("https://example.test/v1/agent-output/trial", {
+          method: "POST", headers, body: JSON.stringify(input),
+        }), env);
+        assert.equal(trial.status, 200);
+        assert.equal((await trial.json()).trial.completion_recorded, true);
+      }
+    }
     let calls = 0,
       approved = 0;
     const wireClient = {
@@ -168,7 +179,7 @@ test("official @x402/mcp recognizes PaymentRequired and retries using native pay
         const response = await handleRequest(
           new Request("https://example.test/mcp/agent", {
             method: "POST",
-            headers: { "content-type": "application/json" },
+            headers,
             body: JSON.stringify({
               jsonrpc: "2.0",
               id: calls,

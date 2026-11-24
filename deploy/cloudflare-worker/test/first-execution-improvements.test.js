@@ -29,6 +29,33 @@ test('OV ordinary name shares atomic campaign; no paid fallback and output contr
  assert.equal(await count(env,'output_verification_trials'),5);
 }));
 
+test('the standard MCP Output Verification tool offers an authorized paid continuation after campaign exhaustion',()=>quiet(async()=>{
+ const env={...envFor(),X402_STANDARD:'1'},input=WORKED_EXAMPLES.agent_output_verification.request;
+ for(let i=0;i<5;i++) {
+   const free=await (await rpc(env,'agent_output_verification',input)).json();
+   assert.equal(free.result.structuredContent.trial.admission,'free_trial');
+ }
+ const response=await rpc(env,'agent_output_verification',input);
+ const payload=await response.json();
+ assert.equal(response.status,200);
+ assert.equal(payload.id,1);
+ assert.equal(payload.result.isError,true);
+ assert.ok(response.headers.has('payment-required'));
+ const challenge=JSON.parse(atob(response.headers.get('payment-required')));
+ assert.deepEqual(payload.result.structuredContent,challenge);
+ assert.equal(challenge.accepts[0].amount,'10000');
+ const admission=payload.result._meta['com.agenda/admission'];
+ assert.equal(admission.evaluated,false);
+ assert.equal(admission.free_trial.available,false);
+ assert.equal(admission.free_trial.unavailable_reason,'network_allowance_exhausted');
+ assert.equal(admission.first_call.automatic_payment,false);
+ assert.equal(admission.first_call.payment_continuation.trace.value,response.headers.get('x-payment-trace-id'));
+ assert.equal(await count(env,'output_verification_trials'),5);
+ const explicit=await rpc(env,'free_trial',input);
+ assert.equal(explicit.headers.has('payment-required'),false);
+ assert.equal(JSON.parse((await explicit.json()).result.content[0].text).code,'trial_exhausted');
+}));
+
 test('free router returns blank Minerals templates, never audit or invented facts',()=>quiet(async()=>{
  const env={...envFor(),AGENT_PROFILE:'agenda'};
  const result=await (await rpc(env,'strategic_risk_triage',{text:'Lithium offtake, partial context only'})).json();
