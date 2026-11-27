@@ -23,7 +23,13 @@ human review. See the [contract](../../docs/integrations/rag-output.md) and
 The local adapter uses `check_evidence_packet`, separate from the hosted
 compatibility gate below; it does not consume hosted trial quota.
 
-## Run safely (Node 20+)
+## First hosted MCP check without a wallet
+
+Follow the [native MCP trial walkthrough](../../docs/deployment/output-evaluation-receipts.md#first-hosted-mcp-check-without-a-wallet)
+to discover `free_trial`, copy its example from `tools/list`, check the
+allowance and verify the signed evaluation.
+
+## Inspect paid admission (Node 20+)
 
 From the repository root:
 
