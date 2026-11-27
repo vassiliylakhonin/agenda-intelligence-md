@@ -104,7 +104,7 @@ test('site offers the correct input and example before the integration details',
     ['agenda', 'I have a question', 'I have a drafted memo', 'Route a strategic question for free'],
     ['kazakhstan', 'Prepare a shipment dossier', 'Check a drafted shipment memo', 'Aktau–Baku shipment document checklist'],
     ['corridor_sanctions_assistant', 'Route my trade question free', 'Handoff for the Aktau–Baku question', 'Route a trade question for free'],
-    ['agent_output_verification', 'See a citation check', 'Try your own input', 'A2A example · mismatched launch date quote'],
+    ['agent_output_verification', 'Try one claim free', 'See why “2 meters” was flagged', 'A2A example · mismatched launch date quote'],
     ['m2m_escrow_arbiter', 'Review my delivery evidence', 'Hash and schema findings', 'reported timing: late']
   ];
   for (const [profile, action, example, result] of cases) {
