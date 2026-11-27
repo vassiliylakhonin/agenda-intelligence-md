@@ -141,15 +141,16 @@ test('web raw answer, synthetic demo and correction use the real trial without f
 test('one-claim form is opt-in to the existing Output trial and begins without evidence or inferred support',async()=>quiet(async()=>{
   const ui=await browser();
   assert.ok(ui.html.includes('id="one-claim-review"'));
-  assert.ok(ui.html.includes('One-Claim Review: Check one claim'));
-  assert.ok(ui.html.includes('Check the citation, not whether the claim is true.'));
+  assert.ok(ui.html.includes('Check one claim against its source'));
+  assert.ok(ui.html.includes('A human reviewer checks meaning, source authenticity and factual accuracy.'));
   assert.ok(ui.html.includes('href="#citation-claim"'));
   assert.ok(ui.html.includes('The allowance does not reset daily; shared daily capacity also applies.'));
-  assert.ok(ui.html.indexOf('One-Claim Review: Check one claim') < ui.html.indexOf('id="citation-demo-before"'));
+  assert.ok(ui.html.indexOf('id="citation-numeric-example"') < ui.html.indexOf('id="citation-claim"'));
   assert.ok(ui.html.includes('href="#one-claim-review"'));
   assert.ok(ui.html.indexOf('id="citation-demo-before"')<ui.html.indexOf('id="raw-answer"'));
   assert.ok(ui.html.includes('Copy API request'));
-  assert.ok(ui.html.includes('same 5 campaign attempts'));
+  assert.ok(ui.html.includes('Up to 5 shared campaign attempts'));
+  assert.ok(ui.html.indexOf('id="citation-run"')<ui.html.indexOf('id="raw-answer"'));
   assert.equal([...ui.html.matchAll(/id="profile-review"/g)].length,1);
   assert.equal([...ui.html.matchAll(/id="profile-allowance-check"/g)].length,1);
   assert.ok(ui.html.indexOf('id="one-claim-review"')<ui.html.indexOf('id="profile-allowance-check"'));
@@ -244,21 +245,48 @@ test('five public-document owner tasks run through the bundled form, real trial 
   }
 }));
 
-test('one-claim form shows numeric context in the summary and clears it after correction',async()=>quiet(async()=>{
-  const ui = await browser();
-  const quote = 'The Orchid cable spans 2 kilometers';
-  ui.elements['citation-claim'].value = 'The Orchid cable spans 2 meters.';
-  ui.elements['citation-source'].value = `${quote}.`;
-  ui.elements['citation-quote'].value = quote;
-  ui.elements['citation-support'].value = 'direct';
-  await run(ui);
-  assert.match(ui.elements['profile-summary'].innerHTML, /Review numeric context.*2 meters/);
-  assert.equal(ui.responses[0].evidence_gaps.length, 0);
-  ui.elements['citation-claim'].value = 'The Orchid cable spans 2,000 meters.';
-  await run(ui);
-  assert.doesNotMatch(ui.elements['profile-summary'].innerHTML, /Review numeric context/);
-  assert.equal(ui.responses[1].verdict, ui.responses[0].verdict);
-}));
+test('numeric example links to real trial stages without spending allowance on open',async()=>{
+  const events = [];
+  const originalLog = console.log;
+  console.log = event => events.push(event);
+  try {
+    const ui = await browser();
+    await ui.context.recordNumericExample(false);
+    assert.equal(ui.requests.length, 0);
+    await ui.context.recordNumericExample(true);
+    await ui.context.recordNumericExample(true);
+    assert.equal(ui.requests.length, 1);
+    assert.equal(ui.requests[0].url, '/telemetry/worked-example');
+    assert.equal(ui.requests[0].init.body, undefined);
+    assert.equal(ui.elements['citation-claim'].value, '');
+    const beacon = events.find(event => event.step === 'worked_example');
+    assert.equal(beacon.example_variant, 'numeric_context_v1');
+    assert.match(beacon.demo_trace_id, /^[a-f0-9-]{36}$/);
+
+    const quote = 'The Orchid cable spans 2 kilometers.';
+    assert.ok(ui.html.includes(quote));
+    ui.elements['citation-claim'].value = 'The Orchid cable spans 2 meters.';
+    ui.elements['citation-source'].value = quote;
+    ui.elements['citation-quote'].value = quote;
+    ui.elements['citation-support'].value = 'direct';
+    await run(ui);
+    assert.match(ui.elements['profile-summary'].innerHTML, /Review numeric context.*2 meters/);
+    assert.equal(ui.responses[0].evidence_gaps.length, 0);
+    assert.equal(ui.responses[0].trial.completion_recorded, true);
+    const trialEvents = events.filter(event => event.event === 'agenda_intelligence_payment' &&
+      event.demo_trace_id === beacon.demo_trace_id);
+    assert.deepEqual(trialEvents.map(event => event.stage), ['request_received','request_validated','preview_completed']);
+    assert.equal(new Set(trialEvents.map(event => event.attempt_id)).size, 1);
+    assert.ok(trialEvents.every(event => event.review_flow === 'one_claim_claim'));
+    assert.ok(!JSON.stringify([beacon, ...trialEvents]).includes('The Orchid'));
+    assert.equal((await ui.env.PAYMENT_LEDGER.prepare('SELECT COUNT(*) AS count FROM output_verification_trials').first()).count, 1);
+
+    ui.elements['citation-claim'].value = 'The Orchid cable spans 2,000 meters.';
+    await run(ui);
+    assert.doesNotMatch(ui.elements['profile-summary'].innerHTML, /Review numeric context/);
+    assert.equal(ui.responses[1].verdict, ui.responses[0].verdict);
+  } finally { console.log = originalLog; }
+});
 
 test('one-claim retries retain quota admission, last result and owner-bound optional feedback',async()=>quiet(async()=>{
   const ui=await browser();

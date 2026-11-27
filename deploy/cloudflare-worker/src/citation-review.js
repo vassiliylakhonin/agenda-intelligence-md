@@ -9,6 +9,15 @@ var rawBusy = false;
 var outputReviewRecords = {};
 var outputRecoveryKind = 'structured_claims';
 var rawRecoveryController = null;
+var agendaNumericExampleTraceId = null;
+function recordNumericExample(open) {
+  if (!open || agendaNumericExampleTraceId || !window.crypto?.randomUUID) return;
+  agendaNumericExampleTraceId = window.crypto.randomUUID();
+  return fetch('/telemetry/worked-example', {method:'POST', keepalive:true,
+    headers:agendaTelemetryHeaders('/telemetry/worked-example', {
+      'x-example-trace-id':agendaNumericExampleTraceId, 'x-agenda-example':'numeric-context-v1'
+    })}).catch(function() {});
+}
 function rawReviewInput() {
   var answer=document.getElementById('raw-answer').value, source=document.getElementById('raw-source').value;
   var input={answer:answer,sources:source.trim() ? [{source_id:'s1',text:source}] : []};
@@ -157,22 +166,30 @@ export function citationReviewHtml(attempts, allowancePanel, escapeHtml) {
   };
   return `<section id="one-claim-review" aria-label="Review one claim">
     <section class="card" aria-label="One-Claim Review introduction">
-      <h2>One-Claim Review: Check one claim</h2>
-      <p><strong>Check the citation, not whether the claim is true.</strong></p>
-      <p>Paste one assertion from an AI answer and the source excerpt you have. Add an exact quote if the answer contains one. See whether the supplied quote appears in the excerpt, plus evidence gaps and suggested next steps for a human reviewer.</p>
-      <h3>What this does not do</h3>
-      <p>It does not establish whether the source supports the claim's meaning, whether the source is real or whether it is accurate or current. It does not fetch sources or give permission to share or act. A false claim or a fabricated or stale source can still produce no citation issues. Human review is always required.</p>
-      <h3>How to use the one-claim form</h3>
-      <ol>
-        <li>Paste the assertion and the actual source excerpt, not just a URL.</li>
-        <li>Add the exact quote, if there is one.</li>
-        <li>Choose your assessment of the source's support. This is recorded, not independently verified.</li>
-        <li>Read the findings and next steps. Correct any gaps, then send the material for human review.</li>
-      </ol>
-      <p><a class="primary-action primary-action-main" href="#citation-claim">Go to the one-claim form</a></p>
-      <p>No code, wallet or MCP setup is needed to use this browser form.</p>
-      <p><small>Up to ${attempts} free attempts per network for this product's campaign, shared across browser, HTTP, MCP and A2A. The allowance does not reset daily; shared daily capacity also applies. Corrected submissions use another attempt. Saved examples use none. Do not submit confidential material. <a href="/terms#access">Limits and privacy terms</a>.</small></p>
+      <h2>Check one claim against its source</h2>
+      <p>See where a quote differs from the excerpt or a number needs a closer look. A human reviewer checks meaning, source authenticity and factual accuracy.</p>
+      <details id="citation-numeric-example" ontoggle="recordNumericExample(this.open)">
+        <summary>See why “2 meters” was flagged</summary>
+        <p><strong>AI claim</strong> The Orchid cable spans 2 meters.<br>
+        <strong>Exact source quote</strong> “The Orchid cable spans 2 kilometers.”</p>
+        <p><strong>Warning</strong> Review numeric context for <strong>2 meters</strong>. The source uses the same number with a different unit. Changing the claim to 2,000 meters clears this warning. Human review still applies.</p>
+        <p><a href="#citation-claim">Check your own claim</a> · Fictional example. Opening it uses no trial attempt.</p>
+      </details>
     </section>
+    ${allowancePanel}
+    <form onsubmit="runCitationReview(event)">
+      <p><label for="citation-claim">Assertion from the AI answer</label><br><textarea id="citation-claim" rows="3" required style="width:100%;font:inherit;padding:8px"></textarea></p>
+      <p><label for="citation-source">Original source excerpt</label><br><textarea id="citation-source" rows="5" required style="width:100%;font:inherit;padding:8px"></textarea></p>
+      <p><label for="citation-quote">Exact supporting quote, if present in the answer (optional)</label><br><textarea id="citation-quote" rows="2" style="width:100%;font:inherit;padding:8px"></textarea></p>
+      <p><label for="citation-support">How do you assess the source's support?</label><br>
+      <select id="citation-support" required style="font:inherit;padding:8px"><option value="">Choose your assessment</option><option value="direct">Direct</option><option value="partial">Partial</option><option value="weak">Weak</option><option value="unsupported">Unsupported</option></select><br>
+      <small>This records your assessment for the reviewer.</small></p>
+      <button id="citation-run" type="submit" class="primary-action primary-action-main">Check this claim free</button>
+      <p id="citation-status" role="status"></p>
+    </form>
+    <p>Up to ${attempts} shared campaign attempts per network. The allowance does not reset daily; shared daily capacity also applies. A revised submission uses another attempt. Use public or redacted material. <a href="/terms#access">Limits and privacy terms</a>.</p>
+    <details>
+    <summary>Review a full answer or see API examples</summary>
     <section class="card" aria-label="Synthetic citation demonstration">
       <h2>See a citation check</h2>
       <p>Saved fictional example. Viewing it uses no trial attempt.</p>
@@ -204,20 +221,7 @@ export function citationReviewHtml(attempts, allowancePanel, escapeHtml) {
       <button id="raw-save" type="button" hidden onclick="saveOutputReview('answer_citations')">Save last completed answer review locally</button>
       <p><small>The download contains the checked answer, supplied source text and result. Later edits are not included until checked. Nothing is uploaded by saving; keep the file private if the material is private.</small></p>
     </form>
-    <p>Each explicit review uses one of ${attempts} shared network attempts. Corrections need another attempt; unchanged completed input is not resubmitted. Do not submit confidential material.</p>
-    <h2>Check one claim before sharing an AI answer</h2>
-    <p>Paste one assertion from your answer and the actual source excerpt. Add the exact quote you want checked, if any. Text and quotes are preserved as supplied. This checks citation structure and quote presence; a reviewer must decide whether the source supports the meaning.</p>
-    ${allowancePanel}
-    <form onsubmit="runCitationReview(event)">
-      <p><label for="citation-claim">Assertion from the AI answer</label><br><textarea id="citation-claim" rows="3" required style="width:100%;font:inherit;padding:8px"></textarea></p>
-      <p><label for="citation-source">Original source excerpt</label><br><textarea id="citation-source" rows="5" required style="width:100%;font:inherit;padding:8px"></textarea></p>
-      <p><label for="citation-quote">Exact supporting quote, if present in the answer (optional)</label><br><textarea id="citation-quote" rows="2" style="width:100%;font:inherit;padding:8px"></textarea></p>
-      <p><label for="citation-support">How do you assess the source's support?</label><br>
-      <select id="citation-support" required style="font:inherit;padding:8px"><option value="">Choose your assessment</option><option value="direct">Direct</option><option value="partial">Partial</option><option value="weak">Weak</option><option value="unsupported">Unsupported</option></select><br>
-      <small>Your assessment is recorded as your claim, not independently verified.</small></p>
-      <button id="citation-run" type="submit" class="primary-action primary-action-main">Check this claim free</button>
-      <p id="citation-status" role="status"></p>
-    </form>
-    <p>This uses one of the same ${attempts} campaign attempts per network. Only the claim entered here is checked. Do not submit confidential material. After a result, correct the assertion or quote and check again; the result and optional feedback appear below. <a href="#profile-console">Review several claims with the full request form</a>.</p>
+    <p><a href="#profile-console">Review several claims with the full request form</a>.</p>
+    </details>
   </section>`;
 }

@@ -348,7 +348,7 @@ button:hover { border-color:var(--accent); }
 
   <div class="primary-actions">
     ${citationFirst
-      ? '<a class="primary-action primary-action-main" href="#one-claim-review">See a citation check</a><a class="primary-action" href="#raw-answer">Try your own input</a>'
+      ? '<a class="primary-action primary-action-main" href="#one-claim-review">Try one claim free</a>'
       : `<a class="primary-action primary-action-main" href="#${consoleId}">${escapeHtml(ownInputLabel)}</a>
          ${memoReview ? `<a class="primary-action" href="#memo-example">${isKazakhstan ? 'Check a drafted shipment memo' : 'I have a drafted memo'}</a>` : ''}
          <a class="primary-action" href="/?source=agenstry#worked-example" onclick="showWorkedExample(); return false;">${escapeHtml(savedLabel)}</a>`}
@@ -867,7 +867,10 @@ async function runProfileExample(event, paid, reviewFlow) {
       body:JSON.stringify({jsonrpc:'2.0',id:traceId,method:'tools/call',params:{name:'${routingTool}',arguments:payload}})
     });` : freeTrial ? `if (!agendaTrialTraceId && window.crypto && crypto.randomUUID) agendaTrialTraceId = crypto.randomUUID();
     var trialHeaders = agendaTelemetryHeaders('${origin}${trialTerms?.endpoint}', {'content-type':'application/json', 'x-trace-id':traceId});
-    if (reviewFlow === 'one-claim-v1') trialHeaders['x-agenda-review-flow'] = reviewFlow;
+    if (reviewFlow === 'one-claim-v1') {
+      trialHeaders['x-agenda-review-flow'] = reviewFlow;
+      if (agendaNumericExampleTraceId) trialHeaders['x-example-trace-id'] = agendaNumericExampleTraceId;
+    }
     if (agendaTrialTraceId) trialHeaders['x-payment-trace-id'] = agendaTrialTraceId;
     var response = paid ? await agendaPaidFetch('${origin}${consoleEndpoint}', {
       method:'POST', headers:trialHeaders, body:JSON.stringify(${useMcp ? `{jsonrpc:'2.0', id:traceId, method:'tools/call', params:{name:'${workedExample.tool}', arguments:payload}}` : 'payload'})

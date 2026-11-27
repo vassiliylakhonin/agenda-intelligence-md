@@ -2,6 +2,11 @@
 
 [Open the one-claim review](https://output-verification.agendamcp.dpdns.org/#one-claim-review).
 
+The saved numeric example is available in the form before any submission.
+Open it to see why a claim of 2 meters drew a warning even though the source
+quote contained the number 2. Then paste your own claim. Viewing the example
+uses no allowance and leaves the form blank.
+
 Use this when you have an AI-written answer and the original material it cites.
 Start with one important assertion. The service checks supplied references and
 quote presence. When an assertion contains a number and its cited excerpts
@@ -70,6 +75,15 @@ from having the answer and source available to recording the decision. Include
 input preparation in the tool time. Review the five cases individually, then
 track voluntary repeat use and any actual purchase as separate follow-up
 signals. Discovery requests and scores cannot substitute for these observations.
+
+To inspect the new path, start with same-host `worked_example` events with
+`example_variant=numeric_context_v1`. Join by the page-local `demo_trace_id`
+to `one_claim_claim` events for `request_validated` and `preview_completed`.
+Join those two stages by server `attempt_id` and count each linked example
+once. Report validation, completed checks and refusals by reason. Opening the
+example sends a random ID and an allowlisted variant label with the normal
+request telemetry. These observations do not carry the claim or source text
+and do not identify participants or establish useful results.
 
 ## Current status
 

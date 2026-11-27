@@ -564,6 +564,10 @@ async function logFunnelEvent(request, step, env = {}, feedback = null, mcp = nu
     step,
     demo_trace_id: step === "worked_example" ? exampleTraceId(request) : null,
     ...(step === 'worked_example' && url.pathname === '/telemetry/worked-example' &&
+      agentProfile(request, env) === 'agent_output_verification' &&
+      request.headers.get('x-agenda-example') === 'numeric-context-v1' && exampleTraceId(request)
+      ? {example_variant:'numeric_context_v1'} : {}),
+    ...(step === 'worked_example' && url.pathname === '/telemetry/worked-example' &&
       agentProfile(request, env) === 'm2m_escrow_arbiter' &&
       request.headers.get('x-agenda-example-source') === 'agenstry' ? {example_source: 'agenstry_link'} : {}),
     request_kind: funnelRequestKind(step),
