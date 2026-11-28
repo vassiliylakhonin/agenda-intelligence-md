@@ -75,6 +75,36 @@ test("served A2A extension directly supplies actionable status and evaluation me
     { ...env, WORKER_FREE_TRIAL: "0" })).json();
   assert.equal(disabled.capabilities.extensions.some((item) => item.uri === A2A_TRIAL_URI), false);
 });
+test("A2A form errors offer the same executable free status request as discovery", async () => {
+  const env = envFor("dual_use_technology_export");
+  const card = await (await handleRequest(new Request(origin + "/.well-known/agent-card.json"), env)).json();
+  const discovered = card.capabilities.extensions.find(item => item.uri === A2A_TRIAL_URI).params.status_wire_request;
+  const rejected = await handleRequest(new Request(origin + "/message/send", {
+    method: "POST", headers: { ...headers, "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ method: "SendMessage", message: "private user input" }),
+  }), env);
+  assert.equal(rejected.status, 400);
+  const data = (await rejected.json()).error.data;
+  assert.equal(data.input_diagnostics.media_type, "form_urlencoded");
+  assert.deepEqual(data.free_status_request, discovered);
+  assert.ok(discovered);
+  assert.equal(discovered.headers["Content-Type"], "application/json");
+  assert.equal(discovered.headers["A2A-Version"], "1.0");
+  assert.equal(discovered.url, origin + "/message/send");
+  assert.equal(discovered.body.includes("private user input"), false);
+  const repaired = await handleRequest(new Request(discovered.url, {
+    method: discovered.method,
+    headers: { ...discovered.headers, "cf-connecting-ip": headers["cf-connecting-ip"], "x-client-id": headers["x-client-id"] },
+    body: discovered.body,
+  }), env);
+  const response = await repaired.json();
+  assert.equal(repaired.status, 200, JSON.stringify(response.error));
+  const task = response.result.task;
+  assert.equal(task.metadata.evaluation_performed, false);
+  assert.equal(task.metadata.trial_status.availability.attempt_consumed, false);
+  assert.equal(task.metadata.trial_status.availability.remaining_attempts, 2);
+});
+
 test("A2A status and evaluation share the existing allowance for every fleet profile", async () => {
   for (const profile of Object.keys(TRIAL_PROFILES)) {
     const env = envFor(profile);

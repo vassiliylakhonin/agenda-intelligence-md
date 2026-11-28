@@ -57,25 +57,43 @@ export function a2aTrialInput(payload) {
     };
   return { operation: selector.operation, input: parts[0].data };
 }
-export function a2aTrialDiscovery(example) {
-  const message = (operation) => ({
+function trialMessage(operation, data) {
+  return {
     messageId: "replace-with-unique-id",
     role: "ROLE_USER",
     metadata: { [A2A_TRIAL_KEY]: { operation } },
-    parts:
-      operation === "status"
-        ? [{ text: "Check free trial availability" }]
-        : [{ data: example, mediaType: "application/json" }],
-  });
+    parts: operation === "status"
+      ? [{ text: "Check free trial availability" }]
+      : [{ data, mediaType: "application/json" }],
+  };
+}
+
+export function a2aTrialStatusRequest(origin) {
+  return {
+    url: origin + "/message/send",
+    method: "POST",
+    headers: { "Content-Type": "application/json", "A2A-Version": "1.0" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: "free-trial-status",
+      method: "SendMessage",
+      params: { message: { ...trialMessage("status"), messageId: "free-trial-status" } },
+    }),
+  };
+}
+
+export function a2aTrialDiscovery(example, origin) {
   return {
     uri: A2A_TRIAL_URI,
     metadata_key: A2A_TRIAL_KEY,
     endpoint: "/message/send",
     method: "SendMessage",
     legacy_method: "message/send",
-    status_message: message("status"),
-    evaluation_message: message("evaluate"),
-    feedback_message:{...message('feedback'),parts:[{data:{attempt_id:'replace-with-trial.attempt_id',response:'still_blocked'},mediaType:'application/json'}]},
+    status_message: trialMessage("status"),
+    status_wire_request: a2aTrialStatusRequest(origin),
+    status_wire_instruction: "Send the body as raw JSON with the given headers. This status request checks availability without payment or a trial attempt.",
+    evaluation_message: trialMessage("evaluate", example),
+    feedback_message: trialMessage('feedback', {attempt_id:'replace-with-trial.attempt_id',response:'still_blocked'}),
     feedback_note:'Optional self-reported usefulness only; same network/product and a recent completed trial required. No extra evaluation or allowance.',
     example_is_synthetic: true,
     allowance:
