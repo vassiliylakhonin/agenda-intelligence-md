@@ -3,7 +3,7 @@ import {buildRemediation,inputRemediation,unknownInputFindings,REMEDIATION_PROFI
 import {INPUT_VALIDATION_TOOL,INPUT_VALIDATION_PATH,INPUT_VALIDATION_MAX_BYTES,validationTool,validatePublishedInput} from './input-validation.js';
 import {machineContract,machineOffers,profilePaymentManifest,publicToolSchema,toolSchemaUrl,evaluationAmount} from './machine-contracts.js';
 import {x402Enabled, decodeX402, executeX402, x402RequiredResponse, x402ExecutionResponse} from "./x402-v2.js";
-import {isA2ATrial, a2aTrialInput, a2aTrialDiscovery, A2A_TRIAL_URI} from "./a2a-trial.js";
+import {isA2ATrial, a2aTrialInput, a2aTrialDiscovery, a2aTrialStatusRequest, A2A_TRIAL_URI} from "./a2a-trial.js";
 import { withEvaluationContract } from "./evaluation-contract.js";
 import { addSkillDiscovery } from './skill-discovery.js';
 import { addCatalogOnboarding, catalogOperation, catalogDemoContent } from './catalog-demo.js';
@@ -1383,7 +1383,7 @@ function agentCard(request, env = {}) {
   shaped.x_agenda_intelligence.diagnostics = {field:"remediation",contract_version:"worker-remediation.v1",input_preflight:"/v1/validate-input",network_reset_policy:"campaign_no_scheduled_reset"};
   if (trial) {
     shaped.x_agenda_intelligence.free_trial_request_example = freeTrialRequestExample(profile, origin);
-    shaped.x_agenda_intelligence.a2a_free_trial = a2aTrialDiscovery(workerTrialAdapter(profile).example);
+    shaped.x_agenda_intelligence.a2a_free_trial = a2aTrialDiscovery(workerTrialAdapter(profile).example, origin);
     shaped.capabilities = {...shaped.capabilities,extensions:[...(shaped.capabilities?.extensions || []),
       {uri:A2A_TRIAL_URI,description:'Opt-in free evaluation or allowance status through message metadata; HTTP/MCP/A2A share one allowance.',required:false,
         params:shaped.x_agenda_intelligence.a2a_free_trial}]};
@@ -16489,6 +16489,11 @@ async function handleRequestWithBilling(request, env = {}, ctx = {}) {
           : input_diagnostics.failure === 'invalid_utf8' ? 'Encode the complete JSON request as UTF-8 before sending it with Content-Type: application/json.'
           : ['form_urlencoded', 'multipart'].includes(input_diagnostics.media_type) ? 'Send a serialized JSON object with Content-Type: application/json, rather than HTML form fields or multipart data.'
           : 'Send a complete UTF-8 JSON object using your JSON serializer. Do not send shell quoting, comments or trailing commas.' } };
+    if ((path === '/message/send' || path === '/') &&
+        ['form_urlencoded', 'multipart'].includes(input_diagnostics.media_type) && outputTrialEnabled(profile, env)) {
+      data.free_status_request = a2aTrialStatusRequest(new URL(request.url).origin);
+      data.free_status_instruction = 'Check the connection and allowance with free_status_request. Send its body as raw JSON with its headers. It consumes no attempt. Correct your own input before asking for an evaluation.';
+    }
     if (data.request_hint.example_request) {
       data.request_hint.wire_request = {
         url: new URL(request.url).origin + path, method: 'POST',

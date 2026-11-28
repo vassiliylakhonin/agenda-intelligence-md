@@ -18,7 +18,7 @@ const envFor=()=>({AGENT_PROFILE:'agent_output_verification',WORKER_FREE_TRIAL:'
 async function browser(env=envFor()) {
   const html=await(await handleRequest(new Request(origin+'/?owner_test=1',{headers:{accept:'text/html'}}),env)).text();
   const elements=Object.fromEntries(['citation-claim','citation-source','citation-quote','citation-support','citation-status','citation-run',
-    'raw-answer','raw-source','raw-status','raw-result','raw-run','raw-numeric','raw-save','profile-save-review','profile-input-status','profile-validate-input','citation-demo-before','citation-demo-after',
+    'raw-answer-details','raw-answer','raw-source','raw-status','raw-result','raw-run','raw-numeric','raw-save','profile-save-review','profile-input-status','profile-validate-input','citation-demo-before','citation-demo-after',
     'profile-run','profile-paid','profile-status','profile-result','profile-summary','profile-progress','profile-response','profile-request',
     'profile-feedback','profile-feedback-status','profile-helpful','profile-blocked','profile-feedback-panel','profile-intake','profile-recovery']
     .map(id=>[id,{value:'',textContent:'',innerHTML:'',hidden:true,disabled:false}]));
@@ -310,4 +310,23 @@ test('one-claim retries retain quota admission, last result and owner-bound opti
   const receipt=await ui.env.PAYMENT_LEDGER.prepare('SELECT origin_group FROM trial_completion_receipts LIMIT 1').first();
   assert.equal(receipt.origin_group,'excluded');
   assert.equal(ui.elements['citation-run'].disabled,false);
+}));
+
+
+test('numeric example opens the editable answer form without submitting or replacing an existing draft',async()=>quiet(async()=>{
+  const ui=await browser();
+  assert.match(ui.html,/onclick="loadNumericExample\(\)"/);
+  ui.elements['raw-answer'].focus=()=>{};
+  ui.context.loadNumericExample();
+  assert.equal(ui.elements['raw-answer-details'].open,true);
+  assert.equal(ui.elements['raw-numeric'].checked,true);
+  assert.match(ui.elements['raw-answer'].value,/2 meters.*\[s1\]/);
+  assert.match(ui.elements['raw-source'].value,/2 kilometers/);
+  assert.equal(ui.requests.length,0);
+  await ui.context.runRawReview({preventDefault(){}});
+  assert.match(ui.elements['raw-result'].textContent,/number_absent_from_cited_sources/);
+  ui.elements['raw-answer'].value='Keep my own draft [s1]';
+  ui.context.loadNumericExample();
+  assert.equal(ui.elements['raw-answer'].value,'Keep my own draft [s1]');
+  assert.equal(ui.requests.length,1);
 }));

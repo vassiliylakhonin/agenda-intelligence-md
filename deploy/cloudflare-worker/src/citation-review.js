@@ -18,6 +18,21 @@ function recordNumericExample(open) {
       'x-example-trace-id':agendaNumericExampleTraceId, 'x-agenda-example':'numeric-context-v1'
     })}).catch(function() {});
 }
+function loadNumericExample() {
+  var answer = document.getElementById('raw-answer');
+  var source = document.getElementById('raw-source');
+  document.getElementById('raw-answer-details').open = true;
+  var status = document.getElementById('raw-status');
+  if (!answer.value.trim() && !source.value.trim()) {
+    answer.value = 'The Orchid cable spans 2 meters. [s1]';
+    source.value = 'The Orchid cable spans 2 kilometers.';
+    document.getElementById('raw-numeric').checked = true;
+    status.textContent = 'Example loaded. Edit it or run a review using one shared trial attempt.';
+  } else {
+    status.textContent = 'Your draft is still in the form.';
+  }
+  answer.focus();
+}
 function rawReviewInput() {
   var answer=document.getElementById('raw-answer').value, source=document.getElementById('raw-source').value;
   var input={answer:answer,sources:source.trim() ? [{source_id:'s1',text:source}] : []};
@@ -173,7 +188,8 @@ export function citationReviewHtml(attempts, allowancePanel, escapeHtml) {
         <p><strong>AI claim</strong> The Orchid cable spans 2 meters.<br>
         <strong>Exact source quote</strong> “The Orchid cable spans 2 kilometers.”</p>
         <p><strong>Warning</strong> Review numeric context for <strong>2 meters</strong>. The source uses the same number with a different unit. Changing the claim to 2,000 meters clears this warning. Human review still applies.</p>
-        <p><a href="#citation-claim">Check your own claim</a> · Fictional example. Opening it uses no trial attempt.</p>
+        <button type="button" onclick="loadNumericExample()">Load this example into the review form</button>
+        <p><a href="#citation-claim">Check your own claim</a> · Fictional example. Opening or loading it uses no trial attempt.</p>
       </details>
     </section>
     ${allowancePanel}
@@ -188,7 +204,7 @@ export function citationReviewHtml(attempts, allowancePanel, escapeHtml) {
       <p id="citation-status" role="status"></p>
     </form>
     <p>Up to ${attempts} shared campaign attempts per network. The allowance does not reset daily; shared daily capacity also applies. A revised submission uses another attempt. Use public or redacted material. <a href="/terms#access">Limits and privacy terms</a>.</p>
-    <details>
+    <details id="raw-answer-details">
     <summary>Review a full answer or see API examples</summary>
     <section class="card" aria-label="Synthetic citation demonstration">
       <h2>See a citation check</h2>
